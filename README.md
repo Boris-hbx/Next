@@ -1,4 +1,6 @@
-# Boris Life - Work Engine
+# Next
+
+**Focus on the Right Thing.**
 
 A personal life management PWA built with Flask. Organize tasks with the Eisenhower Matrix, maintain motivation, manage prompts, and visualize data with bubble charts.
 
