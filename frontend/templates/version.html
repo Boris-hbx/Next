@@ -1,0 +1,636 @@
+{% extends "base.html" %}
+
+{% block title %}版本管理 - Boris Life{% endblock %}
+
+{% block content %}
+<style>
+/* 版本管理页面样式 */
+.version-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.version-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.version-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-primary, #333);
+}
+
+.version-stats {
+    display: flex;
+    gap: 16px;
+}
+
+.stat-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.stat-badge.pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.stat-badge.completed {
+    background: #d4edda;
+    color: #155724;
+}
+
+/* 快捷入口 */
+.quick-links {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.quick-link-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: var(--card-bg, white);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s ease;
+}
+
+.quick-link-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+
+.quick-link-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    font-size: 24px;
+}
+
+.quick-link-icon.prompt { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+.quick-link-icon.history { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+.quick-link-icon.learning { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+.quick-link-icon.ai { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+
+.quick-link-info h3 {
+    margin: 0 0 4px 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary, #333);
+}
+
+.quick-link-info p {
+    margin: 0;
+    font-size: 12px;
+    color: var(--text-secondary, #666);
+}
+
+/* 验收区域 */
+.acceptance-section {
+    background: var(--card-bg, white);
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+
+.acceptance-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-light, #eee);
+}
+
+.acceptance-tab {
+    flex: 1;
+    padding: 16px 24px;
+    background: none;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary, #666);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.acceptance-tab.active {
+    color: var(--primary-color, #667eea);
+}
+
+.acceptance-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--primary-color, #667eea);
+    border-radius: 3px 3px 0 0;
+}
+
+.acceptance-tab .tab-count {
+    margin-left: 8px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    background: var(--hover-bg, #f0f0f0);
+}
+
+.acceptance-tab.active .tab-count {
+    background: var(--primary-color, #667eea);
+    color: white;
+}
+
+/* 验收列表 */
+.acceptance-list {
+    padding: 16px;
+}
+
+.acceptance-item {
+    background: var(--hover-bg, #f8f9fa);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.acceptance-item:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.acceptance-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    cursor: pointer;
+}
+
+.acceptance-item-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.acceptance-id {
+    padding: 4px 10px;
+    background: var(--primary-color, #667eea);
+    color: white;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.acceptance-title {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-primary, #333);
+}
+
+.acceptance-status {
+    font-size: 13px;
+}
+
+.acceptance-item-body {
+    display: none;
+    padding: 0 16px 16px;
+    border-top: 1px solid var(--border-light, #eee);
+}
+
+.acceptance-item.expanded .acceptance-item-body {
+    display: block;
+}
+
+.acceptance-field {
+    display: flex;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-light, #eee);
+}
+
+.acceptance-field:last-child {
+    border-bottom: none;
+}
+
+.acceptance-field-label {
+    width: 100px;
+    flex-shrink: 0;
+    font-weight: 500;
+    color: var(--text-secondary, #666);
+    font-size: 13px;
+}
+
+.acceptance-field-value {
+    flex: 1;
+    font-size: 13px;
+    color: var(--text-primary, #333);
+    white-space: pre-wrap;
+}
+
+/* 验收按钮 */
+.acceptance-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-accept {
+    flex: 1;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-accept.approve {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+}
+
+.btn-accept.approve:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(17, 153, 142, 0.4);
+}
+
+.btn-accept.reject {
+    background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+    color: white;
+}
+
+.btn-accept.reject:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 65, 108, 0.4);
+}
+
+/* 空状态 */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-secondary, #666);
+}
+
+.empty-state-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.empty-state-text {
+    font-size: 16px;
+}
+
+/* 展开箭头 */
+.expand-arrow {
+    transition: transform 0.2s ease;
+    color: var(--text-secondary, #999);
+}
+
+.acceptance-item.expanded .expand-arrow {
+    transform: rotate(180deg);
+}
+
+/* 验收详情信息（展开后显示） */
+.acceptance-details {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-light, #eee);
+}
+
+.detail-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 8px 0;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.detail-item:first-child {
+    padding-top: 0;
+}
+
+.detail-label {
+    flex-shrink: 0;
+    width: 70px;
+    font-weight: 600;
+    color: var(--text-secondary, #666);
+}
+
+.detail-value {
+    flex: 1;
+    color: var(--text-primary, #333);
+    word-break: break-word;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+    .version-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .quick-links {
+        grid-template-columns: 1fr;
+    }
+
+    .acceptance-item-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .acceptance-actions {
+        flex-direction: column;
+    }
+
+    .detail-item {
+        flex-wrap: wrap;
+    }
+
+    .detail-label {
+        width: 100%;
+        margin-bottom: 4px;
+    }
+}
+</style>
+
+<div class="version-container">
+    <div class="version-header">
+        <h1 class="version-title">版本管理</h1>
+        <div class="version-stats">
+            <span class="stat-badge pending">
+                <span>⏳</span>
+                <span>待验收: <strong id="pending-count">0</strong></span>
+            </span>
+            <span class="stat-badge completed">
+                <span>✅</span>
+                <span>已验收: <strong id="completed-count">0</strong></span>
+            </span>
+        </div>
+    </div>
+
+    <!-- 快捷入口 -->
+    <div class="quick-links">
+        <a href="{{ url_for('prompt_todo') }}" class="quick-link-card">
+            <div class="quick-link-icon prompt">📋</div>
+            <div class="quick-link-info">
+                <h3>待执行 Prompt</h3>
+                <p>管理待执行的开发任务</p>
+            </div>
+        </a>
+        <a href="{{ url_for('prompts') }}" class="quick-link-card">
+            <div class="quick-link-icon history">📜</div>
+            <div class="quick-link-info">
+                <h3>Prompt 历史记录</h3>
+                <p>查看已完成的任务历史</p>
+            </div>
+        </a>
+        <a href="{{ url_for('learning') }}" class="quick-link-card">
+            <div class="quick-link-icon learning">📚</div>
+            <div class="quick-link-info">
+                <h3>学习总结</h3>
+                <p>开发最佳实践与模板</p>
+            </div>
+        </a>
+        <a href="{{ url_for('aichat') }}" class="quick-link-card">
+            <div class="quick-link-icon ai">🤖</div>
+            <div class="quick-link-info">
+                <h3>智脑中枢</h3>
+                <p>AI 对话助手</p>
+            </div>
+        </a>
+    </div>
+
+    <!-- 特性验收 -->
+    <div class="acceptance-section">
+        <div class="acceptance-tabs">
+            <button class="acceptance-tab active" data-tab="pending" onclick="switchTab('pending')">
+                待验收
+                <span class="tab-count" id="tab-pending-count">0</span>
+            </button>
+            <button class="acceptance-tab" data-tab="completed" onclick="switchTab('completed')">
+                已验收
+                <span class="tab-count" id="tab-completed-count">0</span>
+            </button>
+        </div>
+
+        <div class="acceptance-list" id="acceptance-list">
+            <div class="empty-state">
+                <div class="empty-state-icon">📋</div>
+                <div class="empty-state-text">加载中...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+var allItems = { pending: [], completed: [] };
+var currentTab = 'pending';
+
+function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.acceptance-tab').forEach(function(t) {
+        t.classList.remove('active');
+        if (t.getAttribute('data-tab') === tab) {
+            t.classList.add('active');
+        }
+    });
+    renderList();
+}
+
+function loadAcceptanceItems() {
+    fetch('/api/acceptance')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                allItems.pending = data.pending || [];
+                allItems.completed = data.completed || [];
+
+                // Update counts
+                document.getElementById('pending-count').textContent = allItems.pending.length;
+                document.getElementById('completed-count').textContent = allItems.completed.length;
+                document.getElementById('tab-pending-count').textContent = allItems.pending.length;
+                document.getElementById('tab-completed-count').textContent = allItems.completed.length;
+
+                renderList();
+            }
+        })
+        .catch(function(err) {
+            console.error('Failed to load acceptance items:', err);
+            document.getElementById('acceptance-list').innerHTML =
+                '<div class="empty-state"><div class="empty-state-icon">❌</div><div class="empty-state-text">加载失败，请刷新重试</div></div>';
+        });
+}
+
+function renderList() {
+    var items = allItems[currentTab];
+    var container = document.getElementById('acceptance-list');
+
+    if (items.length === 0) {
+        var msg = currentTab === 'pending' ? '暂无待验收项目' : '暂无已验收项目';
+        var icon = currentTab === 'pending' ? '✨' : '📋';
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">' + icon + '</div><div class="empty-state-text">' + msg + '</div></div>';
+        return;
+    }
+
+    var html = '';
+    items.forEach(function(item) {
+        html += createItemHtml(item);
+    });
+    container.innerHTML = html;
+}
+
+function createItemHtml(item) {
+    var fields = item.fields || {};
+    var isPending = currentTab === 'pending';
+
+    // 构建操作按钮（展开后最先显示，方便点击）
+    var actionsHtml = '';
+    if (isPending) {
+        actionsHtml = '<div class="acceptance-actions">' +
+            '<button class="btn-accept approve" onclick="acceptItem(\'' + item.id + '\', \'approve\', event)"><span>✅</span> 验收通过</button>' +
+            '<button class="btn-accept reject" onclick="acceptItem(\'' + item.id + '\', \'reject\', event)"><span>❌</span> 有问题</button>' +
+        '</div>';
+    }
+
+    // 构建详细信息（展开后显示在按钮下方）
+    var detailsHtml = '<div class="acceptance-details">';
+
+    // Prompt ID
+    var promptId = fields['Prompt ID'] || fields['完成时间'] || '';
+    if (promptId) {
+        detailsHtml += '<div class="detail-item">' +
+            '<span class="detail-label">ID</span>' +
+            '<span class="detail-value">' + escapeHtml(promptId) + '</span>' +
+        '</div>';
+    }
+
+    // 功能
+    if (fields['功能']) {
+        detailsHtml += '<div class="detail-item">' +
+            '<span class="detail-label">功能</span>' +
+            '<span class="detail-value">' + escapeHtml(fields['功能']) + '</span>' +
+        '</div>';
+    }
+
+    // 位置
+    if (fields['位置']) {
+        detailsHtml += '<div class="detail-item">' +
+            '<span class="detail-label">位置</span>' +
+            '<span class="detail-value">' + escapeHtml(fields['位置']) + '</span>' +
+        '</div>';
+    }
+
+    // 验收步骤
+    if (fields['验收步骤']) {
+        detailsHtml += '<div class="detail-item">' +
+            '<span class="detail-label">验收步骤</span>' +
+            '<span class="detail-value">' + escapeHtml(fields['验收步骤']) + '</span>' +
+        '</div>';
+    }
+
+    // 修改文件
+    if (fields['修改文件']) {
+        detailsHtml += '<div class="detail-item">' +
+            '<span class="detail-label">修改文件</span>' +
+            '<span class="detail-value">' + escapeHtml(fields['修改文件']) + '</span>' +
+        '</div>';
+    }
+
+    // 备注
+    if (fields['备注']) {
+        detailsHtml += '<div class="detail-item">' +
+            '<span class="detail-label">备注</span>' +
+            '<span class="detail-value">' + escapeHtml(fields['备注']) + '</span>' +
+        '</div>';
+    }
+
+    detailsHtml += '</div>';
+
+    // 展开区域：先按钮，后详情
+    var expandSection = '<div class="acceptance-item-body">' +
+        actionsHtml +
+        detailsHtml +
+    '</div>';
+
+    return '<div class="acceptance-item" data-id="' + item.id + '">' +
+        '<div class="acceptance-item-header" onclick="toggleItem(\'' + item.id + '\')">' +
+            '<div class="acceptance-item-left">' +
+                '<span class="acceptance-id">' + item.id + '</span>' +
+                '<span class="acceptance-title">' + escapeHtml(item.title) + '</span>' +
+            '</div>' +
+            '<div class="acceptance-item-right">' +
+                '<span class="acceptance-status">' + item.status + '</span>' +
+                '<span class="expand-arrow">▼</span>' +
+            '</div>' +
+        '</div>' +
+        expandSection +
+    '</div>';
+}
+
+function toggleItem(id) {
+    var item = document.querySelector('.acceptance-item[data-id="' + id + '"]');
+    if (item) {
+        item.classList.toggle('expanded');
+    }
+}
+
+function acceptItem(id, action, event) {
+    event.stopPropagation();
+
+    var actionText = action === 'approve' ? '验收通过' : '标记有问题';
+
+    window.AppUtils.showConfirm('确定要将 ' + id + ' ' + actionText + '？', function() {
+        fetch('/api/acceptance/' + id, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: action })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                window.AppUtils.showToast(id + ' ' + actionText, 'success');
+                loadAcceptanceItems();
+            } else {
+                window.AppUtils.showToast('操作失败: ' + (data.error || '未知错误'), 'error');
+            }
+        })
+        .catch(function(err) {
+            window.AppUtils.showToast('请求失败，请稍后重试', 'error');
+        });
+    }, { confirmText: actionText });
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;');
+}
+
+// Initialize
+loadAcceptanceItems();
+</script>
+{% endblock %}

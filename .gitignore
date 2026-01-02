@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+env/
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local config
+.claude/
+.continue/
+
+# ============================================
+# PRIVATE DATA - NEVER COMMIT TO GIT
+# ============================================
+
+# Private data folder (all contents excluded)
+private-data/*
+!private-data/.gitkeep
+
+# Config folder (contains API keys)
+config/
+
+# data folder is now tracked in git
+
+# ============================================
+# OTHER EXCLUSIONS
+# ============================================
+
+# Backup files and folders
+backupfiles/
+backups/
+docs/backup/
+
+# Temporary files
+*.tmp
+*.log
+
+# Screenshots (optional - remove if you want to track)
+# PrtSc/

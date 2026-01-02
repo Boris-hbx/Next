@@ -1,0 +1,849 @@
+{% extends "base.html" %}
+
+{% block title %}气泡图工具 - Time Management{% endblock %}
+
+{% block content %}
+    <div class="page-header compact">
+        <div class="header-left">
+            <h1 class="page-title">气泡图工具箱</h1>
+            <p class="quote-text" id="quote-text">{{ quote }}</p>
+        </div>
+        <button class="btn-shuffle" onclick="shuffleQuote()">换一个</button>
+    </div>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <div class="bubble-main-layout">
+        <!-- 左侧：历史版本列表 -->
+        <div class="bubble-sidebar">
+            <div class="sidebar-header">
+                <h3>工具栏</h3>
+                <button class="btn-new" onclick="createNew()">+ 新建</button>
+            </div>
+            <div class="saved-list" id="saved-list">
+                <!-- 动态加载 -->
+            </div>
+        </div>
+
+        <!-- 右侧：主编辑区 -->
+        <div class="bubble-editor">
+            <!-- 图表标题和简介 -->
+            <div class="bubble-meta">
+                <div class="meta-row">
+                    <input type="text" class="chart-title-input" id="chart-title" placeholder="输入图表标题..." value="未命名图表">
+                    <div class="meta-actions">
+                        <button class="btn-action btn-save" onclick="saveChart()" title="保存">
+                            <span class="btn-icon">💾</span> 保存
+                        </button>
+                        <button class="btn-action btn-duplicate" onclick="duplicateChart()" title="复制为新图表" id="btn-duplicate" style="display:none;">
+                            <span class="btn-icon">📋</span> 复制
+                        </button>
+                        <button class="btn-action btn-delete-chart" onclick="deleteChart()" title="删除" id="btn-delete" style="display:none;">
+                            <span class="btn-icon">🗑️</span> 删除
+                        </button>
+                    </div>
+                </div>
+                <textarea class="chart-desc-input" id="chart-desc" placeholder="添加图表简介（可选）..." rows="2"></textarea>
+                <div class="chart-info" id="chart-info" style="display:none;">
+                    <span class="info-item" id="chart-created"></span>
+                    <span class="info-item" id="chart-updated"></span>
+                </div>
+            </div>
+
+            <div class="bubble-container">
+                <!-- 左侧：数据输入区 -->
+                <div class="bubble-panel data-panel">
+                    <div class="panel-header">
+                        <h3>数据输入</h3>
+                        <div class="panel-actions">
+                            <button class="btn-small" onclick="addRow()">+ 添加</button>
+                            <button class="btn-small btn-secondary" onclick="loadExample()">加载示例</button>
+                            <button class="btn-small btn-secondary" onclick="clearAll()">清空</button>
+                        </div>
+                    </div>
+                    <div class="data-table-wrapper">
+                        <table class="data-table" id="data-table">
+                            <thead>
+                                <tr>
+                                    <th>名称</th>
+                                    <th>X轴值</th>
+                                    <th>Y轴值</th>
+                                    <th>气泡大小</th>
+                                    <th>颜色</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="data-body">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="axis-labels">
+                        <div class="axis-input">
+                            <label>X轴标签：</label>
+                            <input type="text" id="x-axis-label" value="投入成本" onchange="updateChart()">
+                        </div>
+                        <div class="axis-input">
+                            <label>Y轴标签：</label>
+                            <input type="text" id="y-axis-label" value="恢复效果" onchange="updateChart()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧：图表展示区 -->
+                <div class="bubble-panel chart-panel">
+                    <div class="panel-header">
+                        <h3>气泡图预览</h3>
+                        <div class="panel-actions">
+                            <button class="btn-small" onclick="downloadChart()">下载图片</button>
+                        </div>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="bubble-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 评分维度配置（可折叠） -->
+            <div class="bubble-panel scoring-panel">
+                <div class="panel-header collapsible" onclick="toggleScoring()">
+                    <h3>评分维度配置（可选）</h3>
+                    <span class="collapse-icon" id="scoring-icon">▼</span>
+                </div>
+                <div class="scoring-content" id="scoring-content" style="display: none;">
+                    <div class="scoring-columns">
+                        <div class="scoring-column">
+                            <h4>X轴评分维度</h4>
+                            <div id="x-dimensions">
+                                <div class="dimension-item">
+                                    <input type="text" placeholder="维度名称" value="准备时间">
+                                    <input type="number" placeholder="满分" value="5" min="0">
+                                </div>
+                                <div class="dimension-item">
+                                    <input type="text" placeholder="维度名称" value="展开时间">
+                                    <input type="number" placeholder="满分" value="30" min="0">
+                                </div>
+                                <div class="dimension-item">
+                                    <input type="text" placeholder="维度名称" value="学习成本">
+                                    <input type="number" placeholder="满分" value="15" min="0">
+                                </div>
+                            </div>
+                            <button class="btn-tiny" onclick="addDimension('x')">+ 添加维度</button>
+                        </div>
+                        <div class="scoring-column">
+                            <h4>Y轴评分维度</h4>
+                            <div id="y-dimensions">
+                                <div class="dimension-item">
+                                    <input type="text" placeholder="维度名称" value="精力恢复稳定">
+                                    <input type="number" placeholder="满分" value="30" min="0">
+                                </div>
+                                <div class="dimension-item">
+                                    <input type="text" placeholder="维度名称" value="情绪调节">
+                                    <input type="number" placeholder="满分" value="20" min="0">
+                                </div>
+                                <div class="dimension-item">
+                                    <input type="text" placeholder="维度名称" value="缓解压力">
+                                    <input type="number" placeholder="满分" value="20" min="0">
+                                </div>
+                            </div>
+                            <button class="btn-tiny" onclick="addDimension('y')">+ 添加维度</button>
+                        </div>
+                        <div class="scoring-column">
+                            <h4>气泡大小维度</h4>
+                            <div id="size-dimensions">
+                                <div class="dimension-item">
+                                    <input type="text" placeholder="维度名称" value="上肢激活">
+                                    <input type="number" placeholder="满分" value="15" min="0">
+                                </div>
+                                <div class="dimension-item">
+                                    <input type="text" placeholder="维度名称" value="下肢激活">
+                                    <input type="number" placeholder="满分" value="20" min="0">
+                                </div>
+                                <div class="dimension-item">
+                                    <input type="text" placeholder="维度名称" value="全身激活">
+                                    <input type="number" placeholder="满分" value="20" min="0">
+                                </div>
+                            </div>
+                            <button class="btn-tiny" onclick="addDimension('size')">+ 添加维度</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script>
+    var chart = null;
+    var currentBubbleId = null;  // 当前编辑的图表ID
+    var colorPalette = [
+        '#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe',
+        '#00f2fe', '#43e97b', '#38f9d7', '#fa709a', '#fee140',
+        '#a8edea', '#fed6e3', '#5ee7df', '#b490ca', '#d299c2'
+    ];
+    var colorIndex = 0;
+
+    function getNextColor() {
+        var color = colorPalette[colorIndex % colorPalette.length];
+        colorIndex++;
+        return color;
+    }
+
+    function addRow(name, x, y, size, color) {
+        var tbody = document.getElementById('data-body');
+        var row = document.createElement('tr');
+        var rowColor = color || getNextColor();
+
+        row.innerHTML =
+            '<td><input type="text" class="cell-input" value="' + (name || '') + '" onchange="updateChart()"></td>' +
+            '<td><input type="number" class="cell-input" value="' + (x || 50) + '" onchange="updateChart()"></td>' +
+            '<td><input type="number" class="cell-input" value="' + (y || 50) + '" onchange="updateChart()"></td>' +
+            '<td><input type="number" class="cell-input" value="' + (size || 30) + '" onchange="updateChart()"></td>' +
+            '<td><input type="color" class="cell-color" value="' + rowColor + '" onchange="updateChart()"></td>' +
+            '<td><button class="btn-delete" onclick="deleteRow(this)">×</button></td>';
+
+        tbody.appendChild(row);
+        updateChart();
+    }
+
+    function deleteRow(btn) {
+        btn.closest('tr').remove();
+        updateChart();
+    }
+
+    function clearAll() {
+        window.AppUtils.showConfirm('确定要清空所有数据吗？', function() {
+            document.getElementById('data-body').innerHTML = '';
+            colorIndex = 0;
+            updateChart();
+            showToast('已清空', 'success');
+        }, { confirmText: '清空', danger: true });
+    }
+
+    function getData() {
+        var rows = document.querySelectorAll('#data-body tr');
+        var data = [];
+        rows.forEach(function(row) {
+            var inputs = row.querySelectorAll('input');
+            var name = inputs[0].value;
+            var x = parseFloat(inputs[1].value) || 0;
+            var y = parseFloat(inputs[2].value) || 0;
+            var size = parseFloat(inputs[3].value) || 10;
+            var color = inputs[4].value;
+
+            if (name) {
+                data.push({
+                    label: name,
+                    x: x,
+                    y: y,
+                    r: Math.max(5, size / 3),
+                    backgroundColor: color + '99',
+                    borderColor: color,
+                    name: name,
+                    size: size,
+                    color: color
+                });
+            }
+        });
+        return data;
+    }
+
+    function getTableData() {
+        var rows = document.querySelectorAll('#data-body tr');
+        var data = [];
+        rows.forEach(function(row) {
+            var inputs = row.querySelectorAll('input');
+            data.push({
+                name: inputs[0].value,
+                x: parseFloat(inputs[1].value) || 0,
+                y: parseFloat(inputs[2].value) || 0,
+                size: parseFloat(inputs[3].value) || 10,
+                color: inputs[4].value
+            });
+        });
+        return data;
+    }
+
+    // 智能标签位置计算器
+    var labelPositionCache = {};
+
+    // 8个可选方向：右、左、上、下、右上、右下、左上、左下
+    var LABEL_DIRECTIONS = [
+        { name: 'right',      anchor: 'start', align: 'right',  dx: 1,  dy: 0 },
+        { name: 'left',       anchor: 'end',   align: 'left',   dx: -1, dy: 0 },
+        { name: 'top',        anchor: 'end',   align: 'top',    dx: 0,  dy: -1 },
+        { name: 'bottom',     anchor: 'start', align: 'bottom', dx: 0,  dy: 1 },
+        { name: 'top-right',  anchor: 'start', align: 'top',    dx: 0.7, dy: -0.7 },
+        { name: 'top-left',   anchor: 'end',   align: 'top',    dx: -0.7, dy: -0.7 },
+        { name: 'bottom-right', anchor: 'start', align: 'bottom', dx: 0.7, dy: 0.7 },
+        { name: 'bottom-left',  anchor: 'end',   align: 'bottom', dx: -0.7, dy: 0.7 }
+    ];
+
+    function calculateOptimalLabelPositions(chartData, scales) {
+        var bubbles = chartData.map(function(item, index) {
+            return {
+                index: index,
+                label: item.label,
+                x: scales.x.getPixelForValue(item.x),
+                y: scales.y.getPixelForValue(item.y),
+                r: item.r * 2,  // 像素半径
+                dataX: item.x,
+                dataY: item.y
+            };
+        });
+
+        var xMin = scales.x.left;
+        var xMax = scales.x.right;
+        var yMin = scales.y.top;
+        var yMax = scales.y.bottom;
+        var xRange = scales.x.max - scales.x.min;
+        var yRange = scales.y.max - scales.y.min;
+
+        var positions = {};
+        var placedLabels = [];  // 已放置标签的边界框
+
+        // 按气泡大小排序，大的先放置（更重要）
+        var sortedBubbles = bubbles.slice().sort(function(a, b) {
+            return b.r - a.r;
+        });
+
+        sortedBubbles.forEach(function(bubble) {
+            var labelWidth = bubble.label.length * 7 + 4;  // 估算标签宽度
+            var labelHeight = 14;
+            var offset = bubble.r + 6;  // 标签距离气泡中心的距离
+
+            // 根据气泡位置确定首选方向
+            var preferredDirs = getPreferredDirections(bubble, xMin, xMax, yMin, yMax, xRange, yRange, scales);
+
+            var bestDir = null;
+            var minOverlap = Infinity;
+
+            // 遍历所有方向，找到最佳位置
+            for (var i = 0; i < preferredDirs.length; i++) {
+                var dir = preferredDirs[i];
+                var labelX = bubble.x + dir.dx * offset;
+                var labelY = bubble.y + dir.dy * offset;
+
+                // 计算标签边界框
+                var bounds = calculateLabelBounds(labelX, labelY, labelWidth, labelHeight, dir);
+
+                // 检查是否超出图表边界
+                if (bounds.left < xMin - 10 || bounds.right > xMax + 10 ||
+                    bounds.top < yMin - 10 || bounds.bottom > yMax + 10) {
+                    continue;
+                }
+
+                // 计算与其他气泡的重叠程度
+                var bubbleOverlap = 0;
+                for (var j = 0; j < bubbles.length; j++) {
+                    if (bubbles[j].index === bubble.index) continue;
+                    var other = bubbles[j];
+                    var dist = Math.sqrt(Math.pow(labelX - other.x, 2) + Math.pow(labelY - other.y, 2));
+                    if (dist < other.r + 5) {
+                        bubbleOverlap += (other.r + 5 - dist);
+                    }
+                }
+
+                // 计算与已放置标签的重叠程度
+                var labelOverlap = 0;
+                for (var k = 0; k < placedLabels.length; k++) {
+                    var placed = placedLabels[k];
+                    var overlapX = Math.max(0, Math.min(bounds.right, placed.right) - Math.max(bounds.left, placed.left));
+                    var overlapY = Math.max(0, Math.min(bounds.bottom, placed.bottom) - Math.max(bounds.top, placed.top));
+                    labelOverlap += overlapX * overlapY;
+                }
+
+                var totalOverlap = bubbleOverlap * 10 + labelOverlap;  // 气泡重叠权重更高
+
+                if (totalOverlap === 0) {
+                    bestDir = dir;
+                    placedLabels.push(bounds);
+                    break;
+                }
+
+                if (totalOverlap < minOverlap) {
+                    minOverlap = totalOverlap;
+                    bestDir = dir;
+                }
+            }
+
+            if (!bestDir) {
+                bestDir = preferredDirs[0];
+            }
+
+            // 如果没找到完美位置，记录最佳位置的边界框
+            if (minOverlap > 0 && minOverlap !== Infinity) {
+                var labelX = bubble.x + bestDir.dx * offset;
+                var labelY = bubble.y + bestDir.dy * offset;
+                placedLabels.push(calculateLabelBounds(labelX, labelY, labelWidth, labelHeight, bestDir));
+            }
+
+            positions[bubble.index] = bestDir;
+        });
+
+        return positions;
+    }
+
+    function getPreferredDirections(bubble, xMin, xMax, yMin, yMax, xRange, yRange, scales) {
+        // 计算气泡在图表中的相对位置 (0-1)
+        var relX = (bubble.dataX - scales.x.min) / xRange;
+        var relY = (bubble.dataY - scales.y.min) / yRange;
+
+        var dirs = [];
+
+        // 根据位置确定首选方向
+        // 右侧区域 → 优先左边
+        // 左侧区域 → 优先右边
+        // 上方区域 → 优先下边
+        // 下方区域 → 优先上边
+
+        if (relX > 0.7) {
+            // 气泡在右侧，标签放左边
+            dirs.push(LABEL_DIRECTIONS[1]);  // left
+            dirs.push(LABEL_DIRECTIONS[5]);  // top-left
+            dirs.push(LABEL_DIRECTIONS[7]);  // bottom-left
+        } else if (relX < 0.3) {
+            // 气泡在左侧，标签放右边
+            dirs.push(LABEL_DIRECTIONS[0]);  // right
+            dirs.push(LABEL_DIRECTIONS[4]);  // top-right
+            dirs.push(LABEL_DIRECTIONS[6]);  // bottom-right
+        }
+
+        if (relY > 0.7) {
+            // 气泡在上方，标签放下边
+            dirs.push(LABEL_DIRECTIONS[3]);  // bottom
+            if (relX <= 0.5) dirs.push(LABEL_DIRECTIONS[6]);  // bottom-right
+            if (relX > 0.5) dirs.push(LABEL_DIRECTIONS[7]);   // bottom-left
+        } else if (relY < 0.3) {
+            // 气泡在下方，标签放上边
+            dirs.push(LABEL_DIRECTIONS[2]);  // top
+            if (relX <= 0.5) dirs.push(LABEL_DIRECTIONS[4]);  // top-right
+            if (relX > 0.5) dirs.push(LABEL_DIRECTIONS[5]);   // top-left
+        }
+
+        // 添加剩余方向作为备选
+        LABEL_DIRECTIONS.forEach(function(dir) {
+            if (dirs.indexOf(dir) === -1) {
+                dirs.push(dir);
+            }
+        });
+
+        return dirs;
+    }
+
+    function calculateLabelBounds(x, y, width, height, dir) {
+        var left, right, top, bottom;
+
+        // 根据对齐方式计算边界框
+        if (dir.align === 'left') {
+            right = x - 2;
+            left = right - width;
+        } else if (dir.align === 'right') {
+            left = x + 2;
+            right = left + width;
+        } else {
+            left = x - width / 2;
+            right = x + width / 2;
+        }
+
+        if (dir.align === 'top' || dir.name.indexOf('top') >= 0) {
+            bottom = y - 2;
+            top = bottom - height;
+        } else if (dir.align === 'bottom' || dir.name.indexOf('bottom') >= 0) {
+            top = y + 2;
+            bottom = top + height;
+        } else {
+            top = y - height / 2;
+            bottom = y + height / 2;
+        }
+
+        return { left: left, right: right, top: top, bottom: bottom };
+    }
+
+    function updateChart() {
+        var ctx = document.getElementById('bubble-chart').getContext('2d');
+        var data = getData();
+
+        var datasets = data.map(function(item, index) {
+            return {
+                label: item.label,
+                data: [{ x: item.x, y: item.y, r: item.r }],
+                backgroundColor: item.backgroundColor,
+                borderColor: item.borderColor,
+                borderWidth: 2,
+                dataIndex: index  // 用于标签位置查找
+            };
+        });
+
+        if (chart) {
+            chart.destroy();
+        }
+
+        // 重置标签位置缓存和更新标志
+        labelPositionCache = {};
+        var labelPositionsCalculated = false;
+
+        chart = new Chart(ctx, {
+            type: 'bubble',
+            data: { datasets: datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            padding: 15,
+                            usePointStyle: true,
+                            font: { size: 12 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                var d = context.raw;
+                                return context.dataset.label + ': (' + d.x + ', ' + d.y + ')';
+                            }
+                        }
+                    },
+                    datalabels: {
+                        display: true,
+                        color: '#333',
+                        font: {
+                            size: 11,
+                            weight: 'bold'
+                        },
+                        // 无边框样式
+                        backgroundColor: null,
+                        borderColor: null,
+                        borderRadius: 0,
+                        borderWidth: 0,
+                        padding: 0,
+                        // 动态计算锚点和对齐
+                        anchor: function(context) {
+                            var idx = context.dataset.dataIndex;
+                            var pos = labelPositionCache[idx];
+                            return pos ? pos.anchor : 'end';
+                        },
+                        align: function(context) {
+                            var idx = context.dataset.dataIndex;
+                            var pos = labelPositionCache[idx];
+                            return pos ? pos.align : 'right';
+                        },
+                        offset: function(context) {
+                            var r = context.dataset.data[0].r;
+                            return r + 4;  // 标签距离气泡边缘的距离
+                        },
+                        formatter: function(value, context) {
+                            return context.dataset.label;
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: document.getElementById('x-axis-label').value,
+                            font: { size: 14, weight: 'bold' }
+                        },
+                        grid: { color: 'rgba(0,0,0,0.05)' }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: document.getElementById('y-axis-label').value,
+                            font: { size: 14, weight: 'bold' }
+                        },
+                        grid: { color: 'rgba(0,0,0,0.05)' }
+                    }
+                }
+            },
+            plugins: [{
+                id: 'labelPositionCalculator',
+                afterLayout: function(chartInstance) {
+                    // 布局完成后计算最优标签位置（只执行一次）
+                    if (!labelPositionsCalculated && chartInstance.scales && chartInstance.scales.x && chartInstance.scales.y) {
+                        labelPositionCache = calculateOptimalLabelPositions(data, chartInstance.scales);
+                        labelPositionsCalculated = true;
+                        // 延迟重绘以应用新位置
+                        setTimeout(function() {
+                            chartInstance.update('none');
+                        }, 0);
+                    }
+                }
+            }]
+        });
+    }
+
+    function loadExample() {
+        document.getElementById('data-body').innerHTML = '';
+        colorIndex = 0;
+
+        var examples = [
+            ['冥想', 16, 68, 25],
+            ['靠墙静蹲', 20, 18, 30],
+            ['站桩', 18, 40, 40],
+            ['站桩+冥想', 15, 75, 55],
+            ['太极', 52, 87, 75],
+            ['八段锦', 46, 89, 85],
+            ['武式易筋经', 48, 84, 85],
+            ['睡觉', 42, 70, 30],
+            ['躺着', 31, 35, 20],
+            ['靠椅闭眼', 22, 30, 15],
+            ['走几步', 15, 30, 20],
+            ['喝咖啡', 20, 11, 15],
+            ['徒手深蹲', 17, 15, 40],
+            ['伸懒腰', 2, 30, 45],
+            ['站立', 10, 18, 15],
+            ['聊天', 34, 54, 15],
+            ['动态踮脚', 12, 34, 30],
+            ['呼吸六字诀', 16, 49, 40],
+            ['瑜伽', 78, 70, 78],
+            ['刷短视频', 45, 10, 5]
+        ];
+
+        examples.forEach(function(item) {
+            addRow(item[0], item[1], item[2], item[3]);
+        });
+
+        showToast('已加载精力恢复示例数据（共20项）', 'success');
+    }
+
+    function downloadChart() {
+        var canvas = document.getElementById('bubble-chart');
+        var link = document.createElement('a');
+        var title = document.getElementById('chart-title').value || '气泡图';
+        link.download = title + '_' + new Date().toISOString().slice(0,10) + '.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        showToast('图片已下载', 'success');
+    }
+
+    function toggleScoring() {
+        var content = document.getElementById('scoring-content');
+        var icon = document.getElementById('scoring-icon');
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            icon.textContent = '▲';
+        } else {
+            content.style.display = 'none';
+            icon.textContent = '▼';
+        }
+    }
+
+    function addDimension(axis) {
+        var container = document.getElementById(axis + '-dimensions');
+        var div = document.createElement('div');
+        div.className = 'dimension-item';
+        div.innerHTML =
+            '<input type="text" placeholder="维度名称">' +
+            '<input type="number" placeholder="满分" value="10" min="0">' +
+            '<button class="btn-delete-small" onclick="this.parentElement.remove()">×</button>';
+        container.appendChild(div);
+    }
+
+    function showToast(message, type) {
+        AppUtils.showToast(message, type);
+    }
+
+    function shuffleQuote() {
+        var btn = document.querySelector('.btn-shuffle');
+        btn.classList.add('rolling');
+
+        fetch('/api/quote/random')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('quote-text').textContent = data.quote;
+                btn.classList.remove('rolling');
+            })
+            .catch(() => {
+                btn.classList.remove('rolling');
+            });
+    }
+
+    // ============ 版本控制功能 ============
+
+    function formatDate(isoString) {
+        var date = new Date(isoString);
+        var m = (date.getMonth() + 1).toString().padStart(2, '0');
+        var d = date.getDate().toString().padStart(2, '0');
+        var h = date.getHours().toString().padStart(2, '0');
+        var min = date.getMinutes().toString().padStart(2, '0');
+        return m + '-' + d + ' ' + h + ':' + min;
+    }
+
+    function loadSavedList() {
+        fetch('/api/bubbles')
+            .then(response => response.json())
+            .then(data => {
+                var list = document.getElementById('saved-list');
+                if (data.bubbles.length === 0) {
+                    list.innerHTML = '<div class="empty-list">暂无保存的图表</div>';
+                    return;
+                }
+
+                list.innerHTML = data.bubbles.map(function(b) {
+                    var isActive = b.id === currentBubbleId ? 'active' : '';
+                    return '<div class="saved-item ' + isActive + '" onclick="loadBubble(\'' + b.id + '\')">' +
+                        '<div class="saved-title">' + escapeHtml(b.title) + '</div>' +
+                        '<div class="saved-desc">' + escapeHtml(b.description || '暂无简介') + '</div>' +
+                        '<div class="saved-time">更新于 ' + formatDate(b.updated_at) + '</div>' +
+                    '</div>';
+                }).join('');
+            });
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;')
+                  .replace(/"/g, '&quot;');
+    }
+
+    function createNew() {
+        var doCreate = function() {
+            currentBubbleId = null;
+            document.getElementById('chart-title').value = '未命名图表';
+            document.getElementById('chart-desc').value = '';
+            document.getElementById('x-axis-label').value = '投入成本';
+            document.getElementById('y-axis-label').value = '恢复效果';
+            document.getElementById('data-body').innerHTML = '';
+            document.getElementById('chart-info').style.display = 'none';
+            document.getElementById('btn-duplicate').style.display = 'none';
+            document.getElementById('btn-delete').style.display = 'none';
+            colorIndex = 0;
+            addRow('示例1', 30, 60, 40);
+            addRow('示例2', 50, 40, 60);
+            addRow('示例3', 70, 80, 30);
+            loadSavedList();
+            showToast('已创建新图表', 'success');
+        };
+
+        if (currentBubbleId) {
+            window.AppUtils.showConfirm('当前有未保存的更改，确定要新建吗？', doCreate, { confirmText: '新建' });
+        } else {
+            doCreate();
+        }
+    }
+
+    function saveChart() {
+        var title = document.getElementById('chart-title').value.trim() || '未命名图表';
+        var description = document.getElementById('chart-desc').value.trim();
+        var xLabel = document.getElementById('x-axis-label').value;
+        var yLabel = document.getElementById('y-axis-label').value;
+        var tableData = getTableData();
+
+        var payload = {
+            title: title,
+            description: description,
+            x_label: xLabel,
+            y_label: yLabel,
+            data: tableData
+        };
+
+        var url = currentBubbleId ? '/api/bubbles/' + currentBubbleId : '/api/bubbles';
+        var method = currentBubbleId ? 'PUT' : 'POST';
+
+        fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                currentBubbleId = data.bubble.id;
+                document.getElementById('btn-duplicate').style.display = 'inline-flex';
+                document.getElementById('btn-delete').style.display = 'inline-flex';
+                updateChartInfo(data.bubble);
+                loadSavedList();
+                showToast('保存成功', 'success');
+            } else {
+                showToast('保存失败: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            showToast('保存出错', 'error');
+        });
+    }
+
+    function loadBubble(id) {
+        fetch('/api/bubbles/' + id)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    var b = data.bubble;
+                    currentBubbleId = b.id;
+                    document.getElementById('chart-title').value = b.title;
+                    document.getElementById('chart-desc').value = b.description || '';
+                    document.getElementById('x-axis-label').value = b.x_label;
+                    document.getElementById('y-axis-label').value = b.y_label;
+                    document.getElementById('btn-duplicate').style.display = 'inline-flex';
+                    document.getElementById('btn-delete').style.display = 'inline-flex';
+                    updateChartInfo(b);
+
+                    // 加载数据
+                    document.getElementById('data-body').innerHTML = '';
+                    colorIndex = 0;
+                    b.data.forEach(function(item) {
+                        addRow(item.name, item.x, item.y, item.size, item.color);
+                    });
+
+                    loadSavedList();
+                    showToast('已加载: ' + b.title, 'success');
+                }
+            });
+    }
+
+    function duplicateChart() {
+        if (!currentBubbleId) {
+            showToast('请先保存当前图表', 'error');
+            return;
+        }
+
+        fetch('/api/bubbles/' + currentBubbleId + '/duplicate', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    currentBubbleId = data.bubble.id;
+                    document.getElementById('chart-title').value = data.bubble.title;
+                    updateChartInfo(data.bubble);
+                    loadSavedList();
+                    showToast('已创建副本', 'success');
+                } else {
+                    showToast('复制失败: ' + data.error, 'error');
+                }
+            });
+    }
+
+    function deleteChart() {
+        if (!currentBubbleId) return;
+
+        window.AppUtils.showConfirm('确定要删除这个图表吗？此操作不可恢复。', function() {
+            fetch('/api/bubbles/' + currentBubbleId, { method: 'DELETE' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('已删除', 'success');
+                        createNew();
+                    } else {
+                        showToast('删除失败: ' + data.error, 'error');
+                    }
+                });
+        }, { confirmText: '删除', danger: true });
+    }
+
+    function updateChartInfo(bubble) {
+        document.getElementById('chart-info').style.display = 'flex';
+        document.getElementById('chart-created').textContent = '创建于 ' + formatDate(bubble.created_at);
+        document.getElementById('chart-updated').textContent = '更新于 ' + formatDate(bubble.updated_at);
+    }
+
+    // 初始化
+    addRow('示例1', 30, 60, 40);
+    addRow('示例2', 50, 40, 60);
+    addRow('示例3', 70, 80, 30);
+    loadSavedList();
+    </script>
+{% endblock %}

@@ -1,0 +1,376 @@
+{% extends "mobile/base.html" %}
+
+{% block title %}主页 - Boris Life{% endblock %}
+{% block page_title %}Boris Life{% endblock %}
+
+{% block content %}
+<div class="home-page">
+    <!-- Welcome Card -->
+    <div class="welcome-card">
+        <div class="welcome-text">
+            <span class="welcome-greeting">欢迎回来</span>
+            <span class="welcome-name">Boris</span>
+        </div>
+        <div class="welcome-date" id="current-date"></div>
+    </div>
+
+    <!-- Quote Card -->
+    <div class="quote-card">
+        <span class="quote-icon">💡</span>
+        <p class="quote-text">{{ quote }}</p>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+        <div class="stat-item">
+            <span class="stat-value" id="stat-today">-</span>
+            <span class="stat-label">今日待办</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value" id="stat-prompts">-</span>
+            <span class="stat-label">待执行</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value" id="stat-week">-</span>
+            <span class="stat-label">本周</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value" id="stat-bubbles">-</span>
+            <span class="stat-label">气泡图</span>
+        </div>
+    </div>
+
+    <!-- Feature Cards -->
+    <div class="feature-section">
+        <h2 class="section-title">功能入口</h2>
+        <div class="feature-grid">
+            <a href="{{ url_for('todo') }}" class="feature-item feature-todo">
+                <div class="feature-icon">✅</div>
+                <div class="feature-name">Todo</div>
+            </a>
+            <a href="{{ url_for('motivation') }}" class="feature-item feature-motivation">
+                <div class="feature-icon">🔥</div>
+                <div class="feature-name">鼓励大师</div>
+            </a>
+            <a href="{{ url_for('bubble') }}" class="feature-item feature-bubble">
+                <div class="feature-icon">🫧</div>
+                <div class="feature-name">气泡图</div>
+            </a>
+            <a href="{{ url_for('game') }}" class="feature-item feature-game">
+                <div class="feature-icon">🎮</div>
+                <div class="feature-name">放松大脑</div>
+            </a>
+            <!-- AI 暂时隐藏
+            <a href="{{ url_for('aichat') }}" class="feature-item feature-ai">
+                <div class="feature-icon">🤖</div>
+                <div class="feature-name">智脑中枢</div>
+            </a>
+            -->
+            <a href="{{ url_for('prompt_todo') }}" class="feature-item feature-prompt">
+                <div class="feature-icon">📋</div>
+                <div class="feature-name">待执行</div>
+            </a>
+            <a href="{{ url_for('prompts') }}" class="feature-item feature-history">
+                <div class="feature-icon">📜</div>
+                <div class="feature-name">历史</div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Tasks Preview -->
+    <div class="preview-section">
+        <div class="preview-header">
+            <h2 class="section-title">今日任务</h2>
+            <a href="{{ url_for('todo') }}" class="preview-more">查看全部 →</a>
+        </div>
+        <div class="task-preview" id="task-preview">
+            <div class="preview-empty">加载中...</div>
+        </div>
+    </div>
+</div>
+
+<style>
+.home-page {
+    padding-bottom: 20px;
+}
+
+/* Welcome Card */
+.welcome-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 16px;
+    margin-bottom: 16px;
+    color: white;
+}
+
+.welcome-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.welcome-greeting {
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+
+.welcome-name {
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+.welcome-date {
+    font-size: 0.8rem;
+    opacity: 0.85;
+    text-align: right;
+}
+
+/* Quote Card */
+.quote-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+    background: var(--bg-card);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    border-left: 3px solid var(--primary-color);
+}
+
+.quote-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.quote-text {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.5;
+    font-style: italic;
+}
+
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 14px 8px;
+    background: var(--bg-card);
+    border-radius: 12px;
+}
+
+.stat-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.stat-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+/* Feature Section */
+.feature-section {
+    margin-bottom: 20px;
+}
+
+.section-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 12px 0;
+}
+
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.feature-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 18px 10px;
+    background: var(--bg-card);
+    border-radius: 14px;
+    text-decoration: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.feature-item:active {
+    transform: scale(0.96);
+}
+
+.feature-icon {
+    font-size: 1.8rem;
+    margin-bottom: 8px;
+}
+
+.feature-name {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+/* Feature colors */
+.feature-todo { border-bottom: 3px solid #10b981; }
+.feature-motivation { border-bottom: 3px solid #f59e0b; }
+.feature-bubble { border-bottom: 3px solid #667eea; }
+.feature-game { border-bottom: 3px solid #ef4444; }
+.feature-ai { border-bottom: 3px solid #8b5cf6; }
+.feature-prompt { border-bottom: 3px solid #3b82f6; }
+.feature-history { border-bottom: 3px solid #6366f1; }
+
+/* Preview Section */
+.preview-section {
+    background: var(--bg-card);
+    border-radius: 14px;
+    padding: 16px;
+}
+
+.preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.preview-header .section-title {
+    margin: 0;
+}
+
+.preview-more {
+    font-size: 0.8rem;
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.task-preview {
+    min-height: 80px;
+}
+
+.preview-empty {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.preview-task {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.preview-task:last-child {
+    border-bottom: none;
+}
+
+.preview-task-icon {
+    font-size: 0.9rem;
+}
+
+.preview-task-text {
+    flex: 1;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+</style>
+
+<script>
+// Update date
+(function() {
+    var weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+    var now = new Date();
+    var m = now.getMonth() + 1;
+    var d = now.getDate();
+    var w = weekdays[now.getDay()];
+    document.getElementById('current-date').textContent = m + '月' + d + '日 周' + w;
+})();
+
+// Load stats
+(function() {
+    fetch('/api/todos?tab=today')
+        .then(r => r.json())
+        .then(data => {
+            var pending = (data.items || []).filter(function(t) { return !t.completed; }).length;
+            document.getElementById('stat-today').textContent = pending;
+        });
+
+    fetch('/api/todos?tab=week')
+        .then(r => r.json())
+        .then(data => {
+            var pending = (data.items || []).filter(function(t) { return !t.completed; }).length;
+            document.getElementById('stat-week').textContent = pending;
+        });
+
+    fetch('/api/prompt-todos')
+        .then(r => r.json())
+        .then(data => {
+            var pending = (data.todos || []).filter(function(t) { return t.status === '待执行'; }).length;
+            document.getElementById('stat-prompts').textContent = pending;
+        });
+
+    fetch('/api/bubbles')
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('stat-bubbles').textContent = (data.bubbles || []).length;
+        });
+})();
+
+// Load task preview
+(function() {
+    var quadIcons = {
+        'important-urgent': '🔥',
+        'important-not-urgent': '🎯',
+        'not-important-urgent': '📞',
+        'not-important-not-urgent': '🎮'
+    };
+
+    fetch('/api/todos?tab=today')
+        .then(r => r.json())
+        .then(data => {
+            var container = document.getElementById('task-preview');
+            var tasks = (data.items || []).filter(function(t) { return !t.completed; }).slice(0, 3);
+
+            if (tasks.length === 0) {
+                container.innerHTML = '<div class="preview-empty">今日无待办任务</div>';
+                return;
+            }
+
+            var html = '';
+            tasks.forEach(function(task) {
+                var icon = quadIcons[task.quadrant] || '📌';
+                html += '<div class="preview-task">' +
+                    '<span class="preview-task-icon">' + icon + '</span>' +
+                    '<span class="preview-task-text">' + escapeHtml(task.text) + '</span>' +
+                '</div>';
+            });
+            container.innerHTML = html;
+        });
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+})();
+</script>
+{% endblock %}

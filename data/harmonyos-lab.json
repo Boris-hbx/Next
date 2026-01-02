@@ -1,0 +1,42 @@
+{
+  "runtime": {
+    "currentApp": null,
+    "runningApps": [],
+    "notifications": [],
+    "statusBar": {
+      "time": "",
+      "battery": 100,
+      "wifi": true,
+      "signal": 4
+    }
+  },
+  "installedApps": [
+    {
+      "id": "app_1767236998863",
+      "name": "地图",
+      "icon": "📱",
+      "version": "1.0.0",
+      "content": "<p>新应用内容</p>"
+    },
+    {
+      "id": "app_1767237007431",
+      "name": "图库",
+      "icon": "📱",
+      "version": "1.0.0",
+      "content": "<p>新应用内容</p>"
+    }
+  ],
+  "history": [],
+  "logs": [
+    {
+      "time": "22:10:07",
+      "level": "success",
+      "message": "创建应用: 图库"
+    },
+    {
+      "time": "22:09:58",
+      "level": "success",
+      "message": "创建应用: 地图"
+    }
+  ]
+}

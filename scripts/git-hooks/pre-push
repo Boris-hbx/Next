@@ -1,0 +1,52 @@
+#!/bin/bash
+# ==============================================================================
+# Pre-push Hook: 推送前最后检查敏感数据
+# ==============================================================================
+
+# 颜色定义
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+echo -e "${GREEN}[Pre-push Hook]${NC} 最终安全检查..."
+
+# 检查 private-data 目录是否被跟踪
+TRACKED_PRIVATE=$(git ls-files | grep -E "^private-data/" 2>/dev/null)
+if [ -n "$TRACKED_PRIVATE" ]; then
+    echo -e "${RED}[CRITICAL]${NC} private-data/ 目录中的文件正在被 Git 跟踪！"
+    echo "$TRACKED_PRIVATE"
+    echo -e "${RED}推送已阻止${NC}"
+    exit 1
+fi
+
+# 检查 config 目录是否被跟踪
+TRACKED_CONFIG=$(git ls-files | grep -E "^config/" 2>/dev/null)
+if [ -n "$TRACKED_CONFIG" ]; then
+    echo -e "${RED}[CRITICAL]${NC} config/ 目录中的文件正在被 Git 跟踪！"
+    echo "$TRACKED_CONFIG"
+    echo -e "${RED}推送已阻止${NC}"
+    exit 1
+fi
+
+# 检查敏感数据文件
+SENSITIVE_FILES=(
+    "data/todolist.txt"
+    "data/todos.json"
+    "data/motivation.txt"
+    "data/prompts.json"
+    "data/bubbles.json"
+    "data/prompt-todo.json"
+    "data/config.json"
+)
+
+for file in "${SENSITIVE_FILES[@]}"; do
+    if git ls-files --error-unmatch "$file" > /dev/null 2>&1; then
+        echo -e "${RED}[CRITICAL]${NC} 敏感文件正在被跟踪: $file"
+        echo -e "${RED}推送已阻止${NC}"
+        exit 1
+    fi
+done
+
+echo -e "${GREEN}[Pre-push Hook]${NC} 安全检查通过！"
+exit 0

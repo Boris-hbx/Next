@@ -1,0 +1,341 @@
+{% extends "base.html" %}
+
+{% block title %}Prompt历史记录 - Time Management{% endblock %}
+
+{% block content %}
+    <div class="page-header compact">
+        <div class="header-left">
+            <h1 class="page-title">Prompt历史记录</h1>
+            <p class="quote-text" id="quote-text">{{ quote }}</p>
+        </div>
+        <button class="btn-shuffle" onclick="shuffleQuote()">换一个</button>
+    </div>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <div class="prompts-container">
+        <!-- Add New Prompt Form -->
+        <div class="prompt-input-section">
+            <div class="prompt-input-header">
+                <span class="input-title">添加新记录</span>
+                <span class="auto-time" id="current-time"></span>
+            </div>
+            <textarea class="prompt-input" id="prompt-input" placeholder="输入Prompt内容..." rows="3"></textarea>
+            <div class="prompt-input-footer">
+                <div class="auto-tags" id="auto-tags">
+                    <span class="tags-label">自动标签：</span>
+                    <span class="tags-preview" id="tags-preview">输入内容后自动生成</span>
+                </div>
+                <button class="btn-add-prompt" onclick="addPrompt()">添加</button>
+            </div>
+        </div>
+
+        <div class="prompt-stats">
+            <span class="stat-item">共 <strong id="prompt-count">0</strong> 条记录</span>
+        </div>
+
+        <!-- Prompt List -->
+        <div class="prompt-list" id="prompt-list">
+            <!-- Prompts will be rendered here -->
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="delete-modal" style="display:none;" onclick="hideDeleteModal(event)">
+        <div class="modal-content modal-small" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>确认删除</h3>
+                <button class="modal-close" onclick="hideDeleteModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="delete-warning">删除操作不可恢复，请输入密码确认：</p>
+                <input type="password" id="delete-password" class="password-input" placeholder="请输入密码">
+                <p class="password-hint">* 密码可在 data/config.json 中修改</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="hideDeleteModal()">取消</button>
+                <button class="btn-delete" onclick="confirmDelete()">确认删除</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    var allPrompts = [];
+    var deleteTargetId = null;
+
+    // Update current time display
+    function updateCurrentTime() {
+        var now = new Date();
+        var y = now.getFullYear();
+        var m = (now.getMonth() + 1).toString().padStart(2, '0');
+        var d = now.getDate().toString().padStart(2, '0');
+        var h = now.getHours().toString().padStart(2, '0');
+        var min = now.getMinutes().toString().padStart(2, '0');
+        var sec = now.getSeconds().toString().padStart(2, '0');
+        document.getElementById('current-time').textContent = y + '-' + m + '-' + d + ' ' + h + ':' + min + ':' + sec;
+    }
+    setInterval(updateCurrentTime, 1000);
+    updateCurrentTime();
+
+    // Auto-generate tags based on content
+    function generateTags(content) {
+        if (!content || content.trim().length < 5) return [];
+
+        var tags = [];
+        var text = content.toLowerCase();
+
+        // Keyword-based tag generation
+        var tagRules = [
+            { keywords: ['bug', '修复', 'fix', '错误', 'error'], tag: '问题修复' },
+            { keywords: ['功能', 'feature', '新增', '添加', 'add'], tag: '新功能' },
+            { keywords: ['优化', '改进', 'improve', 'optimize', '性能'], tag: '优化' },
+            { keywords: ['ui', '界面', '样式', 'css', 'style', '布局'], tag: 'UI设计' },
+            { keywords: ['api', '接口', 'backend', '后端', '服务'], tag: '后端' },
+            { keywords: ['前端', 'frontend', 'js', 'javascript', 'html'], tag: '前端' },
+            { keywords: ['拖拽', 'drag', 'drop', '交互'], tag: '交互' },
+            { keywords: ['动画', 'animation', '动效', '过渡'], tag: '动画' },
+            { keywords: ['配置', 'config', '设置', 'setting'], tag: '配置' },
+            { keywords: ['测试', 'test', '调试', 'debug'], tag: '测试' },
+            { keywords: ['todo', '任务', 'task', '待办'], tag: 'Todo' },
+            { keywords: ['prompt', '日志', 'log'], tag: 'Prompt' },
+            { keywords: ['数据', 'data', '存储', 'save', '保存'], tag: '数据' }
+        ];
+
+        tagRules.forEach(function(rule) {
+            for (var i = 0; i < rule.keywords.length; i++) {
+                if (text.indexOf(rule.keywords[i]) !== -1) {
+                    if (tags.indexOf(rule.tag) === -1) {
+                        tags.push(rule.tag);
+                    }
+                    break;
+                }
+            }
+        });
+
+        // Limit to 3 tags
+        return tags.slice(0, 3);
+    }
+
+    // Update tag preview as user types
+    document.getElementById('prompt-input').addEventListener('input', function(e) {
+        var content = e.target.value;
+        var tags = generateTags(content);
+        var preview = document.getElementById('tags-preview');
+
+        if (tags.length > 0) {
+            preview.innerHTML = tags.map(function(tag) {
+                return '<span class="preview-tag">' + tag + '</span>';
+            }).join('');
+        } else {
+            preview.textContent = '输入内容后自动生成';
+        }
+    });
+
+    function shuffleQuote() {
+        var btn = document.querySelector('.btn-shuffle');
+        btn.classList.add('rolling');
+
+        fetch('/api/quote/random')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('quote-text').textContent = data.quote;
+                btn.classList.remove('rolling');
+            })
+            .catch(() => {
+                btn.classList.remove('rolling');
+            });
+    }
+
+    function loadPrompts() {
+        fetch('/api/prompts')
+            .then(response => response.json())
+            .then(data => {
+                allPrompts = data.prompts || [];
+                document.getElementById('prompt-count').textContent = allPrompts.length;
+                renderPrompts();
+            });
+    }
+
+    function renderPrompts() {
+        var container = document.getElementById('prompt-list');
+
+        if (allPrompts.length === 0) {
+            container.innerHTML = '<div class="empty-prompts">暂无记录，添加第一条吧！</div>';
+            return;
+        }
+
+        var html = '';
+        var total = allPrompts.length;
+        allPrompts.forEach(function(prompt, index) {
+            // 倒序编号：最新的(index=0)显示最大数字，最旧的显示#1
+            html += createPromptHtml(prompt, total - index);
+        });
+        container.innerHTML = html;
+    }
+
+    function createPromptHtml(prompt, index) {
+        var tagsHtml = '';
+        if (prompt.tags && prompt.tags.length > 0) {
+            tagsHtml = '<div class="prompt-tags">' +
+                prompt.tags.map(function(tag) {
+                    return '<span class="prompt-tag">' + escapeHtml(tag) + '</span>';
+                }).join('') +
+            '</div>';
+        }
+
+        var dateStr = formatDateTime(prompt.created_at);
+
+        return '<div class="prompt-item" data-id="' + prompt.id + '">' +
+            '<div class="prompt-header">' +
+                '<span class="prompt-index">#' + index + '</span>' +
+                '<span class="prompt-time">' + dateStr + '</span>' +
+                '<div class="prompt-actions">' +
+                    '<button class="btn-copy-prompt" onclick="copyPrompt(\'' + prompt.id + '\')" title="复制内容">📋</button>' +
+                    '<button class="btn-copy-to-todo" onclick="copyToTodo(\'' + prompt.id + '\')" title="复制到待执行">📤</button>' +
+                    '<button class="btn-delete-prompt" onclick="showDeleteModal(\'' + prompt.id + '\')" title="删除">×</button>' +
+                '</div>' +
+            '</div>' +
+            '<div class="prompt-content">' + escapeHtml(prompt.content) + '</div>' +
+            tagsHtml +
+        '</div>';
+    }
+
+    function addPrompt() {
+        var content = document.getElementById('prompt-input').value.trim();
+        if (!content) {
+            showToast('请输入内容', 'error');
+            return;
+        }
+
+        var tags = generateTags(content);
+
+        fetch('/api/prompts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: content, tags: tags })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('prompt-input').value = '';
+                document.getElementById('tags-preview').textContent = '输入内容后自动生成';
+                loadPrompts();
+                showToast('添加成功', 'success');
+            } else {
+                showToast('添加失败: ' + data.error, 'error');
+            }
+        });
+    }
+
+    // Delete Modal
+    function showDeleteModal(id) {
+        deleteTargetId = id;
+        document.getElementById('delete-password').value = '';
+        document.getElementById('delete-modal').style.display = 'flex';
+        document.getElementById('delete-password').focus();
+    }
+
+    function hideDeleteModal(e) {
+        if (e && e.target !== document.getElementById('delete-modal')) return;
+        document.getElementById('delete-modal').style.display = 'none';
+        deleteTargetId = null;
+    }
+
+    function confirmDelete() {
+        var password = document.getElementById('delete-password').value;
+        if (!password) {
+            showToast('请输入密码', 'error');
+            return;
+        }
+
+        fetch('/api/prompts/' + deleteTargetId, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: password })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                hideDeleteModal();
+                loadPrompts();
+                showToast('删除成功', 'success');
+            } else {
+                showToast(data.error || '删除失败', 'error');
+            }
+        });
+    }
+
+    function copyPrompt(id) {
+        var prompt = allPrompts.find(function(p) { return p.id === id; });
+        if (!prompt) return;
+
+        navigator.clipboard.writeText(prompt.content).then(function() {
+            showToast('已复制到剪贴板', 'success');
+        }).catch(function() {
+            var textarea = document.createElement('textarea');
+            textarea.value = prompt.content;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast('已复制到剪贴板', 'success');
+        });
+    }
+
+    function copyToTodo(id) {
+        var prompt = allPrompts.find(function(p) { return p.id === id; });
+        if (!prompt) return;
+
+        fetch('/api/prompt-todos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: prompt.content, status: '待修改' })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('已复制到待执行列表', 'success');
+            } else {
+                showToast('复制失败: ' + data.error, 'error');
+            }
+        });
+    }
+
+    // Enter key to submit
+    document.getElementById('delete-password').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') confirmDelete();
+    });
+
+    document.getElementById('prompt-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && e.ctrlKey) {
+            addPrompt();
+        }
+    });
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;')
+                  .replace(/"/g, '&quot;')
+                  .replace(/\n/g, '<br>');
+    }
+
+    function formatDateTime(isoString) {
+        var date = new Date(isoString);
+        var y = date.getFullYear();
+        var m = (date.getMonth() + 1).toString().padStart(2, '0');
+        var d = date.getDate().toString().padStart(2, '0');
+        var h = date.getHours().toString().padStart(2, '0');
+        var min = date.getMinutes().toString().padStart(2, '0');
+        return y + '-' + m + '-' + d + ' ' + h + ':' + min;
+    }
+
+    function showToast(message, type) {
+        AppUtils.showToast(message, type);
+    }
+
+    // Initialize
+    loadPrompts();
+    </script>
+{% endblock %}

@@ -1,0 +1,14 @@
+[
+  {
+    "id": "sample01",
+    "content": "This is a sample prompt entry. Replace with your own prompts and ideas.",
+    "tags": ["sample", "template"],
+    "created_at": "2025-01-01T10:00:00.000000"
+  },
+  {
+    "id": "sample02",
+    "content": "Another sample prompt for demonstration purposes.",
+    "tags": ["demo"],
+    "created_at": "2025-01-01T11:00:00.000000"
+  }
+]

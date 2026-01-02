@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}程序员鼓励大师 - Time Management{% endblock %}
+
+{% block content %}
+    <div class="page-header compact">
+        <div class="header-left">
+            <h1 class="page-title">程序员鼓励大师</h1>
+            <p class="quote-text" id="quote-text">{{ quote }}</p>
+        </div>
+        <button class="btn-shuffle" onclick="shuffleQuote()">换一个</button>
+    </div>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <div class="todo-container">
+        <div class="tab-container">
+            <div class="tab-nav">
+                <div class="tab-item" data-tab="leader-tab">
+                    <button class="tab-btn active" onclick="openTab(event, 'leader-tab', 'leader')">精神领袖</button>
+                    <button class="tab-edit-btn" onclick="switchAndEdit('leader-tab', 'leader')" title="Edit">✎</button>
+                </div>
+                <span class="tab-separator">/</span>
+                <div class="tab-item" data-tab="family-tab">
+                    <button class="tab-btn" onclick="openTab(event, 'family-tab', 'family')">家庭责任</button>
+                    <button class="tab-edit-btn" onclick="switchAndEdit('family-tab', 'family')" title="Edit">✎</button>
+                </div>
+                <span class="tab-separator">/</span>
+                <div class="tab-item" data-tab="mindset-tab">
+                    <button class="tab-btn" onclick="openTab(event, 'mindset-tab', 'mindset')">心态修炼</button>
+                    <button class="tab-edit-btn" onclick="switchAndEdit('mindset-tab', 'mindset')" title="Edit">✎</button>
+                </div>
+                <span class="tab-separator">/</span>
+                <div class="tab-item" data-tab="health-tab">
+                    <button class="tab-btn" onclick="openTab(event, 'health-tab', 'health')">健康人生</button>
+                    <button class="tab-edit-btn" onclick="switchAndEdit('health-tab', 'health')" title="Edit">✎</button>
+                </div>
+            </div>
+
+            <div class="tab-content">
+                <div id="leader-tab" class="tab-panel active">
+                    <div class="tab-panel-content motivation-panel">
+                        <pre class="motivation-text" id="leader-display">{{ motivation.leader }}</pre>
+                        <textarea class="todo-edit" id="leader-edit" style="display:none;">{{ motivation.leader }}</textarea>
+                        <div class="edit-actions-inline" id="leader-actions" style="display:none;">
+                            <button class="btn-save" onclick="saveEdit('leader')">Save</button>
+                            <button class="btn-cancel" onclick="cancelEdit('leader')">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="family-tab" class="tab-panel">
+                    <div class="tab-panel-content motivation-panel">
+                        <pre class="motivation-text" id="family-display">{{ motivation.family }}</pre>
+                        <textarea class="todo-edit" id="family-edit" style="display:none;">{{ motivation.family }}</textarea>
+                        <div class="edit-actions-inline" id="family-actions" style="display:none;">
+                            <button class="btn-save" onclick="saveEdit('family')">Save</button>
+                            <button class="btn-cancel" onclick="cancelEdit('family')">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="mindset-tab" class="tab-panel">
+                    <div class="tab-panel-content motivation-panel">
+                        <pre class="motivation-text" id="mindset-display">{{ motivation.mindset }}</pre>
+                        <textarea class="todo-edit" id="mindset-edit" style="display:none;">{{ motivation.mindset }}</textarea>
+                        <div class="edit-actions-inline" id="mindset-actions" style="display:none;">
+                            <button class="btn-save" onclick="saveEdit('mindset')">Save</button>
+                            <button class="btn-cancel" onclick="cancelEdit('mindset')">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="health-tab" class="tab-panel">
+                    <div class="tab-panel-content motivation-panel">
+                        <pre class="motivation-text" id="health-display">{{ motivation.health }}</pre>
+                        <textarea class="todo-edit" id="health-edit" style="display:none;">{{ motivation.health }}</textarea>
+                        <div class="edit-actions-inline" id="health-actions" style="display:none;">
+                            <button class="btn-save" onclick="saveEdit('health')">Save</button>
+                            <button class="btn-cancel" onclick="cancelEdit('health')">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    var currentSection = 'leader';
+
+    function shuffleQuote() {
+        var btn = document.querySelector('.btn-shuffle');
+        btn.classList.add('rolling');
+
+        fetch('/api/quote/random')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('quote-text').textContent = data.quote;
+                btn.classList.remove('rolling');
+            })
+            .catch(() => {
+                btn.classList.remove('rolling');
+            });
+    }
+
+    function openTab(evt, tabName, section) {
+        currentSection = section;
+        var i, tabPanels, tabBtns;
+
+        tabPanels = document.getElementsByClassName("tab-panel");
+        for (i = 0; i < tabPanels.length; i++) {
+            tabPanels[i].classList.remove("active");
+        }
+
+        tabBtns = document.getElementsByClassName("tab-btn");
+        for (i = 0; i < tabBtns.length; i++) {
+            tabBtns[i].classList.remove("active");
+        }
+
+        document.getElementById(tabName).classList.add("active");
+        if (evt && evt.currentTarget) {
+            evt.currentTarget.classList.add("active");
+        }
+    }
+
+    function switchAndEdit(tabName, section) {
+        var tabBtns = document.getElementsByClassName("tab-btn");
+        var tabPanels = document.getElementsByClassName("tab-panel");
+
+        for (var i = 0; i < tabPanels.length; i++) {
+            tabPanels[i].classList.remove("active");
+        }
+        for (var i = 0; i < tabBtns.length; i++) {
+            tabBtns[i].classList.remove("active");
+        }
+
+        document.getElementById(tabName).classList.add("active");
+        var tabItem = document.querySelector('[data-tab="' + tabName + '"]');
+        if (tabItem) {
+            tabItem.querySelector('.tab-btn').classList.add('active');
+        }
+
+        currentSection = section;
+
+        setTimeout(function() {
+            startEdit(section);
+        }, 100);
+    }
+
+    function startEdit(section) {
+        document.getElementById(section + '-display').style.display = 'none';
+        document.getElementById(section + '-edit').style.display = 'block';
+        document.getElementById(section + '-actions').style.display = 'flex';
+        document.getElementById(section + '-edit').focus();
+    }
+
+    function cancelEdit(section) {
+        var display = document.getElementById(section + '-display');
+        var edit = document.getElementById(section + '-edit');
+        edit.value = display.textContent;
+        display.style.display = 'block';
+        edit.style.display = 'none';
+        document.getElementById(section + '-actions').style.display = 'none';
+    }
+
+    function saveEdit(section) {
+        var content = document.getElementById(section + '-edit').value;
+
+        fetch('/save_motivation/' + section, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ content: content })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById(section + '-display').textContent = content;
+                cancelEdit(section);
+                showToast('已保存', 'success');
+            } else {
+                showToast('保存失败: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            showToast('保存出错', 'error');
+        });
+    }
+
+    function showToast(message, type) {
+        AppUtils.showToast(message, type);
+    }
+    </script>
+{% endblock %}

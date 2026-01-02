@@ -1,0 +1,218 @@
+{% extends "mobile/base.html" %}
+
+{% block title %}智脑中枢 - Boris Life{% endblock %}
+{% block page_title %}智脑中枢{% endblock %}
+
+{% block content %}
+<div class="dev-page">
+    <!-- Notice -->
+    <div class="dev-notice">
+        <span class="notice-icon">🚧</span>
+        <p>AI智脑中枢功能正在开发中，敬请期待。</p>
+    </div>
+
+    <!-- Preview Card -->
+    <div class="dev-preview">
+        <div class="preview-header">
+            <div class="preview-icon">🤖</div>
+            <div class="preview-title">智脑中枢</div>
+        </div>
+        <div class="preview-content">
+            <div class="preview-bubble assistant">
+                <span>你好！有什么可以帮你的？</span>
+            </div>
+            <div class="preview-bubble user">
+                <span>帮我规划今天的任务</span>
+            </div>
+            <div class="preview-bubble assistant">
+                <span>好的，让我来帮你分析...</span>
+            </div>
+        </div>
+        <div class="preview-input">
+            <div class="fake-input">输入消息...</div>
+            <div class="fake-btn">发送</div>
+        </div>
+    </div>
+
+    <!-- Features Coming -->
+    <div class="feature-list">
+        <div class="feature-title">即将推出</div>
+        <div class="feature-item">
+            <span class="feature-icon">💬</span>
+            <span>智能对话，解答疑问</span>
+        </div>
+        <div class="feature-item">
+            <span class="feature-icon">📋</span>
+            <span>任务规划与建议</span>
+        </div>
+        <div class="feature-item">
+            <span class="feature-icon">🧠</span>
+            <span>学习助手与知识问答</span>
+        </div>
+        <div class="feature-item">
+            <span class="feature-icon">✨</span>
+            <span>更多功能持续更新中</span>
+        </div>
+    </div>
+
+    <!-- Go to Desktop -->
+    <div class="goto-desktop">
+        <p>电脑端已支持AI对话功能</p>
+    </div>
+</div>
+
+<style>
+.dev-page {
+    padding-bottom: 20px;
+}
+
+.dev-notice {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, rgba(251,191,36,0.15), rgba(245,158,11,0.1));
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+}
+
+.notice-icon {
+    font-size: 1.2rem;
+}
+
+.dev-notice p {
+    font-size: 0.85rem;
+    color: #b45309;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.dev-preview {
+    background: var(--bg-card);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.preview-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.preview-icon {
+    font-size: 1.5rem;
+}
+
+.preview-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.preview-content {
+    padding: 16px;
+    background: linear-gradient(180deg, #f8f9fa 0%, #fff 100%);
+    min-height: 160px;
+}
+
+.preview-bubble {
+    max-width: 75%;
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 0.85rem;
+    margin-bottom: 10px;
+    animation: fadeIn 0.5s ease;
+}
+
+.preview-bubble.assistant {
+    background: white;
+    color: var(--text-primary);
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.preview-bubble.user {
+    background: var(--primary-color);
+    color: white;
+    margin-left: auto;
+    border-bottom-right-radius: 4px;
+}
+
+.preview-input {
+    display: flex;
+    gap: 10px;
+    padding: 12px 16px;
+    border-top: 1px solid rgba(0,0,0,0.05);
+}
+
+.fake-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 20px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    background: #f8f9fa;
+}
+
+.fake-btn {
+    padding: 10px 18px;
+    border-radius: 20px;
+    background: rgba(102,126,234,0.5);
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.feature-list {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.feature-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.feature-item:last-child {
+    border-bottom: none;
+}
+
+.feature-icon {
+    font-size: 1.1rem;
+}
+
+.goto-desktop {
+    text-align: center;
+    padding: 20px;
+}
+
+.goto-desktop p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+{% endblock %}

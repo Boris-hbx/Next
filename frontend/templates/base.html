@@ -1,0 +1,2518 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Boris Life">
+    <title>{% block title %}Boris Life{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
+    <script>
+    // 早期执行：在页面渲染前应用主题和侧边栏状态，避免闪烁
+    (function() {
+        var theme = localStorage.getItem('theme');
+        if (theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+        // 通过 CSS 类提前标记侧边栏状态
+        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+            document.documentElement.classList.add('sidebar-will-collapse');
+        }
+    })();
+    </script>
+    <style>
+    /* 防止侧边栏状态切换时闪烁 */
+    html.sidebar-will-collapse .sidebar {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+    html.sidebar-will-collapse .main-content {
+        margin-left: 0;
+    }
+    html.sidebar-will-collapse .sidebar-hint {
+        opacity: 1;
+    }
+    /* 用户信息和登出按钮样式 */
+    .header-user {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-right: 16px;
+    }
+    .user-name {
+        color: var(--text-color, #e5e7eb);
+        font-size: 14px;
+        font-weight: 500;
+    }
+    .logout-btn {
+        padding: 6px 12px;
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 6px;
+        color: var(--text-color, #e5e7eb);
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .logout-btn:hover {
+        background: rgba(255,255,255,0.2);
+    }
+    /* 服务离线警告横幅 */
+    .service-offline-banner {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(90deg, #ef4444, #dc2626);
+        color: white;
+        padding: 12px 20px;
+        text-align: center;
+        font-size: 14px;
+        font-weight: 500;
+        z-index: 10000;
+        transform: translateY(-100%);
+        transition: transform 0.3s ease;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    .service-offline-banner.visible {
+        transform: translateY(0);
+    }
+    .service-offline-banner .banner-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+    .service-offline-banner .pulse-dot {
+        width: 8px;
+        height: 8px;
+        background: white;
+        border-radius: 50%;
+        animation: pulse-offline 1.5s infinite;
+    }
+    @keyframes pulse-offline {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(0.8); }
+    }
+    .service-offline-banner button {
+        background: rgba(255,255,255,0.2);
+        border: 1px solid rgba(255,255,255,0.3);
+        color: white;
+        padding: 4px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        margin-left: 15px;
+    }
+    .service-offline-banner button:hover {
+        background: rgba(255,255,255,0.3);
+    }
+    /* Prompt 中心导航组样式 */
+    .nav-group {
+        margin: 8px 0;
+    }
+    .nav-group-header {
+        display: flex;
+        align-items: center;
+        padding: 10px 16px;
+        cursor: pointer;
+        color: var(--sidebar-text, #e5e7eb);
+        border-radius: 8px;
+        transition: background 0.2s;
+        gap: 8px;
+    }
+    .nav-group-header:hover {
+        background: rgba(255,255,255,0.1);
+    }
+    .nav-group-icon {
+        font-size: 16px;
+    }
+    .nav-group-title {
+        flex: 1;
+        font-weight: 500;
+        font-size: 14px;
+    }
+    .nav-group-arrow {
+        font-size: 10px;
+        transition: transform 0.3s;
+    }
+    .nav-group.expanded .nav-group-arrow {
+        transform: rotate(180deg);
+    }
+    .nav-group-items {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+        padding-left: 12px;
+    }
+    .nav-group.expanded .nav-group-items {
+        max-height: 200px;
+    }
+    .nav-link.sub-link {
+        padding: 8px 12px;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 2px 0;
+        border-radius: 6px;
+        color: var(--sidebar-text, #c5c7cb);
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    .nav-link.sub-link:hover {
+        background: rgba(255,255,255,0.08);
+        color: white;
+    }
+    .nav-link.sub-link.active {
+        background: var(--primary-color, #667eea);
+        color: white;
+    }
+    .sub-icon {
+        font-size: 14px;
+    }
+    </style>
+</head>
+<body>
+    <!-- 服务离线警告横幅 -->
+    <div class="service-offline-banner" id="service-offline-banner">
+        <div class="banner-content">
+            <span class="pulse-dot"></span>
+            <span>服务未启动或连接失败，请检查后端服务是否正在运行</span>
+            <button onclick="retryConnection()">重试连接</button>
+        </div>
+    </div>
+
+    <!-- 粒子动画画布（覆盖顶栏+侧边栏的L形区域） -->
+    <canvas id="header-particles" class="particles-canvas-extended"></canvas>
+
+    <!-- GitHub风格顶部导航栏 -->
+    <header class="top-header" id="top-header">
+        <div class="header-left">
+            <button class="header-menu-btn" id="header-menu-btn" title="菜单">
+                <span class="menu-icon">☰</span>
+            </button>
+            <span class="header-logo" id="header-logo" title="点击设置小球数量" style="cursor:pointer;">⚡</span>
+            <span class="header-title">Boris Life</span>
+        </div>
+        <div class="header-right">
+            <div class="header-user" id="header-user" style="display:none;">
+                <span class="user-name" id="user-display-name"></span>
+                <button class="logout-btn" onclick="handleLogout()" title="登出">退出</button>
+            </div>
+            <div class="header-avatar" id="header-avatar" onclick="nextAvatarQuote()">
+                <span class="avatar-text">B</span>
+                <div class="avatar-quote-tooltip" id="avatar-quote-tooltip">
+                    <div class="quote-content" id="avatar-quote-content">Loading...</div>
+                    <div class="quote-hint">点击换一句</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- 左侧提示条 - 侧边栏收起时显示 -->
+        <div class="sidebar-hint" id="sidebar-hint">
+            <div class="hint-glow"></div>
+        </div>
+
+        <!-- 小宠物 - 始终可见 -->
+        <div class="pet" id="pet">
+            <div class="pet-eye"></div>
+            <div class="pet-eye"></div>
+            <div class="pet-eye"></div>
+        </div>
+
+
+        <!-- Left Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <div class="nav-links">
+                <a href="{{ url_for('main') }}" class="nav-link {% if current_page == 'main' %}active{% endif %}">主页</a>
+                <a href="{{ url_for('todo') }}" class="nav-link {% if current_page == 'todo' %}active{% endif %}">Todo</a>
+                <a href="{{ url_for('motivation') }}" class="nav-link {% if current_page == 'motivation' %}active{% endif %}">程序员鼓励大师</a>
+                <a href="{{ url_for('toolbox') }}" class="nav-link {% if current_page == 'toolbox' %}active{% endif %}">工具箱</a>
+                <a href="{{ url_for('game') }}" class="nav-link {% if current_page == 'game' %}active{% endif %}">松开你的大脑</a>
+                <a href="{{ url_for('leader') }}" class="nav-link {% if current_page == 'leader' %}active{% endif %}">领袖培训班</a>
+                <a href="{{ url_for('english') }}" class="nav-link {% if current_page == 'english' %}active{% endif %}">英文学习天地</a>
+                <a href="{{ url_for('aichat') }}" class="nav-link ai-link {% if current_page == 'aichat' %}active{% endif %}">
+                    <span class="ai-glow"></span>
+                    智脑中枢
+                </a>
+
+                <!-- 版本管理 -->
+                <div class="nav-group {% if current_page in ['version', 'prompt_todo', 'prompts', 'learning'] %}expanded{% endif %}">
+                    <div class="nav-group-header" onclick="toggleNavGroup(this)">
+                        <span class="nav-group-icon">🔧</span>
+                        <span class="nav-group-title">版本管理</span>
+                        <span class="nav-group-arrow">▼</span>
+                    </div>
+                    <div class="nav-group-items">
+                        <a href="{{ url_for('version') }}" class="nav-link sub-link {% if current_page == 'version' %}active{% endif %}">
+                            <span class="sub-icon">📋</span>特性验收
+                        </a>
+                        <a href="{{ url_for('prompt_todo') }}" class="nav-link sub-link {% if current_page == 'prompt_todo' %}active{% endif %}">
+                            <span class="sub-icon">📝</span>待执行 Prompt
+                        </a>
+                        <a href="{{ url_for('prompts') }}" class="nav-link sub-link {% if current_page == 'prompts' %}active{% endif %}">
+                            <span class="sub-icon">📜</span>Prompt 历史
+                        </a>
+                        <a href="{{ url_for('learning') }}" class="nav-link sub-link {% if current_page == 'learning' %}active{% endif %}">
+                            <span class="sub-icon">📚</span>学习总结
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 底部区域：时区 -->
+            <div class="sidebar-bottom">
+                <div class="sidebar-divider"></div>
+            </div>
+
+            <!-- 时区显示 - 侧边栏底部 -->
+            <div class="timezone-panel" id="timezone-panel">
+                <div class="timezone-item">
+                    <span class="tz-city">北京</span>
+                    <div class="tz-info">
+                        <span class="tz-datetime" id="tz-beijing-date"></span>
+                        <span class="tz-time" id="tz-beijing-time"></span>
+                    </div>
+                </div>
+                <div class="timezone-item">
+                    <span class="tz-city">滑铁卢</span>
+                    <div class="tz-info">
+                        <span class="tz-datetime" id="tz-waterloo-date"></span>
+                        <span class="tz-time" id="tz-waterloo-time"></span>
+                    </div>
+                </div>
+                <div class="timezone-item">
+                    <span class="tz-city">温哥华</span>
+                    <div class="tz-info">
+                        <span class="tz-datetime" id="tz-vancouver-date"></span>
+                        <span class="tz-time" id="tz-vancouver-time"></span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Right Main Content -->
+        <main class="main-content" id="main-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Theme Toggle Button -->
+    <button class="theme-toggle" id="theme-toggle" title="切换主题 (D)">
+        <span class="icon-sun">☀️</span>
+        <span class="icon-moon">🌙</span>
+    </button>
+
+    <!-- Sync Status Indicator -->
+    <div class="sync-status" id="sync-status">
+        <span class="sync-dot"></span>
+        <span class="sync-text">已保存</span>
+    </div>
+
+    <!-- Focus Mode Indicator -->
+    <div class="focus-mode-indicator" id="focus-indicator">
+        🎯 专注模式 · 按 Esc 退出
+    </div>
+
+    <!-- Weather Effect Toggle -->
+    <button class="weather-toggle-fab" id="weather-toggle-fab" title="天气特效开关 (W)">
+        <span class="weather-toggle-icon">❄️</span>
+        <span class="weather-toggle-status"></span>
+    </button>
+
+    <!-- Pomodoro Timer FAB -->
+    <button class="pomodoro-fab" id="pomodoro-fab" title="番茄钟 (P)">🍅</button>
+    <div class="pomodoro-panel" id="pomodoro-panel">
+        <div class="pomodoro-time" id="pomodoro-time">25:00</div>
+        <div class="pomodoro-label" id="pomodoro-label">专注时间</div>
+        <div class="pomodoro-controls">
+            <button class="pomodoro-btn pomodoro-btn-start" id="pomodoro-start">开始</button>
+            <button class="pomodoro-btn pomodoro-btn-reset" id="pomodoro-reset">重置</button>
+        </div>
+    </div>
+
+    <!-- Keyboard Shortcuts Modal -->
+    <div class="shortcuts-modal" id="shortcuts-modal">
+        <div class="shortcuts-content">
+            <div class="shortcuts-title">⌨️ 键盘快捷键</div>
+            <div class="shortcut-item">
+                <span class="shortcut-key"><kbd>N</kbd></span>
+                <span class="shortcut-desc">新建任务</span>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-key"><kbd>S</kbd></span>
+                <span class="shortcut-desc">搜索任务</span>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-key"><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></span>
+                <span class="shortcut-desc">切换标签页</span>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-key"><kbd>D</kbd></span>
+                <span class="shortcut-desc">切换深色模式</span>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-key"><kbd>F</kbd></span>
+                <span class="shortcut-desc">专注模式</span>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-key"><kbd>P</kbd></span>
+                <span class="shortcut-desc">番茄钟</span>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-key"><kbd>W</kbd></span>
+                <span class="shortcut-desc">天气特效</span>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-key"><kbd>?</kbd></span>
+                <span class="shortcut-desc">显示快捷键</span>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-key"><kbd>Esc</kbd></span>
+                <span class="shortcut-desc">关闭弹窗</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gesture Hint -->
+    <div class="gesture-hint" id="gesture-hint"></div>
+
+    <script>
+    // ============================================
+    // Global Feature Scripts
+    // ============================================
+
+    // 服务状态监控
+    (function() {
+        var banner = document.getElementById('service-offline-banner');
+        var isOffline = false;
+        var checkInterval = 10000; // 每10秒检查一次
+        var retryCount = 0;
+        var maxRetries = 3;
+
+        function checkServiceStatus() {
+            fetch('/api/health', {
+                method: 'GET',
+                cache: 'no-cache'
+            })
+            .then(function(response) {
+                if (response.ok) {
+                    // 服务正常
+                    if (isOffline) {
+                        isOffline = false;
+                        banner.classList.remove('visible');
+                        retryCount = 0;
+                        // 刷新页面以恢复状态
+                        if (document.hidden === false) {
+                            window.location.reload();
+                        }
+                    }
+                } else {
+                    showOfflineBanner();
+                }
+            })
+            .catch(function() {
+                showOfflineBanner();
+            });
+        }
+
+        function showOfflineBanner() {
+            if (!isOffline) {
+                isOffline = true;
+                banner.classList.add('visible');
+            }
+        }
+
+        window.retryConnection = function() {
+            retryCount++;
+            var btn = banner.querySelector('button');
+            btn.textContent = '正在重试...';
+            btn.disabled = true;
+
+            fetch('/api/health', { method: 'GET', cache: 'no-cache' })
+                .then(function(response) {
+                    if (response.ok) {
+                        isOffline = false;
+                        banner.classList.remove('visible');
+                        window.location.reload();
+                    } else {
+                        btn.textContent = '重试连接';
+                        btn.disabled = false;
+                    }
+                })
+                .catch(function() {
+                    btn.textContent = '重试连接';
+                    btn.disabled = false;
+                });
+        };
+
+        // 首次检查（延迟2秒，避免页面刚加载时误报）
+        setTimeout(checkServiceStatus, 2000);
+
+        // 定期检查
+        setInterval(checkServiceStatus, checkInterval);
+
+        // 页面可见性变化时检查
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                checkServiceStatus();
+            }
+        });
+    })();
+
+    // 用户认证状态检查
+    (function() {
+        fetch('/api/auth/status')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.logged_in && data.user) {
+                    var userEl = document.getElementById('header-user');
+                    var nameEl = document.getElementById('user-display-name');
+                    if (userEl && nameEl) {
+                        nameEl.textContent = data.user.display_name;
+                        userEl.style.display = 'flex';
+                    }
+                }
+            })
+            .catch(function() {});
+    })();
+
+    // 登出处理
+    function handleLogout() {
+        window.AppUtils.showConfirm('确定要退出登录吗？', function() {
+            fetch('/api/auth/logout', { method: 'POST' })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        window.location.href = '/login';
+                    }
+                })
+                .catch(function() {
+                    window.AppUtils.showToast('登出失败，请稍后重试', 'error');
+                });
+        }, { confirmText: '退出' });
+    }
+
+    // Nav Group 展开/折叠功能
+    function toggleNavGroup(header) {
+        var navGroup = header.parentElement;
+        navGroup.classList.toggle('expanded');
+        // 保存展开状态到 localStorage
+        var groupTitle = header.querySelector('.nav-group-title').textContent;
+        var expandedGroups = JSON.parse(localStorage.getItem('expandedNavGroups') || '{}');
+        expandedGroups[groupTitle] = navGroup.classList.contains('expanded');
+        localStorage.setItem('expandedNavGroups', JSON.stringify(expandedGroups));
+    }
+
+    // 初始化 Nav Group 状态
+    (function() {
+        var expandedGroups = JSON.parse(localStorage.getItem('expandedNavGroups') || '{}');
+        document.querySelectorAll('.nav-group').forEach(function(group) {
+            var title = group.querySelector('.nav-group-title');
+            if (title && expandedGroups[title.textContent] !== undefined) {
+                if (expandedGroups[title.textContent]) {
+                    group.classList.add('expanded');
+                } else {
+                    group.classList.remove('expanded');
+                }
+            }
+        });
+    })();
+
+    // 全局鼠标位置跟踪（用于 toast 在鼠标附近显示）
+    window._mousePos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    document.addEventListener('mousemove', function(e) {
+        window._mousePos = { x: e.clientX, y: e.clientY };
+    });
+    document.addEventListener('click', function(e) {
+        window._mousePos = { x: e.clientX, y: e.clientY };
+    });
+
+    // Shared utilities
+    window.AppUtils = {
+        formatDate: function(isoString) {
+            var date = new Date(isoString);
+            var y = date.getFullYear();
+            var m = (date.getMonth() + 1).toString().padStart(2, '0');
+            var d = date.getDate().toString().padStart(2, '0');
+            var h = date.getHours().toString().padStart(2, '0');
+            var min = date.getMinutes().toString().padStart(2, '0');
+            return y + '-' + m + '-' + d + ' ' + h + ':' + min;
+        },
+        escapeHtml: function(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;')
+                      .replace(/</g, '&lt;')
+                      .replace(/>/g, '&gt;')
+                      .replace(/"/g, '&quot;')
+                      .replace(/\n/g, '<br>');
+        },
+        showToast: function(message, type) {
+            type = type || 'success';
+            // 创建 toast 元素
+            var toast = document.createElement('div');
+            toast.className = 'toast toast-' + type + ' toast-at-mouse';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            // 计算位置（鼠标附近，稍微偏移避免遮挡）
+            var mouseX = window._mousePos.x;
+            var mouseY = window._mousePos.y;
+            var offsetX = 15;
+            var offsetY = -40;
+
+            // 获取 toast 尺寸后调整位置
+            var rect = toast.getBoundingClientRect();
+            var posX = mouseX + offsetX;
+            var posY = mouseY + offsetY;
+
+            // 边界检测，确保不超出屏幕
+            if (posX + rect.width > window.innerWidth - 10) {
+                posX = mouseX - rect.width - offsetX;
+            }
+            if (posY < 10) {
+                posY = mouseY + 20;
+            }
+            if (posY + rect.height > window.innerHeight - 10) {
+                posY = window.innerHeight - rect.height - 10;
+            }
+
+            toast.style.left = posX + 'px';
+            toast.style.top = posY + 'px';
+
+            setTimeout(function() {
+                toast.classList.add('toast-hide');
+                setTimeout(function() { toast.remove(); }, 300);
+            }, 2000);
+        },
+
+        // 自定义确认弹窗（居中显示，替代浏览器原生 confirm）
+        showConfirm: function(message, onConfirm, options) {
+            options = options || {};
+            var confirmText = options.confirmText || '确定';
+            var cancelText = options.cancelText || '取消';
+            var danger = options.danger || false;
+
+            // 创建弹窗
+            var overlay = document.createElement('div');
+            overlay.className = 'confirm-overlay';
+            overlay.innerHTML = '<div class="confirm-dialog">' +
+                '<div class="confirm-body">' + message + '</div>' +
+                '<div class="confirm-actions">' +
+                    '<button class="confirm-btn cancel-btn">' + cancelText + '</button>' +
+                    '<button class="confirm-btn ok-btn' + (danger ? ' danger' : '') + '">' + confirmText + '</button>' +
+                '</div>' +
+            '</div>';
+
+            document.body.appendChild(overlay);
+
+            // 绑定事件
+            var closeDialog = function(confirmed) {
+                overlay.classList.add('confirm-hide');
+                setTimeout(function() {
+                    overlay.remove();
+                    if (confirmed && onConfirm) {
+                        onConfirm();
+                    }
+                }, 200);
+            };
+
+            overlay.querySelector('.cancel-btn').onclick = function() { closeDialog(false); };
+            overlay.querySelector('.ok-btn').onclick = function() { closeDialog(true); };
+
+            // 点击遮罩关闭
+            overlay.onclick = function(e) {
+                if (e.target === overlay) { closeDialog(false); }
+            };
+
+            // ESC 键关闭
+            var escHandler = function(e) {
+                if (e.key === 'Escape') {
+                    closeDialog(false);
+                    document.removeEventListener('keydown', escHandler);
+                }
+            };
+            document.addEventListener('keydown', escHandler);
+
+            // 聚焦确认按钮
+            overlay.querySelector('.ok-btn').focus();
+        }
+    };
+
+    // Theme Management
+    (function() {
+        var themeToggle = document.getElementById('theme-toggle');
+        var html = document.documentElement;
+
+        // Load saved theme or detect system preference
+        function initTheme() {
+            var saved = localStorage.getItem('theme');
+            if (saved) {
+                html.setAttribute('data-theme', saved);
+            } else {
+                // Check system preference
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    html.setAttribute('data-theme', 'dark');
+                }
+            }
+        }
+
+        function toggleTheme() {
+            var current = html.getAttribute('data-theme');
+            var newTheme = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+
+        themeToggle.addEventListener('click', toggleTheme);
+        initTheme();
+
+        // Expose for keyboard shortcut
+        window.toggleTheme = toggleTheme;
+    })();
+
+    // 头像名言功能
+    (function() {
+        var avatarQuotes = [
+            "代码如诗，优雅而简洁。",
+            "今天的bug，是明天的feature。",
+            "先让它工作，再让它优雅。",
+            "简单是最终的复杂。",
+            "好的代码是自己的最佳文档。",
+            "调试是写代码时没做的事。",
+            "保持学习，保持谦逊。",
+            "一次只做一件事，做到极致。",
+            "软件开发是一场马拉松，不是短跑。",
+            "最好的错误处理是不让错误发生。",
+            "重构是开发者的日常修行。",
+            "测试不是找bug，是证明代码正确。",
+            "代码写给人看，顺便让机器执行。",
+            "永远不要相信用户输入。",
+            "提前优化是万恶之源。",
+            "复制粘贴是技术债的开始。"
+        ];
+        var currentQuoteIndex = Math.floor(Math.random() * avatarQuotes.length);
+        var quoteContent = document.getElementById('avatar-quote-content');
+
+        function updateQuote() {
+            if (quoteContent) {
+                quoteContent.textContent = '"' + avatarQuotes[currentQuoteIndex] + '"';
+            }
+        }
+
+        window.nextAvatarQuote = function() {
+            currentQuoteIndex = (currentQuoteIndex + 1) % avatarQuotes.length;
+            updateQuote();
+        };
+
+        updateQuote();
+    })();
+
+    // Top Header - 滚动隐藏
+    (function() {
+        var header = document.getElementById('top-header');
+        var menuBtn = document.getElementById('header-menu-btn');
+        var lastScrollTop = 0;
+        var scrollThreshold = 60;
+
+        // 滚动时隐藏/显示顶部栏
+        window.addEventListener('scroll', function() {
+            var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+
+            if (scrollTop > lastScrollTop && scrollTop > scrollThreshold) {
+                // 向下滚动，隐藏
+                header.classList.add('hidden');
+            } else {
+                // 向上滚动或接近顶部，显示
+                header.classList.remove('hidden');
+            }
+
+            lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+        }, { passive: true });
+
+        // 菜单按钮点击 - 切换侧边栏
+        if (menuBtn) {
+            menuBtn.addEventListener('click', function() {
+                var pet = document.getElementById('pet');
+                if (pet) pet.click();
+            });
+        }
+    })();
+
+    // Header Particles Animation (完整版：尾巴+排斥+恐惧+爆炸+汇合+侧边栏贯通)
+    (function() {
+        var canvas = document.getElementById('header-particles');
+        if (!canvas) return;
+        var ctx = canvas.getContext('2d');
+        var header = document.getElementById('top-header');
+        var sidebar = document.getElementById('sidebar');
+        var logo = document.getElementById('header-logo');
+
+        // 区域配置 - L形区域：顶栏全宽 + 侧边栏
+        var headerHeight = 48;
+        var sidebarWidth = 220;
+
+        // 粒子配置
+        var particles = [];
+        var fragments = []; // 爆炸碎片
+        var fishes = [];
+        var fishFragments = [];
+        var particleCount = parseInt(localStorage.getItem('particleCount')) || 6;
+        var fishCount = 0; // 小鱼功能已隐藏
+        var maxTailLength = 12;
+        var colors = ['#60a5fa', '#34d399', '#f87171', '#fbbf24', '#a78bfa', '#f472b6'];
+        var fishColors = ['#ff9966', '#66ccff', '#99ff99'];
+
+        // ===== 小球可调参数 =====
+        window.ballConfig = {
+            repelRadius: 180,    // 鼠标感应半径
+            repelForce: 12,      // 排斥力度 (1-15)
+            maxSpeed: 10,        // 最大速度
+            friction: 0.97,      // 摩擦力 (0.9-0.999)
+            tailLength: 5        // 尾巴长度
+        };
+
+        // 鼠标位置
+        var mouse = { x: -1000, y: -1000 };
+
+        // 恐惧与爆炸配置
+        var fearThreshold = 15;      // 更快开始颤抖
+        var explodeThreshold = 45;   // 更快分裂
+        var reuniteDelay = 60;       // 更快合成
+
+        // 从闪电生成的小球队列
+        var spawningParticles = [];
+        var spawnCheckInterval = 30;
+        var spawnCheckCounter = 0;
+
+        // 天气效果配置
+        var weatherEffects = {
+            sunny: { speedMult: 1.2, colorShift: 0, brightness: 1.1 },
+            cloudy: { speedMult: 1.0, colorShift: 0, brightness: 0.9 },
+            rainy: { speedMult: 0.7, colorShift: 30, brightness: 0.8 },
+            snowy: { speedMult: 0.4, colorShift: 60, brightness: 1.0 },
+            stormy: { speedMult: 1.5, colorShift: -20, brightness: 0.7 }
+        };
+        var raindrops = []; // 雨滴效果
+        var snowflakes = []; // 雪花效果
+
+        // 天气特效开关状态（从 localStorage 读取）
+        var weatherEffectEnabled = localStorage.getItem('weatherEffectEnabled') !== 'false';
+
+        function getWeatherEffect() {
+            var type = (window.currentWeather && window.currentWeather.type) || 'cloudy';
+            return weatherEffects[type] || weatherEffects.cloudy;
+        }
+
+        // 调整颜色色相
+        function adjustColor(hexColor, hueShift, brightness) {
+            // 简单的颜色调整
+            var r = parseInt(hexColor.slice(1, 3), 16);
+            var g = parseInt(hexColor.slice(3, 5), 16);
+            var b = parseInt(hexColor.slice(5, 7), 16);
+
+            // 应用亮度
+            r = Math.min(255, Math.floor(r * brightness));
+            g = Math.min(255, Math.floor(g * brightness));
+            b = Math.min(255, Math.floor(b * brightness));
+
+            // 色相偏移（简化版：偏蓝=增加b减少r，偏暖=增加r减少b）
+            if (hueShift > 0) { // 偏冷色
+                b = Math.min(255, b + hueShift);
+                r = Math.max(0, r - hueShift / 2);
+            } else if (hueShift < 0) { // 偏暖色
+                r = Math.min(255, r - hueShift);
+                b = Math.max(0, b + hueShift / 2);
+            }
+
+            return 'rgb(' + r + ',' + g + ',' + b + ')';
+        }
+
+        // 创建雨滴
+        function createRaindrop() {
+            return {
+                x: Math.random() * canvas.width,
+                y: -10,
+                speed: 8 + Math.random() * 6,
+                length: 10 + Math.random() * 15
+            };
+        }
+
+        // 创建雪花
+        function createSnowflake() {
+            return {
+                x: Math.random() * canvas.width,
+                y: -5,
+                speed: 1 + Math.random() * 2,
+                size: 2 + Math.random() * 3,
+                drift: (Math.random() - 0.5) * 0.5
+            };
+        }
+
+        // 更新天气粒子
+        function updateWeatherParticles() {
+            // 如果天气特效关闭，清空所有粒子
+            if (!weatherEffectEnabled) {
+                raindrops = [];
+                snowflakes = [];
+                return;
+            }
+
+            var weatherType = (window.currentWeather && window.currentWeather.type) || 'cloudy';
+
+            // 雨天效果
+            if (weatherType === 'rainy' || weatherType === 'stormy') {
+                if (Math.random() < 0.3) raindrops.push(createRaindrop());
+                for (var i = raindrops.length - 1; i >= 0; i--) {
+                    raindrops[i].y += raindrops[i].speed;
+                    if (raindrops[i].y > canvas.height) raindrops.splice(i, 1);
+                }
+            } else {
+                raindrops = [];
+            }
+
+            // 雪天效果
+            if (weatherType === 'snowy') {
+                if (Math.random() < 0.1) snowflakes.push(createSnowflake());
+                for (var i = snowflakes.length - 1; i >= 0; i--) {
+                    snowflakes[i].y += snowflakes[i].speed;
+                    snowflakes[i].x += snowflakes[i].drift;
+                    if (snowflakes[i].y > canvas.height) snowflakes.splice(i, 1);
+                }
+            } else {
+                snowflakes = [];
+            }
+        }
+
+        // 绘制天气粒子
+        function drawWeatherParticles() {
+            // 绘制雨滴
+            ctx.strokeStyle = 'rgba(100, 150, 255, 0.6)';
+            ctx.lineWidth = 1;
+            raindrops.forEach(function(drop) {
+                ctx.beginPath();
+                ctx.moveTo(drop.x, drop.y);
+                ctx.lineTo(drop.x, drop.y + drop.length);
+                ctx.stroke();
+            });
+
+            // 绘制雪花
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            snowflakes.forEach(function(flake) {
+                ctx.beginPath();
+                ctx.arc(flake.x, flake.y, flake.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function resizeCanvas() {
+            // 全屏宽度以支持L形区域
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        // 检查点是否在L形区域内
+        function isInLShape(x, y) {
+            return y <= headerHeight || x <= sidebarWidth;
+        }
+
+        // 获取L形区域的有效边界
+        function getLShapeBounds(y) {
+            if (y <= headerHeight) {
+                return { minX: 0, maxX: canvas.width };
+            } else {
+                return { minX: 0, maxX: sidebarWidth };
+            }
+        }
+
+        function createParticle(index, x, y, radius) {
+            var baseAngle = Math.random() < 0.5 ? 0 : Math.PI;
+            var angle = baseAngle + (Math.random() - 0.5) * Math.PI / 3;
+            var speed = 1.5 + Math.random() * 1.0; // 更强的初始速度，保证不会静止
+            // 大部分粒子生成在顶栏区域（80%概率）
+            var spawnInHeader = Math.random() < 0.8;
+            var spawnX = x !== undefined ? x : (spawnInHeader ? Math.random() * canvas.width : Math.random() * sidebarWidth);
+            var spawnY = y !== undefined ? y : (spawnInHeader ? Math.random() * headerHeight : headerHeight + Math.random() * (canvas.height - headerHeight));
+            return {
+                x: spawnX, y: spawnY,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                radius: radius || (4 + Math.random() * 3),
+                color: colors[index % colors.length],
+                alpha: 0.7 + Math.random() * 0.2,
+                trail: [],
+                stuckTime: 0,
+                isShaking: false,
+                shakeOffset: { x: 0, y: 0 },
+                targetAngle: angle,
+                turnSpeed: 0.015 + Math.random() * 0.015,
+                nextTurnTime: 100 + Math.floor(Math.random() * 150)
+            };
+        }
+
+        function initParticles() {
+            particles = [];
+            fragments = [];
+            fishes = [];
+            fishFragments = [];
+            spawningParticles = [];
+            for (var i = 0; i < particleCount; i++) {
+                particles.push(createParticle(i));
+            }
+            for (var i = 0; i < fishCount; i++) {
+                fishes.push(createFish(i));
+            }
+        }
+
+        // 从闪电图标生成新小球（螺旋飞出效果）
+        function spawnFromLightning() {
+            var logo = document.getElementById('app-logo');
+            var logoRect = logo ? logo.getBoundingClientRect() : { left: 30, top: 24, width: 24, height: 24 };
+            var centerX = logoRect.left + logoRect.width / 2;
+            var centerY = logoRect.top + logoRect.height / 2;
+
+            var index = particles.length + spawningParticles.length;
+            var sp = {
+                x: centerX,
+                y: centerY,
+                centerX: centerX,
+                centerY: centerY,
+                angle: Math.random() * Math.PI * 2,
+                radius: 5,
+                spiralSpeed: 0.15 + Math.random() * 0.05,
+                expandSpeed: 0.8,
+                rotations: 0,
+                maxRotations: 2,
+                color: colors[index % colors.length],
+                size: 4 + Math.random() * 2,
+                alpha: 0.9,
+                trail: []
+            };
+            spawningParticles.push(sp);
+        }
+
+        function updateSpawningParticle(sp) {
+            sp.trail.push({ x: sp.x, y: sp.y });
+            if (sp.trail.length > 10) sp.trail.shift();
+
+            sp.angle += sp.spiralSpeed;
+            sp.radius += sp.expandSpeed;
+            sp.rotations += sp.spiralSpeed / (Math.PI * 2);
+
+            sp.x = sp.centerX + Math.cos(sp.angle) * sp.radius;
+            sp.y = sp.centerY + Math.sin(sp.angle) * sp.radius;
+
+            if (sp.rotations >= sp.maxRotations) {
+                var newP = createParticle(particles.length, sp.x, sp.y);
+                newP.vx = Math.cos(sp.angle) * 3;
+                newP.vy = Math.sin(sp.angle) * 3;
+                newP.color = sp.color;
+                newP.trail = sp.trail.slice();
+                particles.push(newP);
+                return false;
+            }
+            return true;
+        }
+
+        function drawSpawningParticle(sp) {
+            for (var i = 0; i < sp.trail.length; i++) {
+                var t = sp.trail[i];
+                var progress = (i + 1) / sp.trail.length;
+                ctx.beginPath();
+                ctx.arc(t.x, t.y, sp.size * progress * 0.6, 0, Math.PI * 2);
+                ctx.fillStyle = sp.color;
+                ctx.globalAlpha = sp.alpha * progress * 0.5;
+                ctx.fill();
+            }
+            ctx.beginPath();
+            ctx.arc(sp.x, sp.y, sp.size, 0, Math.PI * 2);
+            ctx.fillStyle = sp.color;
+            ctx.globalAlpha = sp.alpha;
+            ctx.shadowColor = sp.color;
+            ctx.shadowBlur = 12;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = 1;
+        }
+
+        function checkParticleCount() {
+            var totalActive = particles.length + spawningParticles.length;
+            if (totalActive < particleCount) {
+                spawnFromLightning();
+            }
+        }
+
+        function createFish(index, x, y, size) {
+            var direction = Math.random() < 0.5 ? 1 : -1;
+            var facingAngle = direction > 0 ? 0 : Math.PI;
+            var spawnInHeader = Math.random() < 0.8;
+            var spawnX = x !== undefined ? x : (spawnInHeader ? Math.random() * canvas.width : Math.random() * sidebarWidth);
+            var spawnY = y !== undefined ? y : (spawnInHeader ? 8 + Math.random() * (headerHeight - 16) : headerHeight + Math.random() * (canvas.height - headerHeight - 16));
+            var fishSize = size || (6 + Math.random() * 3);
+            return {
+                x: spawnX, y: spawnY,
+                vx: direction * (0.4 + Math.random() * 0.3),
+                vy: (Math.random() - 0.5) * 0.1,
+                size: fishSize,
+                color: fishColors[index % fishColors.length],
+                tailPhase: Math.random() * Math.PI * 2,
+                direction: direction,
+                facingAngle: facingAngle,
+                angle: facingAngle,
+                backwardTime: 0,
+                turnSpeed: 0.15,
+                isEscaping: false,
+                escapePhase: 0,
+                stuckTime: 0,
+                isShaking: false,
+                shakeOffset: { x: 0, y: 0 }
+            };
+        }
+
+        function normalizeAngle(angle) {
+            while (angle > Math.PI) angle -= Math.PI * 2;
+            while (angle < -Math.PI) angle += Math.PI * 2;
+            return angle;
+        }
+
+        // 检测鱼是否被困
+        function isFishStuckAtEdge(f) {
+            var edgeMargin = f.size + 5;
+            var bounds = getLShapeBounds(f.y);
+            var nearEdge = f.x < edgeMargin || f.x > bounds.maxX - edgeMargin ||
+                           f.y < edgeMargin || f.y > canvas.height - edgeMargin;
+            var dx = f.x - mouse.x;
+            var dy = f.y - mouse.y;
+            var nearMouse = Math.sqrt(dx * dx + dy * dy) < window.ballConfig.repelRadius + 20;
+            return nearEdge && nearMouse;
+        }
+
+        // 小鱼爆炸
+        function explodeFish(f, index) {
+            for (var i = 0; i < 3; i++) {
+                var angle = (Math.PI * 2 / 3) * i + Math.random() * 0.5;
+                var speed = 2 + Math.random() * 1.5;
+                fishFragments.push({
+                    x: f.x, y: f.y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    size: f.size * 0.5,
+                    color: f.color,
+                    tailPhase: Math.random() * Math.PI * 2,
+                    angle: angle,
+                    life: reuniteDelay,
+                    parentIndex: index,
+                    ignoreMouseTime: 40
+                });
+            }
+            fishes.splice(index, 1);
+        }
+
+        // 小鱼汇合
+        function reuniteFishFragments() {
+            var groups = {};
+            fishFragments.forEach(function(f, i) {
+                if (!groups[f.parentIndex]) groups[f.parentIndex] = [];
+                groups[f.parentIndex].push({ fragment: f, index: i });
+            });
+            var toRemove = [];
+            for (var parentIndex in groups) {
+                var group = groups[parentIndex];
+                if (group.length > 0 && group[0].fragment.life <= 0) {
+                    var cx = 0, cy = 0;
+                    group.forEach(function(g) { cx += g.fragment.x; cy += g.fragment.y; });
+                    cx /= group.length; cy /= group.length;
+                    var newFish = createFish(parseInt(parentIndex), cx, cy);
+                    newFish.vx = (Math.random() - 0.5) * 1.5;
+                    newFish.vy = (Math.random() - 0.5) * 1.5;
+                    fishes.push(newFish);
+                    group.forEach(function(g) { toRemove.push(g.index); });
+                }
+            }
+            toRemove.sort(function(a, b) { return b - a; });
+            toRemove.forEach(function(i) { fishFragments.splice(i, 1); });
+        }
+
+        function updateFish(f, index) {
+            var weatherEffect = getWeatherEffect();
+            var speedMult = weatherEffect.speedMult;
+
+            f.tailPhase += 0.15 * speedMult;
+            var dx = f.x - mouse.x;
+            var dy = f.y - mouse.y;
+            var dist = Math.sqrt(dx * dx + dy * dy);
+            var escapeAngle = Math.atan2(dy, dx);
+            var velocityAngle = Math.atan2(f.vy, f.vx);
+
+            // 鼠标排斥与智能逃逸
+            if (dist < window.ballConfig.repelRadius && dist > 0) {
+                f.isEscaping = true;
+                var angleDiff = normalizeAngle(escapeAngle - f.facingAngle);
+                var isFacingAway = Math.abs(angleDiff) < Math.PI / 2;
+
+                if (isFacingAway) {
+                    f.escapePhase = 0;
+                    var force = (window.ballConfig.repelRadius - dist) / window.ballConfig.repelRadius * 6;
+                    f.vx += (dx / dist) * force;
+                    f.vy += (dy / dist) * force;
+                } else {
+                    if (f.escapePhase === 0) {
+                        f.escapePhase = 1;
+                        f.backwardTime = 0;
+                    }
+                    if (f.escapePhase === 1) {
+                        f.backwardTime++;
+                        var backwardForce = (window.ballConfig.repelRadius - dist) / window.ballConfig.repelRadius * 3;
+                        f.vx += (dx / dist) * backwardForce;
+                        f.vy += (dy / dist) * backwardForce;
+                        if (f.backwardTime > 15 || dist < window.ballConfig.repelRadius * 0.5) {
+                            f.escapePhase = 2;
+                        }
+                    }
+                    if (f.escapePhase === 2) {
+                        var turnAmount = normalizeAngle(escapeAngle - f.facingAngle) * 0.3;
+                        f.facingAngle = normalizeAngle(f.facingAngle + turnAmount);
+                        var force = (window.ballConfig.repelRadius - dist) / window.ballConfig.repelRadius * 5;
+                        f.vx += (dx / dist) * force;
+                        f.vy += (dy / dist) * force;
+                        if (Math.abs(normalizeAngle(escapeAngle - f.facingAngle)) < Math.PI / 4) {
+                            f.escapePhase = 0;
+                        }
+                    }
+                }
+            } else {
+                f.isEscaping = false;
+                f.escapePhase = 0;
+                f.backwardTime = 0;
+            }
+
+            if (isFishStuckAtEdge(f)) {
+                f.stuckTime++;
+                if (f.stuckTime > fearThreshold) {
+                    f.isShaking = true;
+                    f.shakeOffset = { x: (Math.random() - 0.5) * 3, y: (Math.random() - 0.5) * 3 };
+                }
+                if (f.stuckTime > explodeThreshold) {
+                    explodeFish(f, index);
+                    return false;
+                }
+            } else {
+                f.stuckTime = Math.max(0, f.stuckTime - 2);
+                f.isShaking = false;
+                f.shakeOffset = { x: 0, y: 0 };
+            }
+
+            var inHeader = f.y <= headerHeight;
+            if (inHeader) {
+                f.vy += (Math.random() - 0.5) * 0.02;
+                f.vy *= 0.95;
+            } else {
+                f.vx += (Math.random() - 0.5) * 0.03;
+                f.vy += (Math.random() - 0.5) * 0.03;
+            }
+            f.x += f.vx;
+            f.y += f.vy;
+
+            var speed = Math.sqrt(f.vx * f.vx + f.vy * f.vy);
+            var minSpeed = 0.3 * speedMult;
+            if (speed < minSpeed) {
+                var angle = inHeader ? (Math.random() < 0.5 ? 0 : Math.PI) : Math.random() * Math.PI * 2;
+                f.vx = Math.cos(angle) * 0.5 * speedMult;
+                f.vy = Math.sin(angle) * 0.5 * speedMult;
+            }
+            var maxSpeed = 4 * speedMult;
+            if (speed > maxSpeed) {
+                f.vx = (f.vx / speed) * maxSpeed;
+                f.vy = (f.vy / speed) * maxSpeed;
+            }
+            f.vx *= 0.995;
+            f.vy *= 0.995;
+
+            // L形拐角处理
+            if (f.y > headerHeight && f.x > sidebarWidth - f.size) {
+                var overY = f.y - headerHeight;
+                var overX = f.x - (sidebarWidth - f.size);
+                if (overY < overX) {
+                    f.y = headerHeight - f.size;
+                    f.vy = -Math.abs(f.vy);
+                } else {
+                    f.x = sidebarWidth - f.size;
+                    f.vx = -Math.abs(f.vx);
+                }
+            }
+            var bounds = getLShapeBounds(f.y);
+            if (f.x < f.size) { f.x = f.size; f.vx = Math.abs(f.vx); }
+            else if (f.x > bounds.maxX - f.size) { f.x = bounds.maxX - f.size; f.vx = -Math.abs(f.vx); }
+            if (f.y < f.size) { f.y = f.size; f.vy = Math.abs(f.vy); }
+            else if (f.y > canvas.height - f.size) { f.y = canvas.height - f.size; f.vy = -Math.abs(f.vy); }
+
+            // 更新鱼头朝向
+            velocityAngle = Math.atan2(f.vy, f.vx);
+            if (!f.isEscaping || f.escapePhase === 0) {
+                var targetAngle = velocityAngle;
+                var angleDiff = normalizeAngle(targetAngle - f.facingAngle);
+                var isBackward = Math.abs(angleDiff) > Math.PI / 2;
+                if (isBackward) {
+                    f.backwardTime++;
+                    if (f.backwardTime > 30) {
+                        f.facingAngle = normalizeAngle(f.facingAngle + angleDiff * 0.2);
+                    }
+                } else {
+                    f.backwardTime = Math.max(0, f.backwardTime - 1);
+                    f.facingAngle = normalizeAngle(f.facingAngle + angleDiff * f.turnSpeed);
+                }
+            }
+
+            f.angle = f.facingAngle;
+            f.direction = Math.cos(f.angle) >= 0 ? 1 : -1;
+            return true;
+        }
+
+        function updateFishFragment(ff) {
+            ff.tailPhase += 0.2;
+            if (ff.ignoreMouseTime > 0) ff.ignoreMouseTime--;
+            else {
+                var dx = ff.x - mouse.x;
+                var dy = ff.y - mouse.y;
+                var dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < window.ballConfig.repelRadius && dist > 0) {
+                    var force = (window.ballConfig.repelRadius - dist) / window.ballConfig.repelRadius * 0.5;
+                    ff.vx += (dx / dist) * force;
+                    ff.vy += (dy / dist) * force;
+                }
+            }
+            ff.vx *= 0.98; ff.vy *= 0.98;
+            ff.x += ff.vx; ff.y += ff.vy;
+            ff.life--;
+            ff.angle = Math.atan2(ff.vy, ff.vx);
+            // L形拐角处理
+            if (ff.y > headerHeight && ff.x > sidebarWidth - ff.size) {
+                var overY = ff.y - headerHeight;
+                var overX = ff.x - (sidebarWidth - ff.size);
+                if (overY < overX) {
+                    ff.y = headerHeight - ff.size;
+                    ff.vy = -Math.abs(ff.vy);
+                } else {
+                    ff.x = sidebarWidth - ff.size;
+                    ff.vx = -Math.abs(ff.vx);
+                }
+            }
+            var bounds = getLShapeBounds(ff.y);
+            if (ff.x < ff.size || ff.x > bounds.maxX - ff.size) {
+                ff.vx = -ff.vx;
+                ff.x = Math.max(ff.size, Math.min(bounds.maxX - ff.size, ff.x));
+            }
+            if (ff.y < ff.size || ff.y > canvas.height - ff.size) {
+                ff.vy = -ff.vy;
+                ff.y = Math.max(ff.size, Math.min(canvas.height - ff.size, ff.y));
+            }
+        }
+
+        function drawFish(f) {
+            var weatherEffect = getWeatherEffect();
+            var transMult = getTransparencyMultiplier(f.y);
+            var drawX = f.x + (f.shakeOffset ? f.shakeOffset.x : 0);
+            var drawY = f.y + (f.shakeOffset ? f.shakeOffset.y : 0);
+            ctx.save();
+            ctx.translate(drawX, drawY);
+            var angle = f.angle || 0;
+            var flipY = Math.abs(angle) > Math.PI / 2;
+            if (flipY) { ctx.rotate(angle + Math.PI); ctx.scale(1, -1); }
+            else { ctx.rotate(angle); }
+            var s = f.size;
+            var tailSwing = Math.sin(f.tailPhase) * 0.3;
+
+            // 根据天气调整颜色
+            var fishColor = adjustColor(f.color, weatherEffect.colorShift, weatherEffect.brightness);
+
+            ctx.beginPath();
+            ctx.ellipse(0, 0, s * 1.2, s * 0.6, 0, 0, Math.PI * 2);
+            ctx.fillStyle = fishColor;
+            ctx.globalAlpha = 0.85 * transMult;
+            if (f.isShaking) { ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 15; }
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.beginPath();
+            ctx.moveTo(-s * 1.1, 0);
+            ctx.lineTo(-s * 2, -s * 0.5 + tailSwing * s);
+            ctx.lineTo(-s * 2, s * 0.5 + tailSwing * s);
+            ctx.closePath();
+            ctx.fillStyle = fishColor;
+            ctx.globalAlpha = 0.7 * transMult;
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(s * 0.5, -s * 0.1, s * 0.15, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.globalAlpha = 1 * transMult;
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(s * 0.55, -s * 0.1, s * 0.08, 0, Math.PI * 2);
+            ctx.fillStyle = '#333333';
+            ctx.fill();
+            ctx.restore();
+            ctx.globalAlpha = 1;
+        }
+
+        function drawFishFragment(ff) {
+            var transMult = getTransparencyMultiplier(ff.y) * (ff.life / reuniteDelay);
+            ctx.save();
+            ctx.translate(ff.x, ff.y);
+            var angle = ff.angle || 0;
+            var flipY = Math.abs(angle) > Math.PI / 2;
+            if (flipY) { ctx.rotate(angle + Math.PI); ctx.scale(1, -1); }
+            else { ctx.rotate(angle); }
+            var s = ff.size;
+            var tailSwing = Math.sin(ff.tailPhase) * 0.4;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, s * 1.2, s * 0.6, 0, 0, Math.PI * 2);
+            ctx.fillStyle = ff.color;
+            ctx.globalAlpha = 0.8 * transMult;
+            ctx.shadowColor = ff.color;
+            ctx.shadowBlur = 8;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.beginPath();
+            ctx.moveTo(-s * 1.1, 0);
+            ctx.lineTo(-s * 2, -s * 0.5 + tailSwing * s);
+            ctx.lineTo(-s * 2, s * 0.5 + tailSwing * s);
+            ctx.closePath();
+            ctx.globalAlpha = 0.6 * transMult;
+            ctx.fill();
+            ctx.restore();
+            ctx.globalAlpha = 1;
+        }
+
+        function isStuckAtEdge(p) {
+            var edgeMargin = p.radius + 5;
+            var bounds = getLShapeBounds(p.y);
+            var nearEdge = p.x < edgeMargin || p.x > bounds.maxX - edgeMargin ||
+                           p.y < edgeMargin || p.y > canvas.height - edgeMargin;
+            var dx = p.x - mouse.x;
+            var dy = p.y - mouse.y;
+            var nearMouse = Math.sqrt(dx * dx + dy * dy) < window.ballConfig.repelRadius + 20;
+            return nearEdge && nearMouse;
+        }
+
+        // 爆炸分裂
+        function explodeParticle(p, index) {
+            var fragmentColors = [colors[(index) % colors.length], colors[(index + 2) % colors.length], colors[(index + 4) % colors.length]];
+            for (var i = 0; i < 3; i++) {
+                var angle = (Math.PI * 2 / 3) * i + Math.random() * 0.5;
+                var speed = 3 + Math.random() * 2;
+                fragments.push({
+                    x: p.x,
+                    y: p.y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    radius: p.radius * 0.5,
+                    color: fragmentColors[i],
+                    alpha: 0.9,
+                    trail: [],
+                    life: reuniteDelay,
+                    parentIndex: index,
+                    ignoreMouseTime: 40 // 无视鼠标的时间
+                });
+            }
+            // 移除原粒子
+            particles.splice(index, 1);
+        }
+
+        // 碎片汇合重组
+        function reuniteFragments() {
+            var groups = {};
+            fragments.forEach(function(f, i) {
+                if (!groups[f.parentIndex]) groups[f.parentIndex] = [];
+                groups[f.parentIndex].push({ fragment: f, index: i });
+            });
+
+            var toRemove = [];
+            for (var parentIndex in groups) {
+                var group = groups[parentIndex];
+                if (group.length > 0 && group[0].fragment.life <= 0) {
+                    // 计算汇合中心
+                    var cx = 0, cy = 0;
+                    group.forEach(function(g) { cx += g.fragment.x; cy += g.fragment.y; });
+                    cx /= group.length;
+                    cy /= group.length;
+
+                    // 创建新粒子，确保有足够的初始速度
+                    var newP = createParticle(particles.length, cx, cy);
+                    var angle = Math.random() * Math.PI * 2;
+                    var speed = 1.5 + Math.random() * 1.0;
+                    newP.vx = Math.cos(angle) * speed;
+                    newP.vy = Math.sin(angle) * speed;
+                    particles.push(newP);
+
+                    // 标记移除碎片
+                    group.forEach(function(g) { toRemove.push(g.index); });
+                }
+            }
+            // 从后往前移除
+            toRemove.sort(function(a, b) { return b - a; });
+            toRemove.forEach(function(i) { fragments.splice(i, 1); });
+        }
+
+        function updateParticle(p, index) {
+            // 计算当前速度
+            var speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+
+            // 尾巴长度：基础长度 + 速度加成，使用可调参数
+            var dynamicTailLength = Math.floor(5 + speed * 2);
+            dynamicTailLength = Math.max(5, Math.min(window.ballConfig.tailLength, dynamicTailLength));
+
+            p.trail.push({ x: p.x, y: p.y });
+            while (p.trail.length > dynamicTailLength) p.trail.shift();
+
+            // 检测是否被困
+            if (isStuckAtEdge(p)) {
+                p.stuckTime++;
+                if (p.stuckTime > fearThreshold) {
+                    p.isShaking = true;
+                    p.shakeOffset.x = (Math.random() - 0.5) * 3;
+                    p.shakeOffset.y = (Math.random() - 0.5) * 3;
+                }
+                if (p.stuckTime > explodeThreshold) {
+                    explodeParticle(p, index);
+                    return false; // 粒子已移除
+                }
+            } else {
+                p.stuckTime = Math.max(0, p.stuckTime - 2);
+                p.isShaking = false;
+                p.shakeOffset.x = 0;
+                p.shakeOffset.y = 0;
+            }
+
+            var cfg = window.ballConfig;
+            var inHeader = p.y <= headerHeight;
+
+            // ===== 鼠标排斥 - 最高优先级 =====
+            var dx = p.x - mouse.x;
+            var dy = p.y - mouse.y;
+            var dist = Math.sqrt(dx * dx + dy * dy);
+            var isEscaping = false;
+
+            if (dist < cfg.repelRadius && dist > 0) {
+                isEscaping = true;
+                // 距离越近，力越大（二次方关系，更敏感）
+                var ratio = 1 - dist / cfg.repelRadius;
+                var force = ratio * ratio * cfg.repelForce * 1.5;
+                p.vx += (dx / dist) * force;
+                p.vy += (dy / dist) * force;
+            }
+
+            // 自由游动（仅在不逃跑时生效）
+            if (!isEscaping) {
+                p.nextTurnTime--;
+                if (p.nextTurnTime <= 0) {
+                    var currentAngle = Math.atan2(p.vy, p.vx);
+                    if (inHeader) {
+                        // 顶栏：主要左右游动，偶尔转向
+                        if (Math.random() < 0.6) {
+                            var baseAngle = Math.cos(currentAngle) > 0 ? 0 : Math.PI;
+                            if (Math.random() < 0.2) baseAngle += Math.PI; // 20%概率掉头
+                            p.targetAngle = baseAngle + (Math.random() - 0.5) * Math.PI / 2;
+                        } else {
+                            p.targetAngle = currentAngle + (Math.random() - 0.5) * Math.PI * 0.6;
+                        }
+                    } else {
+                        // 侧边栏：自由方向
+                        p.targetAngle = Math.random() * Math.PI * 2;
+                    }
+                    // 更频繁地改变方向，让运动更活泼
+                    p.nextTurnTime = 40 + Math.floor(Math.random() * 80);
+                }
+
+                var currentAngle = Math.atan2(p.vy, p.vx);
+                var angleDiff = p.targetAngle - currentAngle;
+                while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+                while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+                // 更快的转向速度
+                var newAngle = currentAngle + angleDiff * p.turnSpeed * 1.5;
+                // 保持一定的游动速度
+                var targetSpeed = 1.0 + Math.random() * 1.0;
+                var newSpeed = Math.max(speed, targetSpeed);
+                p.vx = Math.cos(newAngle) * newSpeed;
+                p.vy = Math.sin(newAngle) * newSpeed;
+            }
+
+            if (inHeader && !isEscaping) p.vy *= 0.92; // 稍微限制垂直运动
+
+            // 速度控制
+            speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+            var maxSpeed = isEscaping ? cfg.maxSpeed * 1.5 : cfg.maxSpeed;
+            var minSpeed = 1.0; // 提高最低速度，保持活跃
+            if (speed > maxSpeed) {
+                p.vx = (p.vx / speed) * maxSpeed;
+                p.vy = (p.vy / speed) * maxSpeed;
+            } else if (speed < minSpeed) {
+                // 速度太慢时，给一个随机推力
+                var angle = inHeader ? (Math.random() < 0.5 ? 0 : Math.PI) + (Math.random() - 0.5) * 0.5 : Math.random() * Math.PI * 2;
+                var boost = minSpeed + Math.random() * 0.5;
+                p.vx = Math.cos(angle) * boost;
+                p.vy = Math.sin(angle) * boost;
+            }
+
+            // 摩擦力（逃跑时减少摩擦，平时也保持较低摩擦让运动更流畅）
+            var friction = isEscaping ? 0.96 : 0.995;
+            p.vx *= friction;
+            p.vy *= friction;
+
+            // ===== 安全检查：确保速度有效 =====
+            if (isNaN(p.vx) || isNaN(p.vy) || !isFinite(p.vx) || !isFinite(p.vy)) {
+                var safeAngle = Math.random() * Math.PI * 2;
+                p.vx = Math.cos(safeAngle) * 1.5;
+                p.vy = Math.sin(safeAngle) * 1.5;
+            }
+
+            // 边界安全距离
+            var margin = p.radius + 2;
+
+            // ===== 预测式边界检查 - 在移动前检查目标位置 =====
+            var nextX = p.x + p.vx;
+            var nextY = p.y + p.vy;
+
+            // 检查是否会进入L形禁区（主内容区域）
+            var wouldEnterForbidden = nextY > headerHeight - margin && nextX > sidebarWidth - margin;
+            var currentlyInHeader = p.y <= headerHeight;
+            var currentlyInSidebar = p.x <= sidebarWidth;
+
+            if (wouldEnterForbidden) {
+                if (currentlyInHeader && nextY > headerHeight - margin) {
+                    // 从顶栏向下移动，阻止
+                    p.vy = -Math.abs(p.vy) * 0.5;
+                    nextY = headerHeight - margin;
+                }
+                if (currentlyInSidebar && nextX > sidebarWidth - margin) {
+                    // 从侧边栏向右移动，阻止
+                    p.vx = -Math.abs(p.vx) * 0.5;
+                    nextX = sidebarWidth - margin;
+                }
+            }
+
+            // 外边界检查
+            if (nextX < margin) { nextX = margin; p.vx = Math.abs(p.vx) * 0.8; }
+            if (nextY < margin) { nextY = margin; p.vy = Math.abs(p.vy) * 0.8; }
+
+            // 根据当前区域检查右边界和底边界
+            if (nextY <= headerHeight) {
+                // 在顶栏区域
+                if (nextX > canvas.width - margin) { nextX = canvas.width - margin; p.vx = -Math.abs(p.vx) * 0.8; }
+            } else {
+                // 在侧边栏区域
+                if (nextX > sidebarWidth - margin) { nextX = sidebarWidth - margin; p.vx = -Math.abs(p.vx) * 0.8; }
+                if (nextY > canvas.height - margin) { nextY = canvas.height - margin; p.vy = -Math.abs(p.vy) * 0.8; }
+            }
+
+            // 应用位置
+            p.x = nextX;
+            p.y = nextY;
+
+            // ===== 最终安全检查 - 强制将任何越界粒子推回 =====
+            if (p.y > headerHeight && p.x > sidebarWidth) {
+                // 已经在禁区内，立即推回
+                if (p.y - headerHeight < p.x - sidebarWidth) {
+                    p.y = headerHeight - margin;
+                    p.vy = -Math.abs(p.vy);
+                } else {
+                    p.x = sidebarWidth - margin;
+                    p.vx = -Math.abs(p.vx);
+                }
+            }
+
+            p.targetAngle = Math.atan2(p.vy, p.vx);
+            return true;
+        }
+
+        function updateFragment(f) {
+            f.trail.push({ x: f.x, y: f.y });
+            if (f.trail.length > 8) f.trail.shift();
+
+            if (f.ignoreMouseTime > 0) {
+                f.ignoreMouseTime--;
+            } else {
+                var dx = f.x - mouse.x;
+                var dy = f.y - mouse.y;
+                var dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < window.ballConfig.repelRadius && dist > 0) {
+                    var force = (window.ballConfig.repelRadius - dist) / window.ballConfig.repelRadius * 0.5;
+                    f.vx += (dx / dist) * force;
+                    f.vy += (dy / dist) * force;
+                }
+            }
+
+            f.vx *= 0.98;
+            f.vy *= 0.98;
+            f.x += f.vx;
+            f.y += f.vy;
+            f.life--;
+
+            // L形拐角处理
+            if (f.y > headerHeight && f.x > sidebarWidth - f.radius) {
+                var overY = f.y - headerHeight;
+                var overX = f.x - (sidebarWidth - f.radius);
+                if (overY < overX) {
+                    f.y = headerHeight - f.radius;
+                    f.vy = -Math.abs(f.vy);
+                } else {
+                    f.x = sidebarWidth - f.radius;
+                    f.vx = -Math.abs(f.vx);
+                }
+            }
+
+            // L形边界
+            var bounds = getLShapeBounds(f.y);
+            if (f.x - f.radius < 0 || f.x + f.radius > bounds.maxX) {
+                f.vx = -f.vx;
+                f.x = Math.max(f.radius, Math.min(bounds.maxX - f.radius, f.x));
+            }
+            if (f.y - f.radius < 0 || f.y + f.radius > canvas.height) {
+                f.vy = -f.vy;
+                f.y = Math.max(f.radius, Math.min(canvas.height - f.radius, f.y));
+            }
+        }
+
+        // 计算透明度系数（在侧边栏区域时变透明）
+        function getTransparencyMultiplier(y) {
+            if (y <= headerHeight) return 1; // 顶栏区域：完全不透明
+            // 侧边栏区域：渐变到50%透明
+            var fadeStart = headerHeight;
+            var fadeEnd = headerHeight + 50;
+            if (y < fadeEnd) {
+                return 1 - 0.5 * ((y - fadeStart) / (fadeEnd - fadeStart));
+            }
+            return 0.5; // 侧边栏深处：50%透明
+        }
+
+        function drawParticle(p) {
+            var drawX = p.x + (p.shakeOffset ? p.shakeOffset.x : 0);
+            var drawY = p.y + (p.shakeOffset ? p.shakeOffset.y : 0);
+            var transMult = getTransparencyMultiplier(drawY);
+
+            // 平滑彗星尾巴效果：使用渐变路径
+            if (p.trail.length > 2) {
+                // 从尾部到头部绘制平滑渐变
+                for (var i = 1; i < p.trail.length; i++) {
+                    var t0 = p.trail[i - 1];
+                    var t1 = p.trail[i];
+                    var progress = i / p.trail.length;
+
+                    // 线条宽度：从细到粗
+                    var width0 = p.radius * 2 * (progress - 1/p.trail.length) * 0.9;
+                    var width1 = p.radius * 2 * progress * 0.9;
+
+                    // 透明度：从淡到浓，使用三次方让渐变更平滑
+                    var alpha = p.alpha * progress * progress * progress * 0.6;
+                    var trailTrans = getTransparencyMultiplier((t0.y + t1.y) / 2);
+
+                    // 绘制渐变线段
+                    ctx.beginPath();
+                    ctx.moveTo(t0.x, t0.y);
+                    ctx.lineTo(t1.x, t1.y);
+                    ctx.strokeStyle = p.color;
+                    ctx.lineWidth = Math.max(1, (width0 + width1) / 2);
+                    ctx.lineCap = 'round';
+                    ctx.globalAlpha = alpha * trailTrans;
+                    ctx.stroke();
+                }
+
+                // 连接尾巴末端到球体，确保平滑过渡
+                if (p.trail.length > 0) {
+                    var lastTrail = p.trail[p.trail.length - 1];
+                    ctx.beginPath();
+                    ctx.moveTo(lastTrail.x, lastTrail.y);
+                    ctx.lineTo(drawX, drawY);
+                    ctx.strokeStyle = p.color;
+                    ctx.lineWidth = p.radius * 1.6;
+                    ctx.lineCap = 'round';
+                    ctx.globalAlpha = p.alpha * 0.5 * transMult;
+                    ctx.stroke();
+                }
+            }
+
+            // 主球体（震动时带红色光晕）
+            ctx.beginPath();
+            ctx.arc(drawX, drawY, p.radius, 0, Math.PI * 2);
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = p.alpha * transMult;
+            ctx.shadowColor = p.isShaking ? '#ff0000' : p.color;
+            ctx.shadowBlur = p.isShaking ? 15 : 10;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = 1;
+        }
+
+        function drawFragment(f) {
+            var transMult = getTransparencyMultiplier(f.y);
+            // 尾巴
+            for (var i = 0; i < f.trail.length; i++) {
+                var t = f.trail[i];
+                var progress = i / f.trail.length;
+                var trailTrans = getTransparencyMultiplier(t.y);
+                ctx.beginPath();
+                ctx.arc(t.x, t.y, f.radius * progress * 0.6, 0, Math.PI * 2);
+                ctx.fillStyle = f.color;
+                ctx.globalAlpha = f.alpha * progress * 0.4 * trailTrans;
+                ctx.fill();
+            }
+            // 碎片
+            ctx.beginPath();
+            ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2);
+            ctx.fillStyle = f.color;
+            ctx.globalAlpha = f.alpha * (f.life / reuniteDelay) * transMult;
+            ctx.shadowColor = f.color;
+            ctx.shadowBlur = 8;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = 1;
+        }
+
+        function animate() {
+            try {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // ===== 每帧开始时：强制验证所有粒子速度 =====
+                for (var j = 0; j < particles.length; j++) {
+                    var p = particles[j];
+                    var spd = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+                    // 修复无效速度或静止粒子
+                    if (isNaN(spd) || !isFinite(spd) || spd < 0.5) {
+                        var angle = Math.random() * Math.PI * 2;
+                        var newSpeed = 1.5 + Math.random() * 1.0;
+                        p.vx = Math.cos(angle) * newSpeed;
+                        p.vy = Math.sin(angle) * newSpeed;
+                    }
+                }
+
+                // 定期检查小球数量
+                spawnCheckCounter++;
+                if (spawnCheckCounter >= spawnCheckInterval) {
+                    spawnCheckCounter = 0;
+                    checkParticleCount();
+                }
+
+                // 螺旋生成中的小球
+                for (var i = spawningParticles.length - 1; i >= 0; i--) {
+                    if (updateSpawningParticle(spawningParticles[i])) {
+                        drawSpawningParticle(spawningParticles[i]);
+                    } else {
+                        spawningParticles.splice(i, 1);
+                    }
+                }
+
+                // 更新并绘制天气效果（雨滴/雪花）
+                updateWeatherParticles();
+                drawWeatherParticles();
+
+                // 粒子 - 复制数组避免splice问题
+                var particlesToProcess = particles.slice();
+
+                for (var i = 0; i < particlesToProcess.length; i++) {
+                    var p = particlesToProcess[i];
+                    // 找到当前实际索引
+                    var actualIndex = particles.indexOf(p);
+                    if (actualIndex === -1) continue; // 已被移除
+
+                    if (updateParticle(p, actualIndex)) {
+                        drawParticle(p);
+                    }
+                }
+
+                // 更新并绘制碎片
+                for (var i = 0; i < fragments.length; i++) {
+                    updateFragment(fragments[i]);
+                    drawFragment(fragments[i]);
+                }
+
+                // 检查汇合
+                reuniteFragments();
+
+            } catch (e) {
+                console.error('Animation error:', e);
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        resizeCanvas();
+        initParticles();
+        animate();
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // 鼠标追踪：在L形区域（顶栏全宽 + 侧边栏）内生效 + 扩展检测范围
+        document.addEventListener('mousemove', function(e) {
+            var extend = 120; // 扩展检测范围，让鼠标更容易触发小球逃逸
+            var inLShape = (e.clientY <= headerHeight + extend) || (e.clientX <= sidebarWidth + extend);
+            if (inLShape) {
+                mouse.x = e.clientX;
+                mouse.y = e.clientY;
+            } else {
+                mouse.x = -1000;
+                mouse.y = -1000;
+            }
+        });
+
+        document.addEventListener('mouseleave', function() {
+            mouse.x = -1000;
+            mouse.y = -1000;
+        });
+
+        // 点击闪电设置小球参数 - 表格形式
+        if (logo) {
+            logo.addEventListener('click', function(e) {
+                e.stopPropagation();
+
+                // 创建设置弹窗
+                var overlay = document.createElement('div');
+                overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;';
+
+                var cfg = window.ballConfig;
+                var dialog = document.createElement('div');
+                dialog.style.cssText = 'background:#1a1a2e;border:1px solid #333;border-radius:8px;padding:16px;min-width:280px;color:#fff;font-size:14px;';
+                dialog.innerHTML =
+                    '<div style="font-size:16px;font-weight:bold;margin-bottom:12px;color:#fbbf24;">⚡ 小球设置</div>' +
+                    '<table style="width:100%;border-collapse:collapse;">' +
+                    '<tr><td style="padding:6px 8px;color:#aaa;">数量</td><td><input id="cfg-count" type="number" min="1" max="20" value="' + particleCount + '" style="width:60px;padding:4px;background:#2a2a3e;border:1px solid #444;color:#fff;border-radius:4px;"></td><td style="padding:6px 8px;color:#666;font-size:12px;">建议: 6</td></tr>' +
+                    '<tr><td style="padding:6px 8px;color:#aaa;">感应半径</td><td><input id="cfg-radius" type="number" min="50" max="200" value="' + cfg.repelRadius + '" style="width:60px;padding:4px;background:#2a2a3e;border:1px solid #444;color:#fff;border-radius:4px;"></td><td style="padding:6px 8px;color:#666;font-size:12px;">建议: 180</td></tr>' +
+                    '<tr><td style="padding:6px 8px;color:#aaa;">排斥力度</td><td><input id="cfg-force" type="number" min="1" max="15" value="' + cfg.repelForce + '" style="width:60px;padding:4px;background:#2a2a3e;border:1px solid #444;color:#fff;border-radius:4px;"></td><td style="padding:6px 8px;color:#666;font-size:12px;">建议: 12</td></tr>' +
+                    '<tr><td style="padding:6px 8px;color:#aaa;">最大速度</td><td><input id="cfg-speed" type="number" min="3" max="12" value="' + cfg.maxSpeed + '" style="width:60px;padding:4px;background:#2a2a3e;border:1px solid #444;color:#fff;border-radius:4px;"></td><td style="padding:6px 8px;color:#666;font-size:12px;">建议: 10</td></tr>' +
+                    '<tr><td style="padding:6px 8px;color:#aaa;">摩擦力</td><td><input id="cfg-friction" type="number" min="0.9" max="0.999" step="0.01" value="' + cfg.friction + '" style="width:60px;padding:4px;background:#2a2a3e;border:1px solid #444;color:#fff;border-radius:4px;"></td><td style="padding:6px 8px;color:#666;font-size:12px;">建议: 0.97</td></tr>' +
+                    '<tr><td style="padding:6px 8px;color:#aaa;">尾巴长度</td><td><input id="cfg-tail" type="number" min="3" max="25" value="' + cfg.tailLength + '" style="width:60px;padding:4px;background:#2a2a3e;border:1px solid #444;color:#fff;border-radius:4px;"></td><td style="padding:6px 8px;color:#666;font-size:12px;">建议: 5</td></tr>' +
+                    '</table>' +
+                    '<div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end;">' +
+                    '<button id="cfg-cancel" style="padding:6px 12px;background:#444;border:none;color:#fff;border-radius:4px;cursor:pointer;">取消</button>' +
+                    '<button id="cfg-save" style="padding:6px 12px;background:#fbbf24;border:none;color:#000;border-radius:4px;cursor:pointer;font-weight:bold;">保存</button>' +
+                    '</div>';
+
+                overlay.appendChild(dialog);
+                document.body.appendChild(overlay);
+
+                // 点击背景关闭
+                overlay.addEventListener('click', function(ev) {
+                    if (ev.target === overlay) document.body.removeChild(overlay);
+                });
+
+                // 取消按钮
+                document.getElementById('cfg-cancel').addEventListener('click', function() {
+                    document.body.removeChild(overlay);
+                });
+
+                // 保存按钮
+                document.getElementById('cfg-save').addEventListener('click', function() {
+                    var newCount = Math.max(1, Math.min(20, parseInt(document.getElementById('cfg-count').value) || 5));
+                    cfg.repelRadius = Math.max(50, Math.min(200, parseInt(document.getElementById('cfg-radius').value) || 100));
+                    cfg.repelForce = Math.max(1, Math.min(15, parseInt(document.getElementById('cfg-force').value) || 5));
+                    cfg.maxSpeed = Math.max(3, Math.min(12, parseInt(document.getElementById('cfg-speed').value) || 5));
+                    cfg.friction = Math.max(0.9, Math.min(0.999, parseFloat(document.getElementById('cfg-friction').value) || 0.99));
+                    cfg.tailLength = Math.max(5, Math.min(25, parseInt(document.getElementById('cfg-tail').value) || 12));
+
+                    if (newCount !== particleCount) {
+                        particleCount = newCount;
+                        localStorage.setItem('particleCount', newCount);
+                        initParticles();
+                    }
+
+                    document.body.removeChild(overlay);
+                });
+            });
+        }
+    })();
+
+    // Sync Status Indicator
+    (function() {
+        var syncStatus = document.getElementById('sync-status');
+        var syncText = syncStatus.querySelector('.sync-text');
+        var hideTimeout = null;
+
+        window.showSyncStatus = function(status, message) {
+            syncStatus.className = 'sync-status visible ' + status;
+            syncText.textContent = message || (status === 'syncing' ? '保存中...' : status === 'synced' ? '已保存' : '保存失败');
+
+            if (hideTimeout) clearTimeout(hideTimeout);
+            if (status !== 'syncing') {
+                hideTimeout = setTimeout(function() {
+                    syncStatus.classList.remove('visible');
+                }, 2000);
+            }
+        };
+    })();
+
+    // Pomodoro Timer
+    (function() {
+        var fab = document.getElementById('pomodoro-fab');
+        var panel = document.getElementById('pomodoro-panel');
+        var timeDisplay = document.getElementById('pomodoro-time');
+        var labelDisplay = document.getElementById('pomodoro-label');
+        var startBtn = document.getElementById('pomodoro-start');
+        var resetBtn = document.getElementById('pomodoro-reset');
+
+        var WORK_TIME = 25 * 60;
+        var BREAK_TIME = 5 * 60;
+        var timeLeft = WORK_TIME;
+        var isRunning = false;
+        var isBreak = false;
+        var interval = null;
+
+        function formatTime(seconds) {
+            var m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            var s = (seconds % 60).toString().padStart(2, '0');
+            return m + ':' + s;
+        }
+
+        function updateDisplay() {
+            timeDisplay.textContent = formatTime(timeLeft);
+            labelDisplay.textContent = isBreak ? '休息时间' : '专注时间';
+            fab.classList.toggle('active', isRunning);
+        }
+
+        function tick() {
+            if (timeLeft > 0) {
+                timeLeft--;
+                updateDisplay();
+            } else {
+                // Timer finished
+                clearInterval(interval);
+                isRunning = false;
+
+                // Notification
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    new Notification(isBreak ? '休息结束！' : '专注时间结束！', {
+                        body: isBreak ? '开始新一轮专注吧' : '休息一下吧',
+                        icon: '/assets/icons/icon-192.png'
+                    });
+                }
+
+                // Vibrate if supported
+                if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+
+                // Switch mode
+                isBreak = !isBreak;
+                timeLeft = isBreak ? BREAK_TIME : WORK_TIME;
+                updateDisplay();
+                startBtn.textContent = '开始';
+            }
+        }
+
+        function toggleTimer() {
+            if (isRunning) {
+                clearInterval(interval);
+                isRunning = false;
+                startBtn.textContent = '继续';
+            } else {
+                interval = setInterval(tick, 1000);
+                isRunning = true;
+                startBtn.textContent = '暂停';
+            }
+            updateDisplay();
+        }
+
+        function resetTimer() {
+            clearInterval(interval);
+            isRunning = false;
+            isBreak = false;
+            timeLeft = WORK_TIME;
+            startBtn.textContent = '开始';
+            updateDisplay();
+        }
+
+        fab.addEventListener('click', function() {
+            panel.classList.toggle('visible');
+        });
+
+        startBtn.addEventListener('click', toggleTimer);
+        resetBtn.addEventListener('click', resetTimer);
+
+        // Request notification permission
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
+        updateDisplay();
+
+        // Expose for keyboard shortcut
+        window.togglePomodoro = function() {
+            panel.classList.toggle('visible');
+        };
+    })();
+
+    // Focus Mode
+    (function() {
+        window.toggleFocusMode = function() {
+            document.body.classList.toggle('focus-mode');
+        };
+    })();
+
+    // Keyboard Shortcuts
+    (function() {
+        var shortcutsModal = document.getElementById('shortcuts-modal');
+
+        function isInputFocused() {
+            var active = document.activeElement;
+            return active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
+        }
+
+        document.addEventListener('keydown', function(e) {
+            // Ignore if typing in input
+            if (isInputFocused() && e.key !== 'Escape') return;
+
+            switch(e.key.toLowerCase()) {
+                case 'n':
+                    e.preventDefault();
+                    if (typeof showAddModal === 'function') showAddModal();
+                    break;
+                case 's':
+                    if (!e.ctrlKey && !e.metaKey) {
+                        e.preventDefault();
+                        var searchInput = document.getElementById('search-input');
+                        if (searchInput) searchInput.focus();
+                    }
+                    break;
+                case '1':
+                    e.preventDefault();
+                    if (typeof switchTab === 'function') switchTab('today');
+                    break;
+                case '2':
+                    e.preventDefault();
+                    if (typeof switchTab === 'function') switchTab('week');
+                    break;
+                case '3':
+                    e.preventDefault();
+                    if (typeof switchTab === 'function') switchTab('month');
+                    break;
+                case 'd':
+                    e.preventDefault();
+                    if (typeof toggleTheme === 'function') toggleTheme();
+                    break;
+                case 'f':
+                    e.preventDefault();
+                    if (typeof toggleFocusMode === 'function') toggleFocusMode();
+                    break;
+                case 'p':
+                    e.preventDefault();
+                    if (typeof togglePomodoro === 'function') togglePomodoro();
+                    break;
+                case 'w':
+                    e.preventDefault();
+                    if (typeof toggleWeatherEffect === 'function') toggleWeatherEffect();
+                    break;
+                case '?':
+                    e.preventDefault();
+                    shortcutsModal.classList.toggle('visible');
+                    break;
+                case 'escape':
+                    // Close any open modal
+                    shortcutsModal.classList.remove('visible');
+                    document.body.classList.remove('focus-mode');
+                    var addModal = document.getElementById('add-modal');
+                    if (addModal) addModal.style.display = 'none';
+                    break;
+            }
+        });
+
+        // Close shortcuts modal on click outside
+        shortcutsModal.addEventListener('click', function(e) {
+            if (e.target === shortcutsModal) {
+                shortcutsModal.classList.remove('visible');
+            }
+        });
+    })();
+
+    // Enhanced API wrapper with sync status
+    (function() {
+        var originalFetch = window.fetch;
+        window.fetch = function(url, options) {
+            // Only track mutating requests
+            var method = options && options.method ? options.method.toUpperCase() : 'GET';
+            var isMutating = ['POST', 'PUT', 'DELETE', 'PATCH'].indexOf(method) >= 0;
+
+            if (isMutating && typeof showSyncStatus === 'function') {
+                showSyncStatus('syncing');
+            }
+
+            return originalFetch.apply(this, arguments)
+                .then(function(response) {
+                    if (isMutating && typeof showSyncStatus === 'function') {
+                        showSyncStatus(response.ok ? 'synced' : 'error');
+                    }
+                    return response;
+                })
+                .catch(function(error) {
+                    if (isMutating && typeof showSyncStatus === 'function') {
+                        showSyncStatus('error', '网络错误');
+                    }
+                    throw error;
+                });
+        };
+    })();
+
+    // Original sidebar/pet script
+    (function() {
+        var sidebar = document.getElementById('sidebar');
+        var mainContent = document.getElementById('main-content');
+        var pet = document.getElementById('pet');
+        var navLinks = document.querySelector('.nav-links');
+        var sidebarHint = document.getElementById('sidebar-hint');
+
+        var isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+
+        // 小宠物状态
+        var targetY = window.innerHeight / 2;
+        var currentY = targetY;
+        var petHeight = 80;
+        var sidebarWidth = 220;
+        var isFollowing = false;
+        var returnTimer = null;
+        var isReturning = false;
+
+        // 参数
+        var closeDistance = 20;
+        var rushEasing = 0.3;      // 冲刺时每帧移动30%的剩余距离
+        var gentleEasing = 0.1;    // 靠近时每帧移动10%的剩余距离
+
+        // 获取需要避让的区域（导航按钮区域）
+        function getAvoidZones() {
+            var zones = [];
+            if (navLinks && !isCollapsed) {
+                var rect = navLinks.getBoundingClientRect();
+                zones.push({ top: rect.top - 10, bottom: rect.bottom + 10 });
+            }
+            return zones;
+        }
+
+        // 检查是否在避让区域
+        function isInAvoidZone(y) {
+            var zones = getAvoidZones();
+            var petTop = y - petHeight / 2;
+            var petBottom = y + petHeight / 2;
+            for (var i = 0; i < zones.length; i++) {
+                if (petBottom > zones[i].top && petTop < zones[i].bottom) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function collapseSidebar() {
+            isCollapsed = true;
+            sidebar.classList.add('collapsed');
+            mainContent.classList.add('expanded');
+            pet.classList.add('at-edge');
+            pet.classList.remove('at-sidebar');
+            pet.classList.remove('slim');
+            sidebarHint.classList.add('visible');
+            localStorage.setItem('sidebarCollapsed', 'true');
+            // 更新 quick-add-bar 位置
+            var quickAddBar = document.querySelector('.quick-add-bar');
+            if (quickAddBar) quickAddBar.classList.add('expanded');
+        }
+
+        function expandSidebar() {
+            isCollapsed = false;
+            sidebar.classList.remove('collapsed');
+            mainContent.classList.remove('expanded');
+            pet.classList.remove('at-edge');
+            pet.classList.add('at-sidebar');
+            sidebarHint.classList.remove('visible');
+            localStorage.setItem('sidebarCollapsed', 'false');
+            // 更新 quick-add-bar 位置
+            var quickAddBar = document.querySelector('.quick-add-bar');
+            if (quickAddBar) quickAddBar.classList.remove('expanded');
+        }
+
+        // 初始化
+        if (isCollapsed) {
+            collapseSidebar();
+        } else {
+            pet.classList.add('at-sidebar');
+        }
+        // 移除早期应用的临时类，JS 已接管状态管理
+        document.documentElement.classList.remove('sidebar-will-collapse');
+
+        pet.addEventListener('click', function() {
+            if (isCollapsed) {
+                expandSidebar();
+            } else {
+                collapseSidebar();
+            }
+        });
+
+        // 鼠标跟踪
+        document.addEventListener('mousemove', function(e) {
+            var petX = isCollapsed ? 0 : sidebarWidth;
+            var activeZone = petX + 100;
+
+            if (e.clientX < activeZone) {
+                isFollowing = true;
+                isReturning = false;
+                targetY = e.clientY;
+                pet.classList.add('active');
+
+                if (returnTimer) {
+                    clearTimeout(returnTimer);
+                    returnTimer = null;
+                }
+            } else if (isFollowing) {
+                isFollowing = false;
+                pet.classList.remove('active');
+                pet.classList.remove('excited');
+
+                returnTimer = setTimeout(function() {
+                    isReturning = true;
+                    targetY = window.innerHeight / 2;
+                }, 600);
+            }
+        });
+
+        // 动画循环
+        function animatePet() {
+            var distance = targetY - currentY;
+            var absDistance = Math.abs(distance);
+            var moveAmount = 0;
+
+            if (isFollowing) {
+                if (absDistance > closeDistance) {
+                    // 疯狂冲刺：每帧移动30%的剩余距离，极速响应
+                    moveAmount = distance * rushEasing;
+                    pet.classList.add('excited');
+                } else {
+                    // 温柔靠近：每帧移动10%的剩余距离
+                    moveAmount = distance * gentleEasing;
+                    pet.classList.remove('excited');
+                }
+            } else if (isReturning) {
+                // 返回中心：缓慢移动
+                moveAmount = distance * 0.04;
+                pet.classList.remove('excited');
+            }
+
+            currentY += moveAmount;
+
+            // 边界 (考虑48px顶部导航栏)
+            var minY = petHeight / 2 + 48 + 10;
+            var maxY = window.innerHeight - petHeight / 2 - 20;
+            currentY = Math.max(minY, Math.min(maxY, currentY));
+
+            // 检查是否需要瘦身避让
+            if (isInAvoidZone(currentY)) {
+                pet.classList.add('slim');
+            } else {
+                pet.classList.remove('slim');
+            }
+
+            pet.style.top = currentY + 'px';
+            requestAnimationFrame(animatePet);
+        }
+
+        animatePet();
+
+        window.addEventListener('resize', function() {
+            if (!isFollowing) {
+                targetY = window.innerHeight / 2;
+            }
+        });
+    })();
+
+    // Tab按钮呼吸效果
+    (function() {
+        var tabBtns = document.querySelectorAll('.tab-btn');
+        tabBtns.forEach(function(btn) {
+            btn.addEventListener('mouseenter', function() {
+                btn.classList.remove('fade-out');
+                btn.classList.add('breathing');
+            });
+            btn.addEventListener('mouseleave', function() {
+                btn.classList.remove('breathing');
+                btn.classList.add('fade-out');
+                setTimeout(function() {
+                    btn.classList.remove('fade-out');
+                }, 2000);
+            });
+        });
+    })();
+
+    // 时区更新
+    (function() {
+        var weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+
+        function formatTz(date) {
+            var m = date.getMonth() + 1;
+            var d = date.getDate();
+            var w = weekdays[date.getDay()];
+            var h = date.getHours().toString().padStart(2, '0');
+            var min = date.getMinutes().toString().padStart(2, '0');
+            return {
+                date: m + '/' + d + ' 周' + w,
+                time: h + ':' + min
+            };
+        }
+
+        function updateTimezones() {
+            var now = new Date();
+
+            // 北京时间
+            var beijing = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+            var bjFmt = formatTz(beijing);
+            document.getElementById('tz-beijing-date').textContent = bjFmt.date;
+            document.getElementById('tz-beijing-time').textContent = bjFmt.time;
+
+            // 滑铁卢时间
+            var waterloo = new Date(now.toLocaleString('en-US', { timeZone: 'America/Toronto' }));
+            var wtFmt = formatTz(waterloo);
+            document.getElementById('tz-waterloo-date').textContent = wtFmt.date;
+            document.getElementById('tz-waterloo-time').textContent = wtFmt.time;
+
+            // 温哥华时间
+            var vancouver = new Date(now.toLocaleString('en-US', { timeZone: 'America/Vancouver' }));
+            var vcFmt = formatTz(vancouver);
+            document.getElementById('tz-vancouver-date').textContent = vcFmt.date;
+            document.getElementById('tz-vancouver-time').textContent = vcFmt.time;
+        }
+
+        updateTimezones();
+        setInterval(updateTimezones, 1000);
+    })();
+
+    // 天气显示与小鱼动画联动
+    (function() {
+        // 全局天气状态（供小鱼动画使用）
+        window.currentWeather = {
+            type: 'cloudy',  // sunny, cloudy, rainy, snowy, stormy
+            temp: '--',
+            updated: false
+        };
+
+        function updateWeather() {
+            fetch('/api/weather')
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    var icon = document.getElementById('weather-icon');
+                    var temp = document.getElementById('weather-temp');
+                    var desc = document.getElementById('weather-desc');
+
+                    if (icon) icon.textContent = data.icon || '☁️';
+                    if (temp) temp.textContent = (data.temp_c || '--') + '°C';
+                    if (desc) desc.textContent = data.description || '无法获取';
+
+                    // 更新天气面板样式类
+                    var panel = document.getElementById('weather-panel');
+                    if (panel) {
+                        panel.classList.remove('sunny', 'cloudy', 'rainy', 'snowy', 'stormy');
+                        panel.classList.add(data.weather_type || 'cloudy');
+                    }
+
+                    // 更新全局天气状态
+                    window.currentWeather.type = data.weather_type || 'cloudy';
+                    window.currentWeather.temp = data.temp_c;
+                    window.currentWeather.updated = true;
+
+                    // 触发天气变化事件（小鱼动画监听）
+                    window.dispatchEvent(new CustomEvent('weatherUpdate', { detail: data }));
+                })
+                .catch(function(err) {
+                    console.log('Weather fetch error:', err);
+                    var desc = document.getElementById('weather-desc');
+                    if (desc) desc.textContent = '无法获取';
+                });
+        }
+
+        // 初始加载和定时更新（10分钟）
+        updateWeather();
+        setInterval(updateWeather, 600000);
+    })();
+
+    // 天气特效开关控制
+    (function() {
+        var toggleBtn = document.getElementById('weather-toggle-fab');
+        var iconSpan = toggleBtn.querySelector('.weather-toggle-icon');
+
+        // 天气类型对应的图标
+        var weatherIcons = {
+            sunny: '☀️',
+            cloudy: '☁️',
+            rainy: '🌧️',
+            snowy: '❄️',
+            stormy: '⛈️'
+        };
+
+        // 初始化按钮状态
+        function initToggleState() {
+            var enabled = localStorage.getItem('weatherEffectEnabled') !== 'false';
+            if (enabled) {
+                toggleBtn.classList.remove('disabled');
+            } else {
+                toggleBtn.classList.add('disabled');
+            }
+            updateToggleIcon();
+        }
+
+        // 更新按钮图标（根据当前天气类型）
+        function updateToggleIcon() {
+            var weatherType = (window.currentWeather && window.currentWeather.type) || 'cloudy';
+            iconSpan.textContent = weatherIcons[weatherType] || '☁️';
+        }
+
+        // 切换天气特效
+        function toggleWeatherEffect() {
+            var enabled = localStorage.getItem('weatherEffectEnabled') !== 'false';
+            enabled = !enabled;
+
+            localStorage.setItem('weatherEffectEnabled', enabled ? 'true' : 'false');
+
+            // 更新全局变量（小鱼动画使用）
+            if (typeof weatherEffectEnabled !== 'undefined') {
+                weatherEffectEnabled = enabled;
+            }
+
+            // 更新按钮样式
+            if (enabled) {
+                toggleBtn.classList.remove('disabled');
+            } else {
+                toggleBtn.classList.add('disabled');
+            }
+
+            // 显示提示
+            if (window.AppUtils && window.AppUtils.showToast) {
+                window.AppUtils.showToast(enabled ? '天气特效已开启' : '天气特效已关闭', 'success');
+            }
+        }
+
+        // 绑定点击事件
+        toggleBtn.addEventListener('click', toggleWeatherEffect);
+
+        // 监听天气更新事件，更新图标
+        window.addEventListener('weatherUpdate', function() {
+            updateToggleIcon();
+        });
+
+        // 初始化
+        initToggleState();
+
+        // 暴露切换函数供快捷键使用
+        window.toggleWeatherEffect = toggleWeatherEffect;
+    })();
+
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+            .then(function(reg) {
+                console.log('Service Worker registered:', reg.scope);
+            })
+            .catch(function(err) {
+                console.log('Service Worker registration failed:', err);
+            });
+    }
+    </script>
+</body>
+</html>

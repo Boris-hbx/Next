@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Work Engine{% endblock %}
+
+{% block content %}
+    <style>
+    .login-container {
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+    .login-card {
+        background: var(--card-bg, #fff);
+        border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        padding: 40px;
+        width: 100%;
+        max-width: 380px;
+    }
+    .login-header {
+        text-align: center;
+        margin-bottom: 32px;
+    }
+    .login-logo {
+        font-size: 48px;
+        margin-bottom: 16px;
+    }
+    .login-title {
+        font-size: 24px;
+        font-weight: 600;
+        color: var(--text-color, #1f2937);
+        margin: 0 0 8px 0;
+    }
+    .login-subtitle {
+        color: var(--text-muted, #6b7280);
+        font-size: 14px;
+    }
+    .login-form {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .form-label {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-color, #1f2937);
+    }
+    .form-input {
+        padding: 12px 16px;
+        border: 2px solid var(--border-color, #e5e7eb);
+        border-radius: 10px;
+        font-size: 16px;
+        transition: all 0.2s;
+        background: var(--bg-color, #fff);
+        color: var(--text-color, #1f2937);
+    }
+    .form-input:focus {
+        outline: none;
+        border-color: var(--accent-color, #4f46e5);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+    .pin-input-container {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+    }
+    .pin-digit {
+        width: 56px;
+        height: 64px;
+        text-align: center;
+        font-size: 24px;
+        font-weight: 600;
+        border: 2px solid var(--border-color, #e5e7eb);
+        border-radius: 12px;
+        transition: all 0.2s;
+        background: var(--bg-color, #fff);
+        color: var(--text-color, #1f2937);
+    }
+    .pin-digit:focus {
+        outline: none;
+        border-color: var(--accent-color, #4f46e5);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+    .pin-digit.filled {
+        border-color: var(--accent-color, #4f46e5);
+        background: rgba(79, 70, 229, 0.05);
+    }
+    .login-btn {
+        padding: 14px 24px;
+        background: var(--accent-color, #4f46e5);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-top: 8px;
+    }
+    .login-btn:hover {
+        background: var(--accent-hover, #4338ca);
+        transform: translateY(-1px);
+    }
+    .login-btn:disabled {
+        background: var(--text-muted, #9ca3af);
+        cursor: not-allowed;
+        transform: none;
+    }
+    .login-error {
+        padding: 12px 16px;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 8px;
+        color: #dc2626;
+        font-size: 14px;
+        text-align: center;
+        display: none;
+    }
+    .login-error.visible {
+        display: block;
+    }
+    .login-footer {
+        text-align: center;
+        margin-top: 24px;
+        color: var(--text-muted, #6b7280);
+        font-size: 13px;
+    }
+    </style>
+
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-logo">🔐</div>
+                <h1 class="login-title">Work Engine</h1>
+                <p class="login-subtitle">请输入您的凭证登录</p>
+            </div>
+
+            <div class="login-error" id="login-error"></div>
+
+            <form class="login-form" id="login-form" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label class="form-label">用户名</label>
+                    <input type="text" class="form-input" id="username" placeholder="请输入用户名" autocomplete="username" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">PIN码（4位数字）</label>
+                    <div class="pin-input-container">
+                        <input type="password" class="pin-digit" id="pin-1" maxlength="1" inputmode="numeric" pattern="[0-9]" required>
+                        <input type="password" class="pin-digit" id="pin-2" maxlength="1" inputmode="numeric" pattern="[0-9]" required>
+                        <input type="password" class="pin-digit" id="pin-3" maxlength="1" inputmode="numeric" pattern="[0-9]" required>
+                        <input type="password" class="pin-digit" id="pin-4" maxlength="1" inputmode="numeric" pattern="[0-9]" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="login-btn" id="login-btn">登 录</button>
+            </form>
+
+            <div class="login-footer">
+                默认账户: admin / PIN: 0000
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // PIN码输入框自动跳转
+    const pinInputs = document.querySelectorAll('.pin-digit');
+
+    pinInputs.forEach((input, index) => {
+        input.addEventListener('input', function(e) {
+            // 只允许数字
+            this.value = this.value.replace(/[^0-9]/g, '');
+
+            if (this.value.length === 1) {
+                this.classList.add('filled');
+                // 自动跳转到下一个输入框
+                if (index < pinInputs.length - 1) {
+                    pinInputs[index + 1].focus();
+                }
+            } else {
+                this.classList.remove('filled');
+            }
+        });
+
+        input.addEventListener('keydown', function(e) {
+            // 按退格键时跳转到上一个输入框
+            if (e.key === 'Backspace' && !this.value && index > 0) {
+                pinInputs[index - 1].focus();
+                pinInputs[index - 1].value = '';
+                pinInputs[index - 1].classList.remove('filled');
+            }
+        });
+
+        // 支持粘贴完整PIN码
+        input.addEventListener('paste', function(e) {
+            e.preventDefault();
+            const pastedData = e.clipboardData.getData('text').replace(/[^0-9]/g, '');
+            if (pastedData.length === 4) {
+                for (let i = 0; i < 4; i++) {
+                    pinInputs[i].value = pastedData[i];
+                    pinInputs[i].classList.add('filled');
+                }
+                pinInputs[3].focus();
+            }
+        });
+    });
+
+    function getPin() {
+        return Array.from(pinInputs).map(input => input.value).join('');
+    }
+
+    function showError(message) {
+        const errorEl = document.getElementById('login-error');
+        errorEl.textContent = message;
+        errorEl.classList.add('visible');
+    }
+
+    function hideError() {
+        document.getElementById('login-error').classList.remove('visible');
+    }
+
+    async function handleLogin(e) {
+        e.preventDefault();
+        hideError();
+
+        const username = document.getElementById('username').value.trim();
+        const pin = getPin();
+
+        if (!username) {
+            showError('请输入用户名');
+            return;
+        }
+
+        if (pin.length !== 4) {
+            showError('请输入完整的4位PIN码');
+            return;
+        }
+
+        const btn = document.getElementById('login-btn');
+        btn.disabled = true;
+        btn.textContent = '登录中...';
+
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, pin })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                window.location.href = '/main';
+            } else {
+                showError(data.error || '登录失败');
+                // 清空PIN码
+                pinInputs.forEach(input => {
+                    input.value = '';
+                    input.classList.remove('filled');
+                });
+                pinInputs[0].focus();
+            }
+        } catch (error) {
+            showError('网络错误，请稍后重试');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '登 录';
+        }
+    }
+
+    // 自动聚焦用户名输入框
+    document.getElementById('username').focus();
+    </script>
+{% endblock %}

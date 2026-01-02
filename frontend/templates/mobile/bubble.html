@@ -1,0 +1,140 @@
+{% extends "mobile/base.html" %}
+
+{% block title %}气泡图 - Boris Life{% endblock %}
+{% block page_title %}气泡图工具{% endblock %}
+
+{% block content %}
+<div class="bubble-page">
+    <!-- Notice -->
+    <div class="bubble-notice">
+        <span class="notice-icon">💡</span>
+        <p>气泡图工具仅支持在电脑端编辑，手机端查看示例效果。</p>
+    </div>
+
+    <!-- Demo Bubble Chart -->
+    <div class="bubble-demo">
+        <div class="demo-title">示例：恢复效果分析</div>
+        <div class="bubble-preview">
+            <img src="{{ url_for('static', filename='images/bubble-preview.png') }}" alt="气泡图示例" class="preview-image">
+        </div>
+    </div>
+
+    <!-- Features -->
+    <div class="feature-list">
+        <div class="feature-title">功能特点</div>
+        <div class="feature-item">
+            <span class="feature-icon">🎨</span>
+            <span>拖拽创建气泡，自由调整大小</span>
+        </div>
+        <div class="feature-item">
+            <span class="feature-icon">🎯</span>
+            <span>可视化展示任务/概念关系</span>
+        </div>
+        <div class="feature-item">
+            <span class="feature-icon">💾</span>
+            <span>自动保存，随时查看</span>
+        </div>
+    </div>
+
+    <!-- Go to Desktop -->
+    <div class="goto-desktop">
+        <p>请使用电脑端访问以获得完整体验</p>
+    </div>
+</div>
+
+<style>
+.bubble-page {
+    padding-bottom: 20px;
+}
+
+.bubble-notice {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(118,75,162,0.1));
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+}
+
+.notice-icon {
+    font-size: 1.2rem;
+}
+
+.bubble-notice p {
+    font-size: 0.85rem;
+    color: var(--primary-color);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.bubble-demo {
+    background: var(--bg-card);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.demo-title {
+    padding: 12px 16px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.bubble-preview {
+    padding: 0;
+    overflow: hidden;
+}
+
+.preview-image {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.feature-list {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.feature-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.feature-item:last-child {
+    border-bottom: none;
+}
+
+.feature-icon {
+    font-size: 1.1rem;
+}
+
+.goto-desktop {
+    text-align: center;
+    padding: 20px;
+}
+
+.goto-desktop p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+</style>
+{% endblock %}

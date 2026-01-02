@@ -1,0 +1,1786 @@
+{% extends "base.html" %}
+
+{% block title %}学习总结 - Boris Life{% endblock %}
+
+{% block content %}
+<div class="learning-page">
+    <div class="learning-header">
+        <h1 class="page-title">学习总结</h1>
+        <p class="page-subtitle">软件开发最佳实践 & 优秀 Prompt 案例</p>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="learning-tabs">
+        <button class="tab-btn active" data-tab="best-practices">开发最佳实践</button>
+        <button class="tab-btn" data-tab="prompt-examples">优秀 Prompt 案例</button>
+        <button class="tab-btn" data-tab="templates">Prompt 模板</button>
+        <button class="tab-btn" data-tab="checklist">检查清单</button>
+        <button class="tab-btn" data-tab="workflow">开发流程</button>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content active" id="best-practices">
+        <!-- Section 1: 开发流程 -->
+        <div class="learning-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2>一、标准开发流程（8个阶段）</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="flow-chart">
+                    <div class="flow-item">需求录入<br><small>编写 Prompt</small></div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-item">Agent分析<br><small>审核计划</small></div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-item">实现开发<br><small>编写代码</small></div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-item">验证测试<br><small>手动测试</small></div>
+                </div>
+                <div class="flow-chart" style="margin-top: 10px;">
+                    <div class="flow-item highlight">经验沉淀<br><small>反思总结</small></div>
+                    <div class="flow-arrow">←</div>
+                    <div class="flow-item">文档更新<br><small>CLAUDE.md</small></div>
+                    <div class="flow-arrow">←</div>
+                    <div class="flow-item">代码提交<br><small>Git Commit</small></div>
+                    <div class="flow-arrow">←</div>
+                    <div class="flow-item">人工审核<br><small>Code Review</small></div>
+                </div>
+                <table class="info-table">
+                    <thead>
+                        <tr><th>阶段</th><th>你的职责</th><th>Claude 职责</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>需求录入</td><td>编写清晰 Prompt</td><td>-</td></tr>
+                        <tr><td>分析规划</td><td>审核计划是否合理</td><td>分析代码、设计方案</td></tr>
+                        <tr><td>实现开发</td><td>监控进度、及时反馈</td><td>编写代码</td></tr>
+                        <tr><td>验证测试</td><td>手动测试、截图</td><td>运行自动测试</td></tr>
+                        <tr><td>人工审核</td><td>检查质量/安全</td><td>-</td></tr>
+                        <tr><td>文档更新</td><td>审核内容</td><td>更新 CLAUDE.md</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Section 2: CLAUDE.md -->
+        <div class="learning-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2>二、CLAUDE.md 管理（核心！）</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <p class="highlight-box">CLAUDE.md 是项目的"知识库"，Claude Code 每次会话开始都会读取它来快速了解项目。</p>
+                <h3>必须包含的信息：</h3>
+                <ul class="feature-list">
+                    <li><strong>项目概述</strong> - 项目名称、核心功能、技术栈</li>
+                    <li><strong>项目结构</strong> - 目录树和各目录用途</li>
+                    <li><strong>核心功能模块</strong> - 详细描述每个功能及代码位置</li>
+                    <li><strong>开发约定</strong> - API格式、CSS规范、编码风格</li>
+                    <li><strong>快速索引表</strong> - 功能 → 文件位置映射</li>
+                    <li><strong>已知问题</strong> - 待办事项、限制条件</li>
+                </ul>
+                <h3>维护建议：</h3>
+                <ul class="feature-list">
+                    <li>每次添加新功能都更新 CLAUDE.md</li>
+                    <li>保持代码行号索引的准确性</li>
+                    <li>记录新的开发约定和 API 规范</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Section 3: 高效模式 -->
+        <div class="learning-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2>三、高效开发模式</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="mode-card">
+                    <h3>1. 小步快跑</h3>
+                    <div class="compare-box">
+                        <div class="bad">❌ "完成整个游戏系统"</div>
+                        <div class="good">✅ 拆分为：<br>
+                            - Task 1: 创建游戏容器<br>
+                            - Task 2: 实现游戏逻辑<br>
+                            - Task 3: 添加计分界面<br>
+                            - Task 4: 优化性能
+                        </div>
+                    </div>
+                </div>
+                <div class="mode-card">
+                    <h3>2. 即时验证</h3>
+                    <p>完成一个功能 → 立即测试 → 截图确认 → 快速迭代</p>
+                </div>
+                <div class="mode-card">
+                    <h3>3. 精确定位</h3>
+                    <div class="compare-box">
+                        <div class="bad">❌ "改一下 Todo 页面"</div>
+                        <div class="good">✅ "修改 todo.html 第 100-150 行的搜索框代码"</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 4: 核心建议 -->
+        <div class="learning-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2>四、核心三点</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="key-points">
+                    <div class="key-point">
+                        <span class="point-number">1</span>
+                        <div class="point-content">
+                            <h4>第一次就清晰</h4>
+                            <p>花 5 分钟写好 Prompt，省 30 分钟返工</p>
+                        </div>
+                    </div>
+                    <div class="key-point">
+                        <span class="point-number">2</span>
+                        <div class="point-content">
+                            <h4>即时反馈</h4>
+                            <p>完成小功能就测试，问题早发现早解决</p>
+                        </div>
+                    </div>
+                    <div class="key-point">
+                        <span class="point-number">3</span>
+                        <div class="point-content">
+                            <h4>文档同步</h4>
+                            <p>代码改了，CLAUDE.md 立即更新</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 5: 时间预估 -->
+        <div class="learning-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2>五、时间预估参考</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <table class="info-table">
+                    <thead>
+                        <tr><th>场景</th><th>预计耗时</th><th>说明</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>添加中等功能</td><td>30-60 分钟</td><td>包含编写、测试、文档</td></tr>
+                        <tr><td>Bug 修复</td><td>15-25 分钟</td><td>复现、定位、修复、验证</td></tr>
+                        <tr><td>性能优化</td><td>25-45 分钟</td><td>分析、优化、测量</td></tr>
+                        <tr><td>UI 调整</td><td>10-20 分钟</td><td>样式修改、兼容测试</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab: 优秀 Prompt 案例 -->
+    <div class="tab-content" id="prompt-examples">
+        <div class="learning-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2>案例 1: 拖拽功能 (评分: 9/10)</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="prompt-example">
+                    <h4>原始 Prompt:</h4>
+                    <div class="code-block">ok，那现在可以解决todo里面事件拖拽功能了吧。就是鼠标单击某条事件，点住不放，可以将其拖拽到其它象限，你是资深产品经理，我想你一定知道我想要的是什么，请帮我实现出来。</div>
+                    <h4>优点分析:</h4>
+                    <ul class="feature-list">
+                        <li>明确了交互方式（单击、点住、拖拽）</li>
+                        <li>指明了目标（拖到其他象限）</li>
+                        <li>给予 Agent 角色定位（资深产品经理）</li>
+                    </ul>
+                    <h4>改进建议:</h4>
+                    <div class="code-block improved">【功能名称】: Todo 拖拽分类
+
+【功能描述】:
+实现 Todo 事项的拖拽功能，可将任务拖到不同象限
+
+【验收标准】:
+1. 鼠标单击事项并按住，进入拖拽状态
+2. 拖拽时显示视觉反馈（如半透明、阴影）
+3. 拖到目标象限时高亮显示
+4. 松开后任务移动到新象限
+5. 数据自动保存到 todos.json
+
+【技术约束】:
+- 使用 HTML5 Drag & Drop API
+- 兼容触屏设备</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="learning-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2>案例 2: 动画效果 (评分: 8/10)</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="prompt-example">
+                    <h4>原始 Prompt:</h4>
+                    <div class="code-block">标签放大1.2倍就行了。另外看我截图，红框这里，我希望弄个动态效果，比如有个红色的小点点，带着一个渐变颜色的尾巴，沿着这个框子顺时针游走，反复循环。也可以是类似的效果。就是"My task"的这个框子。</div>
+                    <h4>优点分析:</h4>
+                    <ul class="feature-list">
+                        <li>具体的数值（1.2倍）</li>
+                        <li>清晰的视觉描述（红色小点、渐变尾巴、顺时针）</li>
+                        <li>参考截图辅助说明</li>
+                    </ul>
+                    <h4>改进建议:</h4>
+                    <div class="code-block improved">【功能名称】: 边框光晕动画
+
+【功能描述】:
+在 "My task" 框子边缘添加动态光点效果
+
+【具体要求】:
+- 标签放大 1.2 倍
+- 红色小点（约 8px）沿边框顺时针移动
+- 带渐变色尾巴（长度约 50px）
+- 动画周期: 5秒一圈
+- 无限循环
+
+【参考截图】: PrtSc/mytask_frame.png</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="learning-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2>案例 3: 游戏开发 (评分: 9/10)</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="prompt-example">
+                    <h4>原始 Prompt:</h4>
+                    <div class="code-block">你是一名资深前端工程 Agent，擅长用 HTML + Canvas + 原生 JavaScript 构建轻量、可运行的网页小游戏。你的输出必须一次性可运行，不依赖任何外部资源。
+
+🎯 任务目标
+自动生成一个最小可玩版本（MVP）的 Xonix / Qix-like 网页小游戏
+
+🧱 技术与输出约束
+- 输出一个完整的 index.html
+- 使用：HTML、&lt;canvas&gt;、原生 JavaScript
+- ❌ 不使用任何框架、库、CDN
+- ❌ 不拆分文件
+- 打开 HTML 即可运行</div>
+                    <h4>优点分析:</h4>
+                    <ul class="feature-list">
+                        <li>明确角色定位</li>
+                        <li>MVP 思维，不过度设计</li>
+                        <li>清晰的技术约束</li>
+                        <li>使用 emoji 增强可读性</li>
+                    </ul>
+                    <p class="highlight-box">这是最佳实践的典范，适合复杂功能开发</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="learning-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2>案例 4: 塔防游戏规格 (评分: 10/10)</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="prompt-example">
+                    <h4>原始 Prompt (部分):</h4>
+                    <div class="code-block">任务：
+请为我生成一个可运行的网页端单人塔防游戏原型，同时生成一份塔防游戏设计文档
+
+1. 技术选型：
+   - 使用 HTML5 + CSS + JavaScript
+   - 代码结构模块化，便于未来扩展
+
+2. 游戏基本功能：
+   - 单人玩家可以放置防御塔
+   - 敌人沿固定路径移动，防御塔自动攻击
+   - 游戏分波次，每波敌人数量递增
+
+3. 可扩展性要求：
+   - 团队元素预留接口
+   - 多人模式预留接口
+   - 移动端预留
+
+4. 输出要求：
+   - 提供完整 HTML、CSS、JS 文件
+   - 代码包含注释</div>
+                    <h4>优点分析:</h4>
+                    <ul class="feature-list">
+                        <li>结构化的需求描述</li>
+                        <li>分层次列出要求</li>
+                        <li>考虑了扩展性</li>
+                        <li>明确的输出格式</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab: Prompt 模板 -->
+    <div class="tab-content" id="templates">
+        <div class="learning-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2>新功能开发模板</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="code-block template">【功能名称】: [简短名称]
+
+【功能描述】:
+[详细描述要实现什么功能，解决什么问题]
+
+【验收标准】:
+1. [可验证的具体条件1]
+2. [可验证的具体条件2]
+3. [可验证的具体条件3]
+
+【技术约束】:
+- [技术限制或要求]
+- [兼容性要求]
+- [性能要求]
+
+【参考资料】:
+- 相似功能: [参考位置]
+- 截图: PrtSc/xxx.png</div>
+                <button class="copy-btn" onclick="copyTemplate(this)">复制模板</button>
+            </div>
+        </div>
+
+        <div class="learning-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2>Bug 修复模板</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="code-block template">【问题描述】: [简要描述问题]
+
+【复现步骤】:
+1. [步骤1]
+2. [步骤2]
+3. [步骤3]
+
+【实际结果】: [描述出错的情况]
+
+【期望结果】: [描述正确的行为]
+
+【影响范围】: [哪些功能/页面受影响]
+
+【参考截图】: PrtSc/error_xxx.png</div>
+                <button class="copy-btn" onclick="copyTemplate(this)">复制模板</button>
+            </div>
+        </div>
+
+        <div class="learning-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2>性能优化模板</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="code-block template">【优化目标】: [要优化什么]
+
+【当前状态】: [现在的性能指标]
+
+【目标指标】: [期望达到的性能]
+
+【可接受方案】:
+- [方案1]
+- [方案2]
+
+【测量方式】: [如何验证优化效果]</div>
+                <button class="copy-btn" onclick="copyTemplate(this)">复制模板</button>
+            </div>
+        </div>
+
+        <div class="learning-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2>UI/样式调整模板</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="code-block template">【调整位置】: [具体页面和元素]
+
+【当前状态】: [现在的样式]
+
+【期望效果】: [想要的样式]
+
+【具体要求】:
+- 颜色: [色值]
+- 尺寸: [具体数值]
+- 动画: [效果描述]
+
+【兼容要求】:
+- [ ] 深色模式
+- [ ] 移动端适配
+
+【参考截图】: PrtSc/style_xxx.png</div>
+                <button class="copy-btn" onclick="copyTemplate(this)">复制模板</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab: 检查清单 -->
+    <div class="tab-content" id="checklist">
+        <div class="learning-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2>Prompt 编写检查清单</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="checklist-box">
+                    <label class="checklist-item"><input type="checkbox"> 功能描述是否清晰？</label>
+                    <label class="checklist-item"><input type="checkbox"> 验收标准是否可量化？</label>
+                    <label class="checklist-item"><input type="checkbox"> 技术约束是否明确？</label>
+                    <label class="checklist-item"><input type="checkbox"> 是否提供了参考截图？</label>
+                    <label class="checklist-item"><input type="checkbox"> 是否指定了影响范围？</label>
+                    <label class="checklist-item"><input type="checkbox"> 是否考虑了边界情况？</label>
+                    <label class="checklist-item"><input type="checkbox"> 是否兼容移动端？</label>
+                    <label class="checklist-item"><input type="checkbox"> 是否兼容深色模式？</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="learning-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2>常见错误对照表</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <table class="info-table">
+                    <thead>
+                        <tr><th>错误写法</th><th>问题</th><th>正确写法</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="bad-cell">"加个搜索功能"</td>
+                            <td>太模糊</td>
+                            <td class="good-cell">"添加 Todo 搜索，支持实时过滤，按 S 激活"</td>
+                        </tr>
+                        <tr>
+                            <td class="bad-cell">"优化一下"</td>
+                            <td>无目标</td>
+                            <td class="good-cell">"加载时间从 2s 优化到 1s 以内"</td>
+                        </tr>
+                        <tr>
+                            <td class="bad-cell">"修复 bug"</td>
+                            <td>无复现步骤</td>
+                            <td class="good-cell">"修复拖拽 bug，复现：1. 刷新 2. 拖拽..."</td>
+                        </tr>
+                        <tr>
+                            <td class="bad-cell">"改成好看点"</td>
+                            <td>主观无标准</td>
+                            <td class="good-cell">"背景色改为 #E3F2FD，字体放大到 16px"</td>
+                        </tr>
+                        <tr>
+                            <td class="bad-cell">"你看着办"</td>
+                            <td>无验收标准</td>
+                            <td class="good-cell">提供明确的验收标准列表</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="learning-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2>效率提升技巧速记</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="tips-grid">
+                    <div class="tip-card">
+                        <span class="tip-icon">📝</span>
+                        <h4>第一次就写清楚</h4>
+                        <p>5 分钟写 Prompt，省 30 分钟返工</p>
+                    </div>
+                    <div class="tip-card">
+                        <span class="tip-icon">📷</span>
+                        <h4>善用截图</h4>
+                        <p>一图胜千言，保存到 PrtSc/ 目录</p>
+                    </div>
+                    <div class="tip-card">
+                        <span class="tip-icon">🏃</span>
+                        <h4>小步快跑</h4>
+                        <p>大任务拆成小任务，逐个验证</p>
+                    </div>
+                    <div class="tip-card">
+                        <span class="tip-icon">⚡</span>
+                        <h4>即时反馈</h4>
+                        <p>完成就测试，问题早发现</p>
+                    </div>
+                    <div class="tip-card">
+                        <span class="tip-icon">📋</span>
+                        <h4>模板复用</h4>
+                        <p>使用固定模板，保持一致性</p>
+                    </div>
+                    <div class="tip-card">
+                        <span class="tip-icon">📚</span>
+                        <h4>文档同步</h4>
+                        <p>代码改了，CLAUDE.md 立即更新</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab: 开发流程 -->
+    <div class="tab-content" id="workflow">
+        <!-- 流程总览 -->
+        <div class="learning-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2>开发流程总览</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="workflow-overview">
+                    <div class="workflow-lane">
+                        <div class="lane-header you">你 (Boris)</div>
+                        <div class="lane-steps">
+                            <div class="step you-step">1. 写 Prompt</div>
+                            <div class="step-arrow">↓</div>
+                            <div class="step empty-step">等待</div>
+                            <div class="step-arrow">↓</div>
+                            <div class="step you-step">3. 审核计划</div>
+                            <div class="step-arrow">↓</div>
+                            <div class="step empty-step">等待</div>
+                            <div class="step-arrow">↓</div>
+                            <div class="step you-step">5. 验收测试</div>
+                            <div class="step-arrow">↓</div>
+                            <div class="step you-step">6. 确认提交</div>
+                            <div class="step-arrow">↓</div>
+                            <div class="step empty-step">等待</div>
+                        </div>
+                    </div>
+                    <div class="workflow-lane">
+                        <div class="lane-header claude">Claude</div>
+                        <div class="lane-steps">
+                            <div class="step empty-step">接收</div>
+                            <div class="step-arrow">↓</div>
+                            <div class="step claude-step">2. 分析 + 制定计划</div>
+                            <div class="step-arrow">↓</div>
+                            <div class="step empty-step">等待确认</div>
+                            <div class="step-arrow">↓</div>
+                            <div class="step claude-step">4. 编写代码</div>
+                            <div class="step-arrow">↓</div>
+                            <div class="step empty-step">等待反馈</div>
+                            <div class="step-arrow">↓</div>
+                            <div class="step empty-step">接收指令</div>
+                            <div class="step-arrow">↓</div>
+                            <div class="step claude-step">7. 提交 + 更新文档</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 详细步骤 -->
+        <div class="learning-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2>Step 1: 编写 Prompt（你做）</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="step-detail">
+                    <div class="detail-row">
+                        <span class="detail-label">在哪里做：</span>
+                        <span class="detail-value">Claude Code 对话框（就是当前这个界面）</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">做什么：</span>
+                        <span class="detail-value">描述你要开发的功能</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">怎么做：</span>
+                    </div>
+                    <div class="detail-options">
+                        <div class="option-card">
+                            <h4>方式一：使用模板（推荐）</h4>
+                            <p>从「Prompt 模板」Tab 复制模板，填写内容</p>
+                            <div class="code-block mini">【功能名称】: xxx
+【功能描述】: xxx
+【验收标准】: 1. xxx 2. xxx
+【技术约束】: xxx</div>
+                        </div>
+                        <div class="option-card">
+                            <h4>方式二：自然语言</h4>
+                            <p>直接用中文描述，我能理解</p>
+                            <div class="code-block mini">帮我在 Todo 页面加一个搜索功能，
+可以实时过滤任务，按 S 键激活</div>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">关注什么：</span>
+                        <span class="detail-value">功能描述清晰 + 验收标准明确</span>
+                    </div>
+                    <div class="time-estimate">预计耗时：3-5 分钟</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="learning-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2>Step 2: 分析与计划（Claude 做）</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="step-detail">
+                    <div class="detail-row">
+                        <span class="detail-label">Claude 会做：</span>
+                    </div>
+                    <ul class="action-list claude-actions">
+                        <li>阅读 CLAUDE.md 了解项目结构</li>
+                        <li>分析需求，确定要修改哪些文件</li>
+                        <li>制定实现计划（复杂功能会列出步骤）</li>
+                        <li>如果需求不清晰，会提问确认</li>
+                    </ul>
+                    <div class="detail-row">
+                        <span class="detail-label">你需要关注：</span>
+                        <span class="detail-value">Claude 的计划是否合理，有疑问及时提出</span>
+                    </div>
+                    <div class="time-estimate">预计耗时：1-2 分钟</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="learning-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2>Step 3: 确认计划（你做）</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="step-detail">
+                    <div class="detail-row">
+                        <span class="detail-label">做什么：</span>
+                        <span class="detail-value">检查 Claude 的计划是否符合预期</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">怎么反馈：</span>
+                    </div>
+                    <div class="feedback-options">
+                        <div class="feedback-card good">
+                            <span class="feedback-icon">✓</span>
+                            <div>
+                                <strong>同意：</strong>
+                                <p>"可以，开始吧" 或 "OK"</p>
+                            </div>
+                        </div>
+                        <div class="feedback-card adjust">
+                            <span class="feedback-icon">~</span>
+                            <div>
+                                <strong>调整：</strong>
+                                <p>"这个方案可以，但 xxx 部分改成 xxx"</p>
+                            </div>
+                        </div>
+                        <div class="feedback-card reject">
+                            <span class="feedback-icon">✗</span>
+                            <div>
+                                <strong>否定：</strong>
+                                <p>"不是这样，我想要的是 xxx"</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="time-estimate">预计耗时：1 分钟</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="learning-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2>Step 4: 编写代码（Claude 做）</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="step-detail">
+                    <div class="detail-row">
+                        <span class="detail-label">Claude 会做：</span>
+                    </div>
+                    <ul class="action-list claude-actions">
+                        <li>修改相关文件（后端 app.py、前端模板等）</li>
+                        <li>遵循项目现有代码风格</li>
+                        <li>完成后列出所有修改的文件</li>
+                        <li>添加待验收记录到 PENDING_ACCEPTANCE.md</li>
+                    </ul>
+                    <div class="detail-row">
+                        <span class="detail-label">你需要关注：</span>
+                        <span class="detail-value">可以继续做其他事，等 Claude 完成通知你</span>
+                    </div>
+                    <div class="time-estimate">预计耗时：5-30 分钟（视功能复杂度）</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="learning-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2>Step 5: 验收测试（你做）</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="step-detail">
+                    <div class="detail-row">
+                        <span class="detail-label">在哪里做：</span>
+                    </div>
+                    <div class="test-locations">
+                        <div class="location-card">
+                            <span class="location-icon">🌐</span>
+                            <div>
+                                <strong>浏览器</strong>
+                                <p>访问 http://localhost:3000/xxx 测试功能</p>
+                            </div>
+                        </div>
+                        <div class="location-card">
+                            <span class="location-icon">📱</span>
+                            <div>
+                                <strong>手机</strong>
+                                <p>如果涉及移动端，用手机访问测试</p>
+                            </div>
+                        </div>
+                        <div class="location-card">
+                            <span class="location-icon">💻</span>
+                            <div>
+                                <strong>VS Code</strong>
+                                <p>查看代码改动是否合理</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">怎么反馈：</span>
+                    </div>
+                    <div class="feedback-options">
+                        <div class="feedback-card good">
+                            <span class="feedback-icon">✓</span>
+                            <div>
+                                <strong>通过：</strong>
+                                <p>"验收通过" 或 "OK，没问题"</p>
+                            </div>
+                        </div>
+                        <div class="feedback-card reject">
+                            <span class="feedback-icon">✗</span>
+                            <div>
+                                <strong>有问题：</strong>
+                                <p>"xxx 有问题，表现是 xxx，期望是 xxx"</p>
+                                <p class="hint">（附截图更好，保存到 PrtSc/ 目录）</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="time-estimate">预计耗时：3-10 分钟</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="learning-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2>Step 6: 确认提交（你做）</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="step-detail">
+                    <div class="detail-row">
+                        <span class="detail-label">什么时候做：</span>
+                        <span class="detail-value">验收通过后，你决定是否提交代码</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">怎么说：</span>
+                    </div>
+                    <div class="command-examples">
+                        <div class="command-card">
+                            <code>帮我提交代码</code>
+                            <p>Claude 自动生成 commit message</p>
+                        </div>
+                        <div class="command-card">
+                            <code>帮我提交，commit message: 添加 Todo 搜索功能</code>
+                            <p>使用你指定的 message</p>
+                        </div>
+                        <div class="command-card">
+                            <code>先不提交，我还想再改改</code>
+                            <p>继续修改，稍后再提交</p>
+                        </div>
+                    </div>
+                    <div class="time-estimate">预计耗时：1 分钟</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="learning-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2>Step 7: 提交与文档更新（Claude 做）</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="step-detail">
+                    <div class="detail-row">
+                        <span class="detail-label">Claude 会做：</span>
+                    </div>
+                    <ul class="action-list claude-actions">
+                        <li>执行 git add + git commit</li>
+                        <li>更新 CLAUDE.md（如果是重要功能）</li>
+                        <li>更新 PENDING_ACCEPTANCE.md 状态</li>
+                        <li>告知提交结果</li>
+                    </ul>
+                    <div class="detail-row">
+                        <span class="detail-label">你需要关注：</span>
+                        <span class="detail-value">确认提交成功，可以开始下一个功能</span>
+                    </div>
+                    <div class="time-estimate">预计耗时：1-2 分钟</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 快速参考卡片 -->
+        <div class="learning-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2>快速参考：常用指令</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="command-reference">
+                    <h4>开发相关</h4>
+                    <table class="info-table">
+                        <tr><td><code>帮我开发 xxx 功能</code></td><td>开始新功能开发</td></tr>
+                        <tr><td><code>这个方案可以，开始吧</code></td><td>确认计划，开始编码</td></tr>
+                        <tr><td><code>xxx 有问题，表现是...</code></td><td>反馈 bug</td></tr>
+                        <tr><td><code>验收通过</code></td><td>确认功能完成</td></tr>
+                    </table>
+                    <h4>提交相关</h4>
+                    <table class="info-table">
+                        <tr><td><code>帮我提交代码</code></td><td>提交当前改动</td></tr>
+                        <tr><td><code>先不提交</code></td><td>暂不提交</td></tr>
+                    </table>
+                    <h4>文档相关</h4>
+                    <table class="info-table">
+                        <tr><td><code>更新 CLAUDE.md</code></td><td>更新项目文档</td></tr>
+                        <tr><td><code>把这个功能加到待验收</code></td><td>添加验收记录</td></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 职责分工总结 -->
+        <div class="learning-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2>职责分工总结</h2>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="responsibility-summary">
+                    <div class="resp-column you-resp">
+                        <h3>你负责</h3>
+                        <ul>
+                            <li><strong>决策</strong> - 做什么功能、什么时候提交</li>
+                            <li><strong>输入</strong> - 编写 Prompt、提供需求</li>
+                            <li><strong>审核</strong> - 检查计划、验收测试</li>
+                            <li><strong>反馈</strong> - 确认通过或指出问题</li>
+                            <li><strong>截图</strong> - 遇到问题时保存截图</li>
+                        </ul>
+                        <div class="focus-box">
+                            <strong>关注点：</strong>
+                            <p>需求是否清晰、功能是否正确、体验是否满意</p>
+                        </div>
+                    </div>
+                    <div class="resp-column claude-resp">
+                        <h3>Claude 负责</h3>
+                        <ul>
+                            <li><strong>分析</strong> - 理解需求、制定计划</li>
+                            <li><strong>编码</strong> - 修改代码、实现功能</li>
+                            <li><strong>测试</strong> - 基础测试、语法检查</li>
+                            <li><strong>文档</strong> - 更新 CLAUDE.md、待验收清单</li>
+                            <li><strong>提交</strong> - 执行 git 操作</li>
+                        </ul>
+                        <div class="focus-box">
+                            <strong>关注点：</strong>
+                            <p>代码质量、项目规范、文档同步</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.learning-page {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.learning-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.page-title {
+    font-size: 2rem;
+    color: var(--primary-color, #667eea);
+    margin-bottom: 8px;
+}
+
+.page-subtitle {
+    color: var(--text-muted, #6b7280);
+    font-size: 1rem;
+}
+
+/* Tabs */
+.learning-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    border-bottom: 2px solid var(--border-color, #e5e7eb);
+    padding-bottom: 10px;
+}
+
+.tab-btn {
+    padding: 10px 20px;
+    border: none;
+    background: var(--card-bg, #f9fafb);
+    color: var(--text-color, #374151);
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.tab-btn:hover {
+    background: var(--primary-light, #eef2ff);
+}
+
+.tab-btn.active {
+    background: var(--primary-color, #667eea);
+    color: white;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Sections */
+.learning-section {
+    background: var(--card-bg, #ffffff);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+
+.section-header {
+    padding: 16px 20px;
+    background: var(--header-bg, #f3f4f6);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s;
+}
+
+.section-header:hover {
+    background: var(--hover-bg, #e5e7eb);
+}
+
+.section-header h2 {
+    font-size: 1.1rem;
+    margin: 0;
+    color: var(--text-color, #1f2937);
+}
+
+.toggle-icon {
+    color: var(--text-muted, #6b7280);
+    transition: transform 0.3s;
+}
+
+.section-header.collapsed .toggle-icon {
+    transform: rotate(-90deg);
+}
+
+.section-content {
+    padding: 20px;
+    border-top: 1px solid var(--border-color, #e5e7eb);
+}
+
+.section-content.hidden {
+    display: none;
+}
+
+/* Flow Chart */
+.flow-chart {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.flow-item {
+    padding: 12px 16px;
+    background: var(--primary-light, #eef2ff);
+    border-radius: 8px;
+    text-align: center;
+    font-size: 14px;
+    min-width: 100px;
+}
+
+.flow-item.highlight {
+    background: var(--primary-color, #667eea);
+    color: white;
+}
+
+.flow-item small {
+    display: block;
+    font-size: 11px;
+    opacity: 0.8;
+    margin-top: 4px;
+}
+
+.flow-arrow {
+    color: var(--primary-color, #667eea);
+    font-size: 20px;
+    font-weight: bold;
+}
+
+/* Tables */
+.info-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.info-table th, .info-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.info-table th {
+    background: var(--header-bg, #f3f4f6);
+    font-weight: 600;
+}
+
+.bad-cell {
+    color: #dc2626;
+    background: #fef2f2;
+}
+
+.good-cell {
+    color: #16a34a;
+    background: #f0fdf4;
+}
+
+/* Feature List */
+.feature-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.feature-list li {
+    padding: 8px 0;
+    padding-left: 24px;
+    position: relative;
+}
+
+.feature-list li::before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: var(--primary-color, #667eea);
+    font-weight: bold;
+}
+
+/* Highlight Box */
+.highlight-box {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin: 16px 0;
+}
+
+/* Mode Card */
+.mode-card {
+    background: var(--card-bg, #f9fafb);
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+}
+
+.mode-card h3 {
+    margin: 0 0 12px 0;
+    font-size: 1rem;
+    color: var(--primary-color, #667eea);
+}
+
+/* Compare Box */
+.compare-box {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.compare-box .bad {
+    background: #fef2f2;
+    color: #dc2626;
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.compare-box .good {
+    background: #f0fdf4;
+    color: #16a34a;
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+/* Key Points */
+.key-points {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.key-point {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.point-number {
+    width: 40px;
+    height: 40px;
+    background: var(--primary-color, #667eea);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.point-content h4 {
+    margin: 0 0 4px 0;
+    font-size: 1rem;
+}
+
+.point-content p {
+    margin: 0;
+    color: var(--text-muted, #6b7280);
+    font-size: 14px;
+}
+
+/* Code Block */
+.code-block {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 16px;
+    border-radius: 8px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 13px;
+    white-space: pre-wrap;
+    overflow-x: auto;
+    margin: 12px 0;
+}
+
+.code-block.improved {
+    background: #0d2818;
+    border-left: 4px solid #16a34a;
+}
+
+.code-block.template {
+    background: #1a1a2e;
+    border-left: 4px solid #667eea;
+}
+
+/* Prompt Example */
+.prompt-example h4 {
+    margin: 16px 0 8px 0;
+    font-size: 0.95rem;
+    color: var(--text-color, #374151);
+}
+
+/* Copy Button */
+.copy-btn {
+    margin-top: 8px;
+    padding: 8px 16px;
+    background: var(--primary-color, #667eea);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: opacity 0.2s;
+}
+
+.copy-btn:hover {
+    opacity: 0.9;
+}
+
+/* Checklist */
+.checklist-box {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--card-bg, #f9fafb);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.checklist-item:hover {
+    background: var(--hover-bg, #f3f4f6);
+}
+
+.checklist-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+/* Tips Grid */
+.tips-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.tip-card {
+    background: var(--card-bg, #f9fafb);
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.tip-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.tip-icon {
+    font-size: 2rem;
+    display: block;
+    margin-bottom: 12px;
+}
+
+.tip-card h4 {
+    margin: 0 0 8px 0;
+    font-size: 1rem;
+    color: var(--primary-color, #667eea);
+}
+
+.tip-card p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-muted, #6b7280);
+}
+
+/* Dark mode */
+[data-theme="dark"] .learning-section {
+    background: var(--card-bg-dark, #1f2937);
+}
+
+[data-theme="dark"] .section-header {
+    background: var(--header-bg-dark, #374151);
+}
+
+[data-theme="dark"] .info-table th {
+    background: var(--header-bg-dark, #374151);
+}
+
+[data-theme="dark"] .mode-card,
+[data-theme="dark"] .checklist-item,
+[data-theme="dark"] .tip-card {
+    background: var(--card-bg-dark, #374151);
+}
+
+[data-theme="dark"] .flow-item {
+    background: var(--primary-dark, #4f46e5);
+    color: white;
+}
+
+/* ========== Workflow Tab Styles ========== */
+
+/* Workflow Overview */
+.workflow-overview {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.workflow-lane {
+    background: var(--card-bg, #f9fafb);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.lane-header {
+    padding: 12px 16px;
+    font-weight: 600;
+    text-align: center;
+    color: white;
+}
+
+.lane-header.you {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.lane-header.claude {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+.lane-steps {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.step {
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    text-align: center;
+    width: 100%;
+    max-width: 200px;
+}
+
+.you-step {
+    background: #d1fae5;
+    color: #065f46;
+    border: 2px solid #10b981;
+    font-weight: 500;
+}
+
+.claude-step {
+    background: #e0e7ff;
+    color: #3730a3;
+    border: 2px solid #667eea;
+    font-weight: 500;
+}
+
+.empty-step {
+    background: var(--border-color, #e5e7eb);
+    color: var(--text-muted, #9ca3af);
+    font-size: 12px;
+}
+
+.step-arrow {
+    color: var(--text-muted, #9ca3af);
+    font-size: 14px;
+}
+
+/* Step Detail */
+.step-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.detail-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: var(--text-color, #374151);
+    min-width: 100px;
+}
+
+.detail-value {
+    color: var(--text-muted, #6b7280);
+}
+
+.detail-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 8px;
+}
+
+.option-card {
+    background: var(--card-bg, #f9fafb);
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.option-card h4 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    color: var(--primary-color, #667eea);
+}
+
+.option-card p {
+    margin: 0 0 12px 0;
+    font-size: 13px;
+    color: var(--text-muted, #6b7280);
+}
+
+.code-block.mini {
+    font-size: 12px;
+    padding: 10px;
+    margin: 0;
+}
+
+.time-estimate {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    color: #92400e;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    display: inline-block;
+    margin-top: 8px;
+}
+
+/* Action List */
+.action-list {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0;
+}
+
+.action-list li {
+    padding: 8px 12px;
+    margin-bottom: 6px;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.action-list.claude-actions li {
+    background: #e0e7ff;
+    color: #3730a3;
+    border-left: 3px solid #667eea;
+}
+
+/* Feedback Options */
+.feedback-options {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+.feedback-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    flex: 1;
+    min-width: 200px;
+}
+
+.feedback-card.good {
+    background: #d1fae5;
+    border: 1px solid #10b981;
+}
+
+.feedback-card.adjust {
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+}
+
+.feedback-card.reject {
+    background: #fee2e2;
+    border: 1px solid #ef4444;
+}
+
+.feedback-icon {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.feedback-card.good .feedback-icon { color: #10b981; }
+.feedback-card.adjust .feedback-icon { color: #f59e0b; }
+.feedback-card.reject .feedback-icon { color: #ef4444; }
+
+.feedback-card strong {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.feedback-card p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-muted, #6b7280);
+}
+
+.feedback-card .hint {
+    font-size: 12px;
+    opacity: 0.8;
+    margin-top: 4px;
+}
+
+/* Test Locations */
+.test-locations {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 12px 0;
+}
+
+.location-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: var(--card-bg, #f9fafb);
+    border-radius: 8px;
+    border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.location-icon {
+    font-size: 24px;
+}
+
+.location-card strong {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.location-card p {
+    margin: 0;
+    font-size: 12px;
+    color: var(--text-muted, #6b7280);
+}
+
+/* Command Examples */
+.command-examples {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.command-card {
+    background: var(--card-bg, #f9fafb);
+    padding: 12px 16px;
+    border-radius: 8px;
+    border-left: 3px solid var(--primary-color, #667eea);
+}
+
+.command-card code {
+    display: block;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.command-card p {
+    margin: 0;
+    font-size: 12px;
+    color: var(--text-muted, #6b7280);
+}
+
+/* Command Reference */
+.command-reference h4 {
+    margin: 16px 0 8px 0;
+    font-size: 14px;
+    color: var(--primary-color, #667eea);
+}
+
+.command-reference h4:first-child {
+    margin-top: 0;
+}
+
+.command-reference code {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+/* Responsibility Summary */
+.responsibility-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.resp-column {
+    padding: 20px;
+    border-radius: 12px;
+}
+
+.resp-column.you-resp {
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+    border: 2px solid #10b981;
+}
+
+.resp-column.claude-resp {
+    background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+    border: 2px solid #667eea;
+}
+
+.resp-column h3 {
+    margin: 0 0 16px 0;
+    font-size: 1.1rem;
+}
+
+.you-resp h3 { color: #065f46; }
+.claude-resp h3 { color: #3730a3; }
+
+.resp-column ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 16px 0;
+}
+
+.resp-column li {
+    padding: 6px 0;
+    font-size: 14px;
+}
+
+.focus-box {
+    background: rgba(255,255,255,0.6);
+    padding: 12px;
+    border-radius: 8px;
+}
+
+.focus-box strong {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 13px;
+}
+
+.focus-box p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-muted, #6b7280);
+}
+
+/* Dark mode for workflow */
+[data-theme="dark"] .workflow-lane,
+[data-theme="dark"] .option-card,
+[data-theme="dark"] .location-card,
+[data-theme="dark"] .command-card {
+    background: var(--card-bg-dark, #374151);
+}
+
+[data-theme="dark"] .empty-step {
+    background: #4b5563;
+}
+
+[data-theme="dark"] .resp-column.you-resp {
+    background: linear-gradient(135deg, #065f46, #047857);
+    border-color: #10b981;
+}
+
+[data-theme="dark"] .resp-column.claude-resp {
+    background: linear-gradient(135deg, #3730a3, #4338ca);
+    border-color: #667eea;
+}
+
+[data-theme="dark"] .resp-column {
+    color: white;
+}
+
+[data-theme="dark"] .focus-box {
+    background: rgba(0,0,0,0.2);
+}
+
+[data-theme="dark"] .focus-box p {
+    color: rgba(255,255,255,0.8);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .learning-tabs {
+        justify-content: center;
+    }
+
+    .tab-btn {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+
+    .compare-box {
+        grid-template-columns: 1fr;
+    }
+
+    .flow-chart {
+        flex-direction: column;
+    }
+
+    .flow-arrow {
+        transform: rotate(90deg);
+    }
+
+    .workflow-overview {
+        grid-template-columns: 1fr;
+    }
+
+    .detail-options {
+        grid-template-columns: 1fr;
+    }
+
+    .test-locations {
+        grid-template-columns: 1fr;
+    }
+
+    .responsibility-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .feedback-options {
+        flex-direction: column;
+    }
+}
+</style>
+
+<script>
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        // Remove active from all tabs
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+        // Add active to clicked tab
+        this.classList.add('active');
+        document.getElementById(this.dataset.tab).classList.add('active');
+    });
+});
+
+// Section toggle
+function toggleSection(header) {
+    header.classList.toggle('collapsed');
+    const content = header.nextElementSibling;
+    content.classList.toggle('hidden');
+}
+
+// Copy template
+function copyTemplate(btn) {
+    const codeBlock = btn.previousElementSibling;
+    navigator.clipboard.writeText(codeBlock.textContent).then(() => {
+        const originalText = btn.textContent;
+        btn.textContent = '已复制!';
+        btn.style.background = '#16a34a';
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.style.background = '';
+        }, 2000);
+    });
+}
+</script>
+{% endblock %}

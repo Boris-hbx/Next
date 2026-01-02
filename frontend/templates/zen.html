@@ -1,0 +1,497 @@
+{% extends "base.html" %}
+
+{% block title %}发呆时光 - Boris Life{% endblock %}
+
+{% block content %}
+<div class="zen-page">
+    <div class="zen-header">
+        <h1 class="zen-title">发呆时光</h1>
+        <p class="zen-subtitle">放空自己，看着规律的运动</p>
+    </div>
+
+    <!-- Animation Selector -->
+    <div class="animation-selector">
+        <button class="anim-btn active" data-anim="threebody" onclick="switchAnimation('threebody')">
+            <span class="anim-icon">🌌</span>
+            <span class="anim-name">三体运动</span>
+        </button>
+        <button class="anim-btn" data-anim="orbits" onclick="switchAnimation('orbits')">
+            <span class="anim-icon">🪐</span>
+            <span class="anim-name">行星轨迹</span>
+        </button>
+        <button class="anim-btn" data-anim="geometry" onclick="switchAnimation('geometry')">
+            <span class="anim-icon">🔷</span>
+            <span class="anim-name">几何之舞</span>
+        </button>
+        <button class="anim-btn" data-anim="pendulum" onclick="switchAnimation('pendulum')">
+            <span class="anim-icon">🎯</span>
+            <span class="anim-name">钟摆波浪</span>
+        </button>
+    </div>
+
+    <!-- Canvas Container -->
+    <div class="canvas-container">
+        <canvas id="zenCanvas"></canvas>
+    </div>
+
+    <!-- Controls -->
+    <div class="zen-controls">
+        <button class="control-btn" onclick="toggleFullscreen()">
+            <span id="fullscreen-icon">⛶</span> 全屏
+        </button>
+        <button class="control-btn" onclick="togglePause()">
+            <span id="pause-icon">⏸</span> <span id="pause-text">暂停</span>
+        </button>
+    </div>
+</div>
+
+<style>
+.zen-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    min-height: calc(100vh - 40px);
+    display: flex;
+    flex-direction: column;
+}
+
+.zen-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.zen-title {
+    font-size: 2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #818cf8, #c084fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0 0 8px 0;
+}
+
+.zen-subtitle {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+.animation-selector {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.anim-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    background: var(--bg-card);
+    border: 2px solid var(--border-color);
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.anim-btn:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+}
+
+.anim-btn.active {
+    background: var(--primary-gradient);
+    border-color: transparent;
+    color: white;
+}
+
+.anim-icon {
+    font-size: 1.2rem;
+}
+
+.anim-name {
+    font-weight: 500;
+}
+
+.canvas-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0a0a1a;
+    border-radius: 16px;
+    overflow: hidden;
+    min-height: 400px;
+}
+
+#zenCanvas {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.zen-controls {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.control-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+}
+
+.control-btn:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+/* Fullscreen mode */
+.zen-page.fullscreen .zen-header,
+.zen-page.fullscreen .animation-selector,
+.zen-page.fullscreen .zen-controls {
+    display: none;
+}
+
+.zen-page.fullscreen .canvas-container {
+    position: fixed;
+    inset: 0;
+    border-radius: 0;
+    z-index: 9999;
+}
+
+.zen-page.fullscreen #zenCanvas {
+    width: 100%;
+    height: 100%;
+}
+</style>
+
+<script>
+(function() {
+    var canvas = document.getElementById('zenCanvas');
+    var ctx = canvas.getContext('2d');
+    var currentAnimation = 'threebody';
+    var isPaused = false;
+    var animationId = null;
+
+    // Resize canvas
+    function resizeCanvas() {
+        var container = canvas.parentElement;
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Animation state
+    var time = 0;
+
+    // ========== Three Body Problem ==========
+    var bodies = [];
+    function initThreeBody() {
+        bodies = [
+            { x: canvas.width/2 - 100, y: canvas.height/2, vx: 0, vy: 1.5, mass: 20, color: '#f87171', trail: [] },
+            { x: canvas.width/2 + 100, y: canvas.height/2, vx: 0, vy: -1.5, mass: 20, color: '#60a5fa', trail: [] },
+            { x: canvas.width/2, y: canvas.height/2 - 100, vx: 1.5, vy: 0, mass: 20, color: '#34d399', trail: [] }
+        ];
+    }
+
+    function drawThreeBody() {
+        var G = 0.5;
+        var dt = 0.5;
+
+        // Calculate forces
+        for (var i = 0; i < bodies.length; i++) {
+            var ax = 0, ay = 0;
+            for (var j = 0; j < bodies.length; j++) {
+                if (i !== j) {
+                    var dx = bodies[j].x - bodies[i].x;
+                    var dy = bodies[j].y - bodies[i].y;
+                    var dist = Math.sqrt(dx*dx + dy*dy) + 10;
+                    var force = G * bodies[j].mass / (dist * dist);
+                    ax += force * dx / dist;
+                    ay += force * dy / dist;
+                }
+            }
+            bodies[i].vx += ax * dt;
+            bodies[i].vy += ay * dt;
+        }
+
+        // Update positions
+        for (var i = 0; i < bodies.length; i++) {
+            bodies[i].x += bodies[i].vx * dt;
+            bodies[i].y += bodies[i].vy * dt;
+
+            // Keep in bounds with bounce
+            if (bodies[i].x < 50 || bodies[i].x > canvas.width - 50) bodies[i].vx *= -0.8;
+            if (bodies[i].y < 50 || bodies[i].y > canvas.height - 50) bodies[i].vy *= -0.8;
+            bodies[i].x = Math.max(50, Math.min(canvas.width - 50, bodies[i].x));
+            bodies[i].y = Math.max(50, Math.min(canvas.height - 50, bodies[i].y));
+
+            // Trail
+            bodies[i].trail.push({ x: bodies[i].x, y: bodies[i].y });
+            if (bodies[i].trail.length > 100) bodies[i].trail.shift();
+        }
+
+        // Draw
+        ctx.fillStyle = 'rgba(10, 10, 26, 0.1)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw trails
+        for (var i = 0; i < bodies.length; i++) {
+            ctx.beginPath();
+            ctx.strokeStyle = bodies[i].color;
+            ctx.lineWidth = 2;
+            for (var j = 0; j < bodies[i].trail.length; j++) {
+                var alpha = j / bodies[i].trail.length;
+                ctx.globalAlpha = alpha * 0.5;
+                if (j === 0) {
+                    ctx.moveTo(bodies[i].trail[j].x, bodies[i].trail[j].y);
+                } else {
+                    ctx.lineTo(bodies[i].trail[j].x, bodies[i].trail[j].y);
+                }
+            }
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+        }
+
+        // Draw bodies
+        for (var i = 0; i < bodies.length; i++) {
+            ctx.beginPath();
+            ctx.fillStyle = bodies[i].color;
+            ctx.shadowColor = bodies[i].color;
+            ctx.shadowBlur = 20;
+            ctx.arc(bodies[i].x, bodies[i].y, 12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+    }
+
+    // ========== Planetary Orbits ==========
+    var planets = [];
+    function initOrbits() {
+        var cx = canvas.width / 2;
+        var cy = canvas.height / 2;
+        planets = [
+            { orbit: 60, speed: 0.03, size: 8, color: '#fbbf24', angle: 0 },
+            { orbit: 100, speed: 0.02, size: 10, color: '#60a5fa', angle: Math.PI/3 },
+            { orbit: 150, speed: 0.015, size: 14, color: '#34d399', angle: Math.PI/2 },
+            { orbit: 210, speed: 0.01, size: 12, color: '#f87171', angle: Math.PI },
+            { orbit: 280, speed: 0.007, size: 18, color: '#a78bfa', angle: Math.PI*1.5 }
+        ];
+    }
+
+    function drawOrbits() {
+        var cx = canvas.width / 2;
+        var cy = canvas.height / 2;
+
+        ctx.fillStyle = 'rgba(10, 10, 26, 0.05)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw orbit paths
+        for (var i = 0; i < planets.length; i++) {
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.arc(cx, cy, planets[i].orbit, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        // Draw sun
+        ctx.beginPath();
+        ctx.fillStyle = '#fbbf24';
+        ctx.shadowColor = '#fbbf24';
+        ctx.shadowBlur = 30;
+        ctx.arc(cx, cy, 25, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // Draw planets
+        for (var i = 0; i < planets.length; i++) {
+            planets[i].angle += planets[i].speed;
+            var x = cx + Math.cos(planets[i].angle) * planets[i].orbit;
+            var y = cy + Math.sin(planets[i].angle) * planets[i].orbit;
+
+            ctx.beginPath();
+            ctx.fillStyle = planets[i].color;
+            ctx.shadowColor = planets[i].color;
+            ctx.shadowBlur = 15;
+            ctx.arc(x, y, planets[i].size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+    }
+
+    // ========== Geometry Dance ==========
+    var geoAngle = 0;
+    function drawGeometry() {
+        var cx = canvas.width / 2;
+        var cy = canvas.height / 2;
+
+        ctx.fillStyle = 'rgba(10, 10, 26, 0.05)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        geoAngle += 0.01;
+
+        // Draw multiple rotating polygons
+        var colors = ['#f87171', '#fbbf24', '#34d399', '#60a5fa', '#a78bfa', '#f472b6'];
+
+        for (var layer = 0; layer < 6; layer++) {
+            var sides = 3 + layer;
+            var radius = 50 + layer * 35;
+            var rotation = geoAngle * (layer % 2 === 0 ? 1 : -1) * (1 + layer * 0.2);
+
+            ctx.beginPath();
+            ctx.strokeStyle = colors[layer];
+            ctx.lineWidth = 2;
+            ctx.shadowColor = colors[layer];
+            ctx.shadowBlur = 10;
+
+            for (var i = 0; i <= sides; i++) {
+                var angle = rotation + (i * 2 * Math.PI / sides);
+                var x = cx + Math.cos(angle) * radius;
+                var y = cy + Math.sin(angle) * radius;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+
+        // Central pulsing circle
+        var pulse = Math.sin(geoAngle * 3) * 10 + 20;
+        ctx.beginPath();
+        ctx.fillStyle = 'rgba(255,255,255,0.8)';
+        ctx.arc(cx, cy, pulse, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // ========== Pendulum Wave ==========
+    var pendulums = [];
+    function initPendulum() {
+        pendulums = [];
+        var count = 15;
+        for (var i = 0; i < count; i++) {
+            pendulums.push({
+                length: 100 + i * 15,
+                angle: Math.PI / 4,
+                frequency: 0.5 + i * 0.03
+            });
+        }
+    }
+
+    function drawPendulum() {
+        ctx.fillStyle = 'rgba(10, 10, 26, 0.1)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        var startX = (canvas.width - (pendulums.length - 1) * 40) / 2;
+        var startY = 50;
+        time += 0.02;
+
+        for (var i = 0; i < pendulums.length; i++) {
+            var p = pendulums[i];
+            var angle = Math.sin(time * p.frequency) * (Math.PI / 4);
+            var x = startX + i * 40;
+            var endX = x + Math.sin(angle) * p.length;
+            var endY = startY + Math.cos(angle) * p.length;
+
+            // Draw string
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.lineWidth = 1;
+            ctx.moveTo(x, startY);
+            ctx.lineTo(endX, endY);
+            ctx.stroke();
+
+            // Draw ball
+            var hue = (i / pendulums.length) * 360;
+            ctx.beginPath();
+            ctx.fillStyle = 'hsl(' + hue + ', 70%, 60%)';
+            ctx.shadowColor = 'hsl(' + hue + ', 70%, 60%)';
+            ctx.shadowBlur = 15;
+            ctx.arc(endX, endY, 12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+
+        // Draw top bar
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+        ctx.lineWidth = 3;
+        ctx.moveTo(startX - 20, startY);
+        ctx.lineTo(startX + (pendulums.length - 1) * 40 + 20, startY);
+        ctx.stroke();
+    }
+
+    // ========== Animation Loop ==========
+    function animate() {
+        if (!isPaused) {
+            switch(currentAnimation) {
+                case 'threebody': drawThreeBody(); break;
+                case 'orbits': drawOrbits(); break;
+                case 'geometry': drawGeometry(); break;
+                case 'pendulum': drawPendulum(); break;
+            }
+        }
+        animationId = requestAnimationFrame(animate);
+    }
+
+    function switchAnimation(anim) {
+        currentAnimation = anim;
+        ctx.fillStyle = '#0a0a1a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        document.querySelectorAll('.anim-btn').forEach(function(btn) {
+            btn.classList.toggle('active', btn.dataset.anim === anim);
+        });
+
+        switch(anim) {
+            case 'threebody': initThreeBody(); break;
+            case 'orbits': initOrbits(); break;
+            case 'pendulum': initPendulum(); break;
+        }
+        time = 0;
+    }
+    window.switchAnimation = switchAnimation;
+
+    function togglePause() {
+        isPaused = !isPaused;
+        document.getElementById('pause-icon').textContent = isPaused ? '▶' : '⏸';
+        document.getElementById('pause-text').textContent = isPaused ? '继续' : '暂停';
+    }
+    window.togglePause = togglePause;
+
+    function toggleFullscreen() {
+        var page = document.querySelector('.zen-page');
+        page.classList.toggle('fullscreen');
+        resizeCanvas();
+    }
+    window.toggleFullscreen = toggleFullscreen;
+
+    // ESC to exit fullscreen
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            document.querySelector('.zen-page').classList.remove('fullscreen');
+            resizeCanvas();
+        }
+    });
+
+    // Initialize
+    initThreeBody();
+    animate();
+})();
+</script>
+{% endblock %}

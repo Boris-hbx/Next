@@ -1,0 +1,105 @@
+{% extends "shared/base_core.html" %}
+
+{% block platform_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/mobile.css') }}">
+{% endblock %}
+
+{% block body_class %}platform-mobile{% endblock %}
+
+{% block body_content %}
+<div class="mobile-container">
+    <!-- Top Header -->
+    <header class="mobile-header">
+        <div class="header-title">
+            <img src="{{ url_for('static', filename='images/avatar.jpg') }}" alt="Boris" class="mobile-avatar">
+            <span>{% block page_title %}Boris Life{% endblock %}</span>
+        </div>
+        <div class="header-actions">
+            {% block header_actions %}{% endblock %}
+        </div>
+    </header>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Main Content Area -->
+    <main class="mobile-content" id="mobile-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="mobile-nav">
+        <a href="{{ url_for('main') }}" class="nav-item {% if current_page == 'main' %}active{% endif %}">
+            <span class="nav-icon">🏠</span>
+            <span class="nav-label">主页</span>
+        </a>
+        <a href="{{ url_for('todo') }}" class="nav-item {% if current_page == 'todo' %}active{% endif %}">
+            <span class="nav-icon">✓</span>
+            <span class="nav-label">Todo</span>
+        </a>
+        <a href="{{ url_for('motivation') }}" class="nav-item {% if current_page == 'motivation' %}active{% endif %}">
+            <span class="nav-icon">💪</span>
+            <span class="nav-label">鼓励</span>
+        </a>
+        <a href="{{ url_for('bubble') }}" class="nav-item {% if current_page == 'bubble' %}active{% endif %}">
+            <span class="nav-icon">🫧</span>
+            <span class="nav-label">气泡图</span>
+        </a>
+        <a href="{{ url_for('game') }}" class="nav-item {% if current_page == 'game' %}active{% endif %}">
+            <span class="nav-icon">🎮</span>
+            <span class="nav-label">游戏</span>
+        </a>
+    </nav>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Mobile-specific interactions
+(function() {
+    // Pull to refresh
+    var startY = 0;
+    var isPulling = false;
+    var content = document.getElementById('mobile-content');
+
+    content.addEventListener('touchstart', function(e) {
+        if (content.scrollTop === 0) {
+            startY = e.touches[0].clientY;
+            isPulling = true;
+        }
+    });
+
+    content.addEventListener('touchmove', function(e) {
+        if (!isPulling) return;
+        var pullDistance = e.touches[0].clientY - startY;
+        if (pullDistance > 60 && content.scrollTop === 0) {
+            // Show refresh indicator
+            content.classList.add('pulling');
+        }
+    });
+
+    content.addEventListener('touchend', function() {
+        if (content.classList.contains('pulling')) {
+            content.classList.remove('pulling');
+            // Trigger refresh
+            if (typeof window.refreshContent === 'function') {
+                window.refreshContent();
+            } else {
+                location.reload();
+            }
+        }
+        isPulling = false;
+    });
+
+    // Bottom nav active state feedback
+    document.querySelectorAll('.nav-item').forEach(function(item) {
+        item.addEventListener('touchstart', function() {
+            this.classList.add('touching');
+        });
+        item.addEventListener('touchend', function() {
+            this.classList.remove('touching');
+        });
+    });
+})();
+</script>
+{% endblock %}

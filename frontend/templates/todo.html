@@ -1,0 +1,1416 @@
+{% extends "base.html" %}
+
+{% block title %}Todo - Time Management{% endblock %}
+
+{% block content %}
+    <style>
+    /* 任务编辑输入框样式 */
+    .task-edit-input {
+        width: 100%;
+        padding: 4px 8px;
+        border: 2px solid var(--accent-color, #4f46e5);
+        border-radius: 4px;
+        font-size: inherit;
+        font-family: inherit;
+        background: var(--bg-color, #fff);
+        color: var(--text-color, #1f2937);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+    .task-edit-input:focus {
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+    }
+    .task-text.editing {
+        padding: 0;
+    }
+    </style>
+    <div class="page-header compact">
+        <div class="header-left">
+            <h1 class="page-title">My Tasks</h1>
+            <p class="quote-text" id="quote-text">{{ quote }}</p>
+        </div>
+        <button class="btn-shuffle" onclick="shuffleQuote()">换一个</button>
+    </div>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Search Bar -->
+    <div class="search-container">
+        <input type="text" class="search-input" id="search-input" placeholder="搜索任务... (按 S 快速搜索)">
+        <span class="search-icon">🔍</span>
+        <button class="search-clear" id="search-clear" onclick="clearSearch()">&times;</button>
+    </div>
+
+    <div class="todo-matrix-container">
+        <!-- Tab Navigation -->
+        <div class="matrix-tabs">
+            <button class="matrix-tab active" data-tab="today" onclick="switchTab('today')">
+                Today
+                <span class="tab-count" id="count-today">0</span>
+            </button>
+            <button class="matrix-tab" data-tab="week" onclick="switchTab('week')">
+                This Week
+                <span class="tab-count" id="count-week">0</span>
+            </button>
+            <button class="matrix-tab" data-tab="month" onclick="switchTab('month')">
+                Next 30 Days
+                <span class="tab-count" id="count-month">0</span>
+            </button>
+            <div class="tab-actions">
+                <button class="btn-add-task" onclick="showAddModal()">+ 添加任务</button>
+                <label class="show-completed-toggle">
+                    <input type="checkbox" id="show-completed" onchange="toggleShowCompleted()">
+                    <span>显示已完成</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Drop zone for moving to other tabs with quadrant options -->
+        <div class="tab-drop-zones" id="tab-drop-zones" style="display:none;">
+            <div class="tab-drop-zone" data-target-tab="today">
+                <div class="drop-zone-title">拖到 Today</div>
+                <div class="drop-zone-matrix">
+                    <!-- Cross lines with arrows -->
+                    <div class="drop-cross-center">
+                        <div class="drop-line vertical">
+                            <div class="drop-arrow-head top"></div>
+                            <div class="drop-arrow-head bottom"></div>
+                        </div>
+                        <div class="drop-line horizontal">
+                            <div class="drop-arrow-head left"></div>
+                            <div class="drop-arrow-head right"></div>
+                        </div>
+                        <span class="drop-axis-label top">重要</span>
+                        <span class="drop-axis-label bottom">不重要</span>
+                        <span class="drop-axis-label left">紧急</span>
+                        <span class="drop-axis-label right">不紧急</span>
+                    </div>
+                    <div class="drop-zone-quadrants">
+                        <div class="drop-quadrant" data-target-tab="today" data-target-quadrant="important-urgent">🔥</div>
+                        <div class="drop-quadrant" data-target-tab="today" data-target-quadrant="important-not-urgent">🎯</div>
+                        <div class="drop-quadrant" data-target-tab="today" data-target-quadrant="not-important-urgent">📞</div>
+                        <div class="drop-quadrant" data-target-tab="today" data-target-quadrant="not-important-not-urgent">🎮</div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-drop-zone" data-target-tab="week">
+                <div class="drop-zone-title">拖到 This Week</div>
+                <div class="drop-zone-matrix">
+                    <div class="drop-cross-center">
+                        <div class="drop-line vertical">
+                            <div class="drop-arrow-head top"></div>
+                            <div class="drop-arrow-head bottom"></div>
+                        </div>
+                        <div class="drop-line horizontal">
+                            <div class="drop-arrow-head left"></div>
+                            <div class="drop-arrow-head right"></div>
+                        </div>
+                        <span class="drop-axis-label top">重要</span>
+                        <span class="drop-axis-label bottom">不重要</span>
+                        <span class="drop-axis-label left">紧急</span>
+                        <span class="drop-axis-label right">不紧急</span>
+                    </div>
+                    <div class="drop-zone-quadrants">
+                        <div class="drop-quadrant" data-target-tab="week" data-target-quadrant="important-urgent">🔥</div>
+                        <div class="drop-quadrant" data-target-tab="week" data-target-quadrant="important-not-urgent">🎯</div>
+                        <div class="drop-quadrant" data-target-tab="week" data-target-quadrant="not-important-urgent">📞</div>
+                        <div class="drop-quadrant" data-target-tab="week" data-target-quadrant="not-important-not-urgent">🎮</div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-drop-zone" data-target-tab="month">
+                <div class="drop-zone-title">拖到 Next 30 Days</div>
+                <div class="drop-zone-matrix">
+                    <div class="drop-cross-center">
+                        <div class="drop-line vertical">
+                            <div class="drop-arrow-head top"></div>
+                            <div class="drop-arrow-head bottom"></div>
+                        </div>
+                        <div class="drop-line horizontal">
+                            <div class="drop-arrow-head left"></div>
+                            <div class="drop-arrow-head right"></div>
+                        </div>
+                        <span class="drop-axis-label top">重要</span>
+                        <span class="drop-axis-label bottom">不重要</span>
+                        <span class="drop-axis-label left">紧急</span>
+                        <span class="drop-axis-label right">不紧急</span>
+                    </div>
+                    <div class="drop-zone-quadrants">
+                        <div class="drop-quadrant" data-target-tab="month" data-target-quadrant="important-urgent">🔥</div>
+                        <div class="drop-quadrant" data-target-tab="month" data-target-quadrant="important-not-urgent">🎯</div>
+                        <div class="drop-quadrant" data-target-tab="month" data-target-quadrant="not-important-urgent">📞</div>
+                        <div class="drop-quadrant" data-target-tab="month" data-target-quadrant="not-important-not-urgent">🎮</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Eisenhower Matrix -->
+        <div class="eisenhower-matrix">
+            <!-- Matrix Grid -->
+            <div class="matrix-grid">
+                <!-- Cross lines with arrows -->
+                <div class="matrix-cross-center">
+                    <!-- Vertical axis -->
+                    <div class="cross-line vertical">
+                        <div class="arrow-head top"></div>
+                        <div class="arrow-head bottom"></div>
+                    </div>
+                    <!-- Horizontal axis -->
+                    <div class="cross-line horizontal">
+                        <div class="arrow-head left"></div>
+                        <div class="arrow-head right"></div>
+                    </div>
+                    <!-- Labels -->
+                    <span class="axis-label top">重要</span>
+                    <span class="axis-label bottom">不重要</span>
+                    <span class="axis-label left">紧急</span>
+                    <span class="axis-label right">不紧急</span>
+                </div>
+
+                <!-- Quadrant 1: Important & Urgent -->
+                <div class="quadrant q1" data-quadrant="important-urgent"
+                     ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="dropItem(event)">
+                    <div class="quadrant-header" ondragover="allowDrop(event)" ondrop="dropItem(event)">
+                        <span class="quadrant-icon">🔥</span>
+                        <span class="quadrant-title">重要且紧急</span>
+                        <span class="quadrant-hint">立即做</span>
+                        <button class="btn-quadrant-add" onclick="showAddModalForQuadrant('important-urgent')">+</button>
+                    </div>
+                    <div class="quadrant-items" id="items-important-urgent"
+                         ondragover="allowDrop(event)" ondrop="dropItem(event)"></div>
+                </div>
+
+                <!-- Quadrant 2: Important & Not Urgent -->
+                <div class="quadrant q2" data-quadrant="important-not-urgent"
+                     ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="dropItem(event)">
+                    <div class="quadrant-header" ondragover="allowDrop(event)" ondrop="dropItem(event)">
+                        <span class="quadrant-icon">🎯</span>
+                        <span class="quadrant-title">重要不紧急</span>
+                        <span class="quadrant-hint">计划做</span>
+                        <button class="btn-quadrant-add" onclick="showAddModalForQuadrant('important-not-urgent')">+</button>
+                    </div>
+                    <div class="quadrant-items" id="items-important-not-urgent"
+                         ondragover="allowDrop(event)" ondrop="dropItem(event)"></div>
+                </div>
+
+                <!-- Quadrant 3: Not Important & Urgent -->
+                <div class="quadrant q3" data-quadrant="not-important-urgent"
+                     ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="dropItem(event)">
+                    <div class="quadrant-header" ondragover="allowDrop(event)" ondrop="dropItem(event)">
+                        <span class="quadrant-icon">📞</span>
+                        <span class="quadrant-title">不重要但紧急</span>
+                        <span class="quadrant-hint">委托做</span>
+                        <button class="btn-quadrant-add" onclick="showAddModalForQuadrant('not-important-urgent')">+</button>
+                    </div>
+                    <div class="quadrant-items" id="items-not-important-urgent"
+                         ondragover="allowDrop(event)" ondrop="dropItem(event)"></div>
+                </div>
+
+                <!-- Quadrant 4: Not Important & Not Urgent -->
+                <div class="quadrant q4" data-quadrant="not-important-not-urgent"
+                     ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="dropItem(event)">
+                    <div class="quadrant-header" ondragover="allowDrop(event)" ondrop="dropItem(event)">
+                        <span class="quadrant-icon">🎮</span>
+                        <span class="quadrant-title">不重要不紧急</span>
+                        <span class="quadrant-hint">少做或不做</span>
+                        <button class="btn-quadrant-add" onclick="showAddModalForQuadrant('not-important-not-urgent')">+</button>
+                    </div>
+                    <div class="quadrant-items" id="items-not-important-not-urgent"
+                         ondragover="allowDrop(event)" ondrop="dropItem(event)"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Completed Tasks Section -->
+        <div class="completed-section" id="completed-section" style="display:none;">
+            <div class="completed-header" onclick="toggleCompletedList()">
+                <h3>已完成的任务</h3>
+                <span class="collapse-icon" id="completed-icon">▼</span>
+            </div>
+            <div class="completed-list" id="completed-list"></div>
+        </div>
+    </div>
+
+    <!-- Add Task Modal -->
+    <div class="modal-overlay" id="add-modal" style="display:none;" onclick="hideAddModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>添加新任务</h3>
+                <button class="modal-close" onclick="hideAddModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>任务内容</label>
+                    <input type="text" id="new-task-text" placeholder="输入任务内容..." autofocus>
+                </div>
+                <div class="form-group">
+                    <label>所属时间段</label>
+                    <div class="tab-selector" id="tab-selector">
+                        <button type="button" class="tab-option active" data-tab="today">Today</button>
+                        <button type="button" class="tab-option" data-tab="week">This Week</button>
+                        <button type="button" class="tab-option" data-tab="month">Next 30 Days</button>
+                    </div>
+                    <input type="hidden" id="new-task-tab" value="today">
+                </div>
+                <div class="form-group">
+                    <label>标签</label>
+                    <div class="tag-input-container" id="tag-input-container">
+                        <input type="text" class="tag-input" id="tag-input" placeholder="输入标签后按 Enter 添加...">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>优先级象限</label>
+                    <div class="quadrant-selector">
+                        <label class="quadrant-option selected" data-q="important-urgent">
+                            <input type="radio" name="quadrant" value="important-urgent" checked>
+                            <span class="option-icon">🔥</span>
+                            <span class="option-text">重要且紧急</span>
+                        </label>
+                        <label class="quadrant-option" data-q="important-not-urgent">
+                            <input type="radio" name="quadrant" value="important-not-urgent">
+                            <span class="option-icon">🎯</span>
+                            <span class="option-text">重要不紧急</span>
+                        </label>
+                        <label class="quadrant-option" data-q="not-important-urgent">
+                            <input type="radio" name="quadrant" value="not-important-urgent">
+                            <span class="option-icon">📞</span>
+                            <span class="option-text">不重要但紧急</span>
+                        </label>
+                        <label class="quadrant-option" data-q="not-important-not-urgent">
+                            <input type="radio" name="quadrant" value="not-important-not-urgent">
+                            <span class="option-icon">🎮</span>
+                            <span class="option-text">不重要不紧急</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="hideAddModal()">取消</button>
+                <button class="btn-save" onclick="addTask()">添加</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    var currentTab = 'today';
+    var allItems = [];
+    var showCompleted = false;
+    var draggedItem = null;
+
+    function shuffleQuote() {
+        var btn = document.querySelector('.btn-shuffle');
+        btn.classList.add('rolling');
+
+        fetch('/api/quote/random')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('quote-text').textContent = data.quote;
+                btn.classList.remove('rolling');
+            })
+            .catch(() => {
+                btn.classList.remove('rolling');
+            });
+    }
+
+    function switchTab(tab) {
+        currentTab = tab;
+        document.querySelectorAll('.matrix-tab').forEach(function(t) {
+            t.classList.remove('active');
+            if (t.dataset.tab === tab) {
+                t.classList.add('active');
+            }
+        });
+        document.getElementById('new-task-tab').value = tab;
+        renderItems();
+    }
+
+    function loadItems() {
+        fetch('/api/todos')
+            .then(response => response.json())
+            .then(data => {
+                allItems = data.items || [];
+                updateCounts();
+                renderItems();
+            });
+    }
+
+    function updateCounts() {
+        var counts = { today: 0, week: 0, month: 0 };
+        allItems.forEach(function(item) {
+            if (!item.completed) {
+                counts[item.tab] = (counts[item.tab] || 0) + 1;
+            }
+        });
+        document.getElementById('count-today').textContent = counts.today;
+        document.getElementById('count-week').textContent = counts.week;
+        document.getElementById('count-month').textContent = counts.month;
+    }
+
+    function renderItems() {
+        var quadrants = ['important-urgent', 'important-not-urgent', 'not-important-urgent', 'not-important-not-urgent'];
+
+        quadrants.forEach(function(q) {
+            document.getElementById('items-' + q).innerHTML = '';
+        });
+
+        var completedHtml = '';
+        var hasCompleted = false;
+
+        allItems.forEach(function(item) {
+            if (item.tab !== currentTab) return;
+
+            if (item.completed) {
+                hasCompleted = true;
+                if (showCompleted) {
+                    completedHtml += createCompletedItemHtml(item);
+                }
+            } else {
+                var container = document.getElementById('items-' + item.quadrant);
+                if (container) {
+                    container.innerHTML += createItemHtml(item);
+                }
+            }
+        });
+
+        document.getElementById('completed-list').innerHTML = completedHtml;
+        document.getElementById('completed-section').style.display = hasCompleted ? 'block' : 'none';
+    }
+
+    function createItemHtml(item) {
+        var tagsHtml = '';
+        if (item.tags && item.tags.length > 0) {
+            tagsHtml = '<div class="task-tags">';
+            item.tags.forEach(function(tag) {
+                tagsHtml += '<span class="task-tag">' + escapeHtml(tag) + '</span>';
+            });
+            tagsHtml += '</div>';
+        }
+        return '<div class="task-item" data-id="' + item.id + '" onmousedown="startCustomDrag(event)">' +
+            '<div class="drag-handle">⋮⋮</div>' +
+            '<div class="task-checkbox" onclick="toggleComplete(\'' + item.id + '\')" onmousedown="event.stopPropagation()"></div>' +
+            '<div class="task-content">' +
+                '<div class="task-text" ondblclick="editTask(\'' + item.id + '\')">' + escapeHtml(item.text) + '</div>' +
+                tagsHtml +
+            '</div>' +
+            '<button class="task-delete" onclick="deleteTask(\'' + item.id + '\')" onmousedown="event.stopPropagation()">&times;</button>' +
+        '</div>';
+    }
+
+    function createCompletedItemHtml(item) {
+        var completedAt = item.completed_at ? formatDate(item.completed_at) : '';
+        return '<div class="task-item completed" data-id="' + item.id + '">' +
+            '<div class="task-checkbox checked" onclick="toggleComplete(\'' + item.id + '\')">✓</div>' +
+            '<div class="task-text">' + escapeHtml(item.text) + '</div>' +
+            '<div class="task-completed-time">' + completedAt + '</div>' +
+            '<button class="task-delete" onclick="deleteTask(\'' + item.id + '\')">&times;</button>' +
+        '</div>';
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;')
+                  .replace(/"/g, '&quot;');
+    }
+
+    function formatDate(isoString) {
+        var date = new Date(isoString);
+        var m = (date.getMonth() + 1).toString().padStart(2, '0');
+        var d = date.getDate().toString().padStart(2, '0');
+        var h = date.getHours().toString().padStart(2, '0');
+        var min = date.getMinutes().toString().padStart(2, '0');
+        return m + '-' + d + ' ' + h + ':' + min;
+    }
+
+    // Custom Drag and Drop (more reliable than HTML5 drag-drop)
+    var isDragging = false;
+    var dragClone = null;
+    var dragItemId = null;
+    var dragStartX = 0;
+    var dragStartY = 0;
+    var dragThreshold = 5; // pixels to move before starting drag
+
+    function startCustomDrag(e) {
+        // Only left mouse button
+        if (e.button !== 0) return;
+
+        var taskItem = e.target.closest('.task-item');
+        if (!taskItem || taskItem.classList.contains('completed')) return;
+
+        dragItemId = taskItem.dataset.id;
+        draggedItem = taskItem;
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+
+        // Add listeners for drag
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+
+        e.preventDefault();
+    }
+
+    function onMouseMove(e) {
+        var dx = e.clientX - dragStartX;
+        var dy = e.clientY - dragStartY;
+
+        // Check if we've moved enough to start dragging
+        if (!isDragging && (Math.abs(dx) > dragThreshold || Math.abs(dy) > dragThreshold)) {
+            isDragging = true;
+            startDragVisual(e);
+        }
+
+        if (isDragging && dragClone) {
+            // Move the clone
+            dragClone.style.left = e.clientX + 'px';
+            dragClone.style.top = e.clientY + 'px';
+
+            // Highlight quadrant under cursor
+            highlightQuadrantUnderCursor(e.clientX, e.clientY);
+        }
+    }
+
+    function startDragVisual(e) {
+        if (!draggedItem) return;
+
+        // Create visual clone
+        dragClone = document.createElement('div');
+        dragClone.className = 'drag-clone';
+        dragClone.textContent = draggedItem.querySelector('.task-text').textContent;
+        dragClone.style.left = e.clientX + 'px';
+        dragClone.style.top = e.clientY + 'px';
+        document.body.appendChild(dragClone);
+
+        // Mark original as dragging
+        draggedItem.classList.add('dragging');
+
+        // Show tab drop zones
+        document.getElementById('tab-drop-zones').style.display = 'flex';
+        document.querySelectorAll('.tab-drop-zone').forEach(function(zone) {
+            zone.style.display = zone.dataset.targetTab === currentTab ? 'none' : 'flex';
+        });
+    }
+
+    function highlightQuadrantUnderCursor(x, y) {
+        // Remove all highlights first
+        document.querySelectorAll('.quadrant.drag-over').forEach(function(q) {
+            q.classList.remove('drag-over');
+        });
+        document.querySelectorAll('.drop-quadrant.drag-over').forEach(function(q) {
+            q.classList.remove('drag-over');
+        });
+        document.querySelectorAll('.tab-drop-zone.drag-over').forEach(function(q) {
+            q.classList.remove('drag-over');
+        });
+
+        var tabDropZones = document.getElementById('tab-drop-zones');
+        var matrix = document.querySelector('.eisenhower-matrix');
+        var isOverDropZone = false;
+
+        // Find element under cursor
+        var elements = document.elementsFromPoint(x, y);
+        for (var i = 0; i < elements.length; i++) {
+            // Check for drop-quadrant first (most specific)
+            var dropQuadrant = elements[i].closest('.drop-quadrant');
+            if (dropQuadrant) {
+                dropQuadrant.classList.add('drag-over');
+                dropQuadrant.closest('.tab-drop-zone').classList.add('drag-over');
+                isOverDropZone = true;
+                break;
+            }
+
+            // Check for tab-drop-zone
+            var dropZone = elements[i].closest('.tab-drop-zone');
+            if (dropZone) {
+                dropZone.classList.add('drag-over');
+                isOverDropZone = true;
+                break;
+            }
+
+            // Check for matrix quadrant
+            var quadrant = elements[i].closest('.quadrant');
+            if (quadrant) {
+                quadrant.classList.add('drag-over');
+                break;
+            }
+        }
+
+        // Add/remove focus effect classes
+        if (isOverDropZone) {
+            tabDropZones.classList.add('has-focus');
+            matrix.classList.add('dimmed');
+        } else {
+            tabDropZones.classList.remove('has-focus');
+            matrix.classList.remove('dimmed');
+        }
+    }
+
+    function onMouseUp(e) {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+
+        if (isDragging) {
+            // Find target
+            var elements = document.elementsFromPoint(e.clientX, e.clientY);
+            var targetQuadrant = null;
+            var targetTab = null;
+
+            for (var i = 0; i < elements.length; i++) {
+                // Check for drop-quadrant first (cross-tab with specific quadrant)
+                var dq = elements[i].closest('.drop-quadrant');
+                if (dq) {
+                    targetTab = dq.dataset.targetTab;
+                    targetQuadrant = dq.dataset.targetQuadrant;
+                    break;
+                }
+
+                // Check for tab-drop-zone (cross-tab, keep same quadrant)
+                var tz = elements[i].closest('.tab-drop-zone');
+                if (tz && !elements[i].closest('.drop-quadrant')) {
+                    targetTab = tz.dataset.targetTab;
+                    break;
+                }
+
+                // Check for matrix quadrant (same tab)
+                var q = elements[i].closest('.quadrant');
+                if (q) {
+                    targetQuadrant = q.dataset.quadrant;
+                    break;
+                }
+            }
+
+            if (targetTab && targetQuadrant) {
+                // Move to different tab AND different quadrant
+                moveToTabAndQuadrant(dragItemId, targetTab, targetQuadrant);
+            } else if (targetTab) {
+                // Move to different tab, keep same quadrant
+                moveToTab(dragItemId, targetTab);
+            } else if (targetQuadrant) {
+                // Move to different quadrant, same tab
+                moveToQuadrant(dragItemId, targetQuadrant);
+            }
+
+            // Cleanup
+            endDrag();
+        }
+
+        isDragging = false;
+        dragItemId = null;
+        draggedItem = null;
+    }
+
+    function endDrag() {
+        // Remove clone
+        if (dragClone) {
+            dragClone.remove();
+            dragClone = null;
+        }
+
+        // Remove dragging class
+        document.querySelectorAll('.task-item.dragging').forEach(function(item) {
+            item.classList.remove('dragging');
+        });
+
+        // Hide drop zones and remove focus effects
+        var tabDropZones = document.getElementById('tab-drop-zones');
+        tabDropZones.style.display = 'none';
+        tabDropZones.classList.remove('has-focus');
+
+        // Remove matrix dimming
+        var matrix = document.querySelector('.eisenhower-matrix');
+        if (matrix) matrix.classList.remove('dimmed');
+
+        // Remove all highlights
+        document.querySelectorAll('.quadrant.drag-over').forEach(function(q) {
+            q.classList.remove('drag-over');
+        });
+        document.querySelectorAll('.drop-quadrant.drag-over').forEach(function(q) {
+            q.classList.remove('drag-over');
+        });
+        document.querySelectorAll('.tab-drop-zone.drag-over').forEach(function(q) {
+            q.classList.remove('drag-over');
+        });
+    }
+
+    function moveToQuadrant(itemId, newQuadrant) {
+        var item = allItems.find(function(i) { return i.id === itemId; });
+        if (!item || item.quadrant === newQuadrant) return;
+
+        fetch('/api/todos/' + itemId, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ quadrant: newQuadrant })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                allItems = allItems.map(function(i) {
+                    if (i.id === itemId) i.quadrant = newQuadrant;
+                    return i;
+                });
+                renderItems();
+                showToast('已移动到' + getQuadrantName(newQuadrant), 'success');
+            }
+        });
+    }
+
+    function moveToTab(itemId, newTab) {
+        if (newTab === currentTab) return;
+
+        fetch('/api/todos/' + itemId, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tab: newTab })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                allItems = allItems.map(function(i) {
+                    if (i.id === itemId) i.tab = newTab;
+                    return i;
+                });
+                updateCounts();
+                renderItems();
+                showToast('已移动到 ' + getTabName(newTab), 'success');
+            }
+        });
+    }
+
+    function moveToTabAndQuadrant(itemId, newTab, newQuadrant) {
+        var item = allItems.find(function(i) { return i.id === itemId; });
+        if (!item) return;
+
+        // Check if anything actually changes
+        if (item.tab === newTab && item.quadrant === newQuadrant) return;
+
+        fetch('/api/todos/' + itemId, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tab: newTab, quadrant: newQuadrant })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                allItems = allItems.map(function(i) {
+                    if (i.id === itemId) {
+                        i.tab = newTab;
+                        i.quadrant = newQuadrant;
+                    }
+                    return i;
+                });
+                updateCounts();
+                renderItems();
+                showToast('已移动到 ' + getTabName(newTab) + ' - ' + getQuadrantName(newQuadrant), 'success');
+            }
+        });
+    }
+
+    function getQuadrantName(q) {
+        var names = {
+            'important-urgent': '重要且紧急',
+            'important-not-urgent': '重要不紧急',
+            'not-important-urgent': '不重要但紧急',
+            'not-important-not-urgent': '不重要不紧急'
+        };
+        return names[q] || q;
+    }
+
+    function dropToTab(e, targetTab) {
+        e.preventDefault();
+        var itemId = e.dataTransfer.getData('text/plain');
+
+        if (!itemId || targetTab === currentTab) return;
+
+        fetch('/api/todos/' + itemId, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tab: targetTab })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                allItems = allItems.map(function(item) {
+                    if (item.id === itemId) {
+                        item.tab = targetTab;
+                    }
+                    return item;
+                });
+                updateCounts();
+                renderItems();
+                showToast('已移动到 ' + getTabName(targetTab), 'success');
+            }
+        });
+    }
+
+    function getTabName(tab) {
+        var names = { today: 'Today', week: 'This Week', month: 'Next 30 Days' };
+        return names[tab] || tab;
+    }
+
+    // Task Actions
+    function toggleComplete(itemId) {
+        var item = allItems.find(function(i) { return i.id === itemId; });
+        if (!item) return;
+
+        var newCompleted = !item.completed;
+
+        var doToggle = function() {
+            fetch('/api/todos/' + itemId, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ completed: newCompleted })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    allItems = allItems.map(function(i) {
+                        if (i.id === itemId) {
+                            return data.item;
+                        }
+                        return i;
+                    });
+                    updateCounts();
+                    renderItems();
+                    showToast(newCompleted ? '已完成' : '已恢复', 'success');
+                }
+            });
+        };
+
+        // 如果是标记为完成，需要确认
+        if (newCompleted) {
+            window.AppUtils.showConfirm('确定要将此任务标记为已完成吗？', doToggle, { confirmText: '完成' });
+        } else {
+            doToggle();
+        }
+    }
+
+    function deleteTask(itemId) {
+        window.AppUtils.showConfirm('确定要删除这个任务吗？', function() {
+            fetch('/api/todos/' + itemId, { method: 'DELETE' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        allItems = allItems.filter(function(i) { return i.id !== itemId; });
+                        updateCounts();
+                        renderItems();
+                        showToast('已删除', 'success');
+                    }
+                });
+        }, { confirmText: '删除', danger: true });
+    }
+
+    function editTask(itemId) {
+        var item = allItems.find(function(i) { return i.id === itemId; });
+        if (!item) return;
+
+        var taskElement = document.querySelector('.task-item[data-id="' + itemId + '"]');
+        if (!taskElement) return;
+
+        var textElement = taskElement.querySelector('.task-text');
+        if (!textElement || textElement.classList.contains('editing')) return;
+
+        var originalText = item.text;
+
+        // 创建编辑输入框
+        var editInput = document.createElement('input');
+        editInput.type = 'text';
+        editInput.className = 'task-edit-input';
+        editInput.value = originalText;
+
+        // 替换文本为输入框
+        textElement.classList.add('editing');
+        textElement.innerHTML = '';
+        textElement.appendChild(editInput);
+        editInput.focus();
+        editInput.select();
+
+        // 保存函数
+        function saveEdit() {
+            var newText = editInput.value.trim();
+            if (!newText || newText === originalText) {
+                cancelEdit();
+                return;
+            }
+
+            fetch('/api/todos/' + itemId, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: newText })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    allItems = allItems.map(function(i) {
+                        if (i.id === itemId) {
+                            i.text = newText;
+                        }
+                        return i;
+                    });
+                    renderItems();
+                    showToast('已更新', 'success');
+                } else {
+                    cancelEdit();
+                    showToast('更新失败', 'error');
+                }
+            })
+            .catch(function() {
+                cancelEdit();
+                showToast('更新失败', 'error');
+            });
+        }
+
+        // 取消编辑函数
+        function cancelEdit() {
+            textElement.classList.remove('editing');
+            textElement.innerHTML = escapeHtml(originalText);
+        }
+
+        // 事件监听
+        editInput.addEventListener('blur', saveEdit);
+        editInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                editInput.blur();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                editInput.removeEventListener('blur', saveEdit);
+                cancelEdit();
+            }
+        });
+    }
+
+    // Modal
+    function showAddModal() {
+        document.getElementById('add-modal').style.display = 'flex';
+        document.getElementById('new-task-text').value = '';
+        // Sync tab selector with current tab
+        setModalTab(currentTab);
+        document.getElementById('new-task-text').focus();
+    }
+
+    function showAddModalForQuadrant(quadrant) {
+        document.getElementById('add-modal').style.display = 'flex';
+        document.getElementById('new-task-text').value = '';
+        // Sync tab selector with current tab
+        setModalTab(currentTab);
+        // Select the quadrant
+        document.querySelectorAll('.quadrant-option').forEach(function(opt) {
+            opt.classList.remove('selected');
+            if (opt.dataset.q === quadrant) {
+                opt.classList.add('selected');
+                opt.querySelector('input').checked = true;
+            }
+        });
+        document.getElementById('new-task-text').focus();
+    }
+
+    function setModalTab(tab) {
+        document.getElementById('new-task-tab').value = tab;
+        document.querySelectorAll('.tab-option').forEach(function(btn) {
+            btn.classList.remove('active');
+            if (btn.dataset.tab === tab) {
+                btn.classList.add('active');
+            }
+        });
+    }
+
+    function hideAddModal(e) {
+        if (e && e.target !== document.getElementById('add-modal')) return;
+        document.getElementById('add-modal').style.display = 'none';
+    }
+
+    // Tag management for modal
+    var modalTags = [];
+
+    function addTagToModal(tag) {
+        tag = tag.trim();
+        if (!tag || modalTags.includes(tag)) return;
+        modalTags.push(tag);
+        renderModalTags();
+    }
+
+    function removeTagFromModal(tag) {
+        modalTags = modalTags.filter(function(t) { return t !== tag; });
+        renderModalTags();
+    }
+
+    function renderModalTags() {
+        var container = document.getElementById('tag-input-container');
+        var input = document.getElementById('tag-input');
+        // Remove existing tag chips
+        container.querySelectorAll('.tag-chip').forEach(function(el) { el.remove(); });
+        // Add tag chips before input
+        modalTags.forEach(function(tag) {
+            var chip = document.createElement('span');
+            chip.className = 'tag-chip';
+            chip.innerHTML = escapeHtml(tag) + ' <span class="tag-chip-remove" onclick="removeTagFromModal(\'' + escapeHtml(tag) + '\')">&times;</span>';
+            container.insertBefore(chip, input);
+        });
+    }
+
+    // Tag input handling
+    document.getElementById('tag-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            addTagToModal(this.value);
+            this.value = '';
+        } else if (e.key === 'Backspace' && !this.value && modalTags.length > 0) {
+            modalTags.pop();
+            renderModalTags();
+        }
+    });
+
+    function addTask() {
+        var text = document.getElementById('new-task-text').value.trim();
+        var tab = document.getElementById('new-task-tab').value;
+        var quadrant = document.querySelector('input[name="quadrant"]:checked').value;
+
+        if (!text) {
+            showToast('请输入任务内容', 'error');
+            return;
+        }
+
+        fetch('/api/todos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: text, tab: tab, quadrant: quadrant, tags: modalTags })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                allItems.push(data.item);
+                updateCounts();
+                renderItems();
+                hideAddModal();
+                modalTags = [];
+                renderModalTags();
+                showToast('已添加', 'success');
+            }
+        });
+    }
+
+    // Quadrant selector
+    document.querySelectorAll('.quadrant-option').forEach(function(opt) {
+        opt.addEventListener('click', function() {
+            document.querySelectorAll('.quadrant-option').forEach(function(o) {
+                o.classList.remove('selected');
+            });
+            opt.classList.add('selected');
+            opt.querySelector('input').checked = true;
+        });
+    });
+
+    // Tab selector in modal
+    document.querySelectorAll('.tab-option').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.tab-option').forEach(function(b) {
+                b.classList.remove('active');
+            });
+            btn.classList.add('active');
+            document.getElementById('new-task-tab').value = btn.dataset.tab;
+        });
+    });
+
+    // Enter key to add task
+    document.getElementById('new-task-text').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            addTask();
+        }
+    });
+
+    function toggleShowCompleted() {
+        showCompleted = document.getElementById('show-completed').checked;
+        renderItems();
+    }
+
+    function toggleCompletedList() {
+        var list = document.getElementById('completed-list');
+        var icon = document.getElementById('completed-icon');
+        if (list.style.display === 'none') {
+            list.style.display = 'block';
+            icon.textContent = '▲';
+        } else {
+            list.style.display = 'none';
+            icon.textContent = '▼';
+        }
+    }
+
+    function showToast(message, type) {
+        AppUtils.showToast(message, type);
+    }
+
+    // Search functionality
+    var searchQuery = '';
+    var searchInput = document.getElementById('search-input');
+    var searchClear = document.getElementById('search-clear');
+
+    searchInput.addEventListener('input', function(e) {
+        searchQuery = e.target.value.toLowerCase().trim();
+        searchClear.style.display = searchQuery ? 'flex' : 'none';
+        renderItems();
+    });
+
+    function clearSearch() {
+        searchInput.value = '';
+        searchQuery = '';
+        searchClear.style.display = 'none';
+        renderItems();
+    }
+
+    function matchesSearch(item) {
+        if (!searchQuery) return true;
+        return item.text.toLowerCase().indexOf(searchQuery) >= 0;
+    }
+
+    function highlightText(text) {
+        if (!searchQuery) return escapeHtml(text);
+        var escaped = escapeHtml(text);
+        var regex = new RegExp('(' + escapeHtml(searchQuery).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+        return escaped.replace(regex, '<span class="search-highlight">$1</span>');
+    }
+
+    // Override createItemHtml to support search highlighting
+    var originalCreateItemHtml = createItemHtml;
+    createItemHtml = function(item) {
+        if (!searchQuery) return originalCreateItemHtml(item);
+        return '<div class="task-item" data-id="' + item.id + '" onmousedown="startCustomDrag(event)" ontouchstart="startTouchDrag(event)">' +
+            '<div class="drag-handle">⋮⋮</div>' +
+            '<div class="task-checkbox" onclick="toggleComplete(\'' + item.id + '\')" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()"></div>' +
+            '<div class="task-text" ondblclick="editTask(\'' + item.id + '\')">' + highlightText(item.text) + '</div>' +
+            '<button class="task-delete" onclick="deleteTask(\'' + item.id + '\')" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()">&times;</button>' +
+        '</div>';
+    };
+
+    // Override renderItems to filter by search
+    var originalRenderItems = renderItems;
+    renderItems = function() {
+        var quadrants = ['important-urgent', 'important-not-urgent', 'not-important-urgent', 'not-important-not-urgent'];
+
+        quadrants.forEach(function(q) {
+            document.getElementById('items-' + q).innerHTML = '';
+        });
+
+        var completedHtml = '';
+        var hasCompleted = false;
+        var visibleCount = 0;
+
+        allItems.forEach(function(item) {
+            if (item.tab !== currentTab) return;
+            if (!matchesSearch(item)) return;
+
+            if (item.completed) {
+                hasCompleted = true;
+                if (showCompleted) {
+                    completedHtml += createCompletedItemHtml(item);
+                }
+            } else {
+                visibleCount++;
+                var container = document.getElementById('items-' + item.quadrant);
+                if (container) {
+                    container.innerHTML += createItemHtml(item);
+                }
+            }
+        });
+
+        document.getElementById('completed-list').innerHTML = completedHtml;
+        document.getElementById('completed-section').style.display = hasCompleted ? 'block' : 'none';
+
+        // Re-attach touch handlers
+        attachTouchHandlers();
+    };
+
+    // Touch Drag and Drop Support
+    var touchDragItem = null;
+    var touchDragClone = null;
+    var touchStartX = 0;
+    var touchStartY = 0;
+    var touchIsDragging = false;
+    var touchDragThreshold = 10;
+
+    function startTouchDrag(e) {
+        var taskItem = e.target.closest('.task-item');
+        if (!taskItem || taskItem.classList.contains('completed')) return;
+
+        var touch = e.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        touchDragItem = taskItem;
+        touchIsDragging = false;
+
+        // Long press to start drag
+        touchDragItem.longPressTimer = setTimeout(function() {
+            if (touchDragItem) {
+                touchIsDragging = true;
+                startTouchDragVisual(touch);
+                if (navigator.vibrate) navigator.vibrate(50);
+            }
+        }, 300);
+    }
+
+    function startTouchDragVisual(touch) {
+        touchDragClone = document.createElement('div');
+        touchDragClone.className = 'drag-clone';
+        touchDragClone.textContent = touchDragItem.querySelector('.task-text').textContent;
+        touchDragClone.style.left = touch.clientX + 'px';
+        touchDragClone.style.top = touch.clientY + 'px';
+        document.body.appendChild(touchDragClone);
+
+        touchDragItem.classList.add('touch-dragging');
+        document.getElementById('tab-drop-zones').style.display = 'flex';
+        document.querySelectorAll('.tab-drop-zone').forEach(function(zone) {
+            zone.style.display = zone.dataset.targetTab === currentTab ? 'none' : 'flex';
+        });
+    }
+
+    function onTouchMove(e) {
+        if (!touchDragItem) return;
+
+        var touch = e.touches[0];
+        var dx = touch.clientX - touchStartX;
+        var dy = touch.clientY - touchStartY;
+
+        if (!touchIsDragging && (Math.abs(dx) > touchDragThreshold || Math.abs(dy) > touchDragThreshold)) {
+            clearTimeout(touchDragItem.longPressTimer);
+        }
+
+        if (touchIsDragging && touchDragClone) {
+            e.preventDefault();
+            touchDragClone.style.left = touch.clientX + 'px';
+            touchDragClone.style.top = touch.clientY + 'px';
+            highlightQuadrantUnderCursor(touch.clientX, touch.clientY);
+        }
+    }
+
+    function onTouchEnd(e) {
+        if (touchDragItem) {
+            clearTimeout(touchDragItem.longPressTimer);
+        }
+
+        if (touchIsDragging && touchDragItem) {
+            var touch = e.changedTouches[0];
+            var elements = document.elementsFromPoint(touch.clientX, touch.clientY);
+            var targetQuadrant = null;
+            var targetTab = null;
+            var itemId = touchDragItem.dataset.id;
+
+            for (var i = 0; i < elements.length; i++) {
+                var dq = elements[i].closest('.drop-quadrant');
+                if (dq) {
+                    targetTab = dq.dataset.targetTab;
+                    targetQuadrant = dq.dataset.targetQuadrant;
+                    break;
+                }
+                var tz = elements[i].closest('.tab-drop-zone');
+                if (tz && !elements[i].closest('.drop-quadrant')) {
+                    targetTab = tz.dataset.targetTab;
+                    break;
+                }
+                var q = elements[i].closest('.quadrant');
+                if (q) {
+                    targetQuadrant = q.dataset.quadrant;
+                    break;
+                }
+            }
+
+            if (targetTab && targetQuadrant) {
+                moveToTabAndQuadrant(itemId, targetTab, targetQuadrant);
+            } else if (targetTab) {
+                moveToTab(itemId, targetTab);
+            } else if (targetQuadrant) {
+                moveToQuadrant(itemId, targetQuadrant);
+            }
+        }
+
+        // Cleanup
+        if (touchDragClone) {
+            touchDragClone.remove();
+            touchDragClone = null;
+        }
+        if (touchDragItem) {
+            touchDragItem.classList.remove('touch-dragging');
+            touchDragItem = null;
+        }
+        touchIsDragging = false;
+        endDrag();
+    }
+
+    function attachTouchHandlers() {
+        document.querySelectorAll('.task-item:not(.completed)').forEach(function(item) {
+            item.addEventListener('touchstart', startTouchDrag, { passive: false });
+        });
+    }
+
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('touchend', onTouchEnd);
+
+    // Gesture navigation (swipe between tabs)
+    var gestureStartX = 0;
+    var gestureStartY = 0;
+    var gestureHint = document.getElementById('gesture-hint');
+
+    document.querySelector('.eisenhower-matrix').addEventListener('touchstart', function(e) {
+        if (e.target.closest('.task-item')) return;
+        gestureStartX = e.touches[0].clientX;
+        gestureStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    document.querySelector('.eisenhower-matrix').addEventListener('touchend', function(e) {
+        if (e.target.closest('.task-item')) return;
+        var dx = e.changedTouches[0].clientX - gestureStartX;
+        var dy = e.changedTouches[0].clientY - gestureStartY;
+
+        if (Math.abs(dx) > 80 && Math.abs(dx) > Math.abs(dy) * 2) {
+            var tabs = ['today', 'week', 'month'];
+            var currentIndex = tabs.indexOf(currentTab);
+
+            if (dx < 0 && currentIndex < tabs.length - 1) {
+                // Swipe left -> next tab
+                switchTab(tabs[currentIndex + 1]);
+                showGestureHint('→ ' + getTabName(tabs[currentIndex + 1]));
+            } else if (dx > 0 && currentIndex > 0) {
+                // Swipe right -> previous tab
+                switchTab(tabs[currentIndex - 1]);
+                showGestureHint('← ' + getTabName(tabs[currentIndex - 1]));
+            }
+        }
+    }, { passive: true });
+
+    function showGestureHint(text) {
+        if (!gestureHint) return;
+        gestureHint.textContent = text;
+        gestureHint.classList.add('visible');
+        setTimeout(function() {
+            gestureHint.classList.remove('visible');
+        }, 1000);
+    }
+
+    // Initialize
+    console.log('=== Todo page loaded (v11 - with search, touch drag, gestures) ===');
+    loadItems();
+    </script>
+
+    <!-- Daily Review Button (F601) -->
+    <button class="daily-review-trigger" onclick="showDailyReview()" title="每日回顾 (R)">📊</button>
+
+    <!-- Daily Review Modal (F601) -->
+    <div class="daily-review-modal" id="daily-review-modal" onclick="hideDailyReview(event)">
+        <div class="daily-review-content" onclick="event.stopPropagation()">
+            <div class="daily-review-header" id="review-header">今日回顾</div>
+            <div class="daily-review-date" id="review-date"></div>
+            <div class="daily-review-stats">
+                <div class="review-stat">
+                    <div class="review-stat-value success" id="review-completed">0</div>
+                    <div class="review-stat-label">已完成</div>
+                </div>
+                <div class="review-stat">
+                    <div class="review-stat-value" id="review-pending">0</div>
+                    <div class="review-stat-label">待完成</div>
+                </div>
+            </div>
+            <div class="daily-review-message" id="review-message"></div>
+            <div class="daily-review-tasks" id="review-tasks"></div>
+            <button class="daily-review-close" onclick="hideDailyReview()">继续加油</button>
+        </div>
+    </div>
+
+    <script>
+    // F601: Daily Review functionality
+    function showDailyReview() {
+        var today = new Date();
+        var dateStr = today.getFullYear() + '年' + (today.getMonth() + 1) + '月' + today.getDate() + '日';
+        document.getElementById('review-date').textContent = dateStr;
+
+        // Calculate stats for today's tasks
+        var todayItems = allItems.filter(function(item) { return item.tab === 'today'; });
+        var completed = todayItems.filter(function(item) { return item.completed; });
+        var pending = todayItems.filter(function(item) { return !item.completed; });
+
+        document.getElementById('review-completed').textContent = completed.length;
+        document.getElementById('review-pending').textContent = pending.length;
+
+        // Generate message based on completion
+        var messages = [];
+        var rate = todayItems.length > 0 ? (completed.length / todayItems.length * 100).toFixed(0) : 0;
+
+        if (rate >= 100) {
+            messages = ['太棒了！今日任务全部完成！', '完美的一天！所有任务都搞定了！', '你是效率之王！'];
+        } else if (rate >= 80) {
+            messages = ['非常出色！完成了大部分任务！', '很接近目标了，继续保持！'];
+        } else if (rate >= 50) {
+            messages = ['完成了一半任务，继续努力！', '稳步前进，你可以的！'];
+        } else if (rate > 0) {
+            messages = ['迈出了第一步，明天更进一步！', '每一点进步都值得肯定！'];
+        } else if (todayItems.length === 0) {
+            messages = ['今天还没有任务，添加一个开始吧！'];
+        } else {
+            messages = ['休息也是为了更好的出发！', '明天是新的开始！'];
+        }
+        document.getElementById('review-message').textContent = messages[Math.floor(Math.random() * messages.length)];
+
+        // Show completed tasks
+        var tasksHtml = '';
+        completed.forEach(function(item) {
+            tasksHtml += '<div class="review-task-item"><span class="review-task-check">✓</span><span>' + escapeHtml(item.text) + '</span></div>';
+        });
+        document.getElementById('review-tasks').innerHTML = tasksHtml || '<div style="text-align:center;color:var(--text-muted);">暂无完成的任务</div>';
+
+        document.getElementById('daily-review-modal').classList.add('visible');
+    }
+
+    function hideDailyReview(e) {
+        if (e && e.target !== document.getElementById('daily-review-modal')) return;
+        document.getElementById('daily-review-modal').classList.remove('visible');
+    }
+
+    // Add keyboard shortcut R for daily review
+    document.addEventListener('keydown', function(e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        if (e.key === 'r' || e.key === 'R') {
+            showDailyReview();
+        }
+    });
+    </script>
+
+    <!-- Quick Add Bar -->
+    <div class="quick-add-bar">
+        <input type="text" class="quick-add-input" id="quick-add-input" placeholder="快速添加任务到今日...">
+        <button class="quick-add-btn" onclick="quickAddTask()">+</button>
+    </div>
+
+    <script>
+    // Quick Add functionality
+    function quickAddTask() {
+        var input = document.getElementById('quick-add-input');
+        var text = input.value.trim();
+        if (!text) return;
+
+        fetch('/api/todos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                text: text,
+                tab: 'today',
+                quadrant: 'important-urgent'
+            })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                allItems.push(data.item);
+                updateCounts();
+                if (currentTab === 'today') renderItems();
+                input.value = '';
+                showToast('已添加到今日', 'success');
+            }
+        })
+        .catch(function() {
+            showToast('添加失败', 'error');
+        });
+    }
+
+    document.getElementById('quick-add-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') quickAddTask();
+    });
+    </script>
+{% endblock %}

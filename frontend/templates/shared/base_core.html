@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#ff6b6b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Boris Life">
+    <title>{% block title %}Boris Life{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    {% block platform_css %}{% endblock %}
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+    {% block body_content %}{% endblock %}
+
+    <script>
+    // 全局鼠标位置跟踪
+    window._mousePos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    document.addEventListener('mousemove', function(e) {
+        window._mousePos = { x: e.clientX, y: e.clientY };
+    });
+    document.addEventListener('click', function(e) {
+        window._mousePos = { x: e.clientX, y: e.clientY };
+    });
+
+    // Shared utilities
+    window.AppUtils = {
+        formatDate: function(isoString) {
+            var date = new Date(isoString);
+            var y = date.getFullYear();
+            var m = (date.getMonth() + 1).toString().padStart(2, '0');
+            var d = date.getDate().toString().padStart(2, '0');
+            var h = date.getHours().toString().padStart(2, '0');
+            var min = date.getMinutes().toString().padStart(2, '0');
+            return y + '-' + m + '-' + d + ' ' + h + ':' + min;
+        },
+        escapeHtml: function(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;')
+                      .replace(/</g, '&lt;')
+                      .replace(/>/g, '&gt;')
+                      .replace(/"/g, '&quot;')
+                      .replace(/\n/g, '<br>');
+        },
+        showToast: function(message, type, containerId) {
+            // 创建 toast 元素
+            var toast = document.createElement('div');
+            toast.className = 'toast toast-' + type + ' toast-at-mouse';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            // 计算位置（鼠标附近，稍微偏移避免遮挡）
+            var mouseX = window._mousePos.x;
+            var mouseY = window._mousePos.y;
+            var offsetX = 15;
+            var offsetY = -40;
+
+            // 获取 toast 尺寸后调整位置
+            var rect = toast.getBoundingClientRect();
+            var posX = mouseX + offsetX;
+            var posY = mouseY + offsetY;
+
+            // 边界检测，确保不超出屏幕
+            if (posX + rect.width > window.innerWidth - 10) {
+                posX = mouseX - rect.width - offsetX;
+            }
+            if (posY < 10) {
+                posY = mouseY + 20;
+            }
+            if (posY + rect.height > window.innerHeight - 10) {
+                posY = window.innerHeight - rect.height - 10;
+            }
+
+            toast.style.left = posX + 'px';
+            toast.style.top = posY + 'px';
+
+            setTimeout(function() {
+                toast.classList.add('toast-hide');
+                setTimeout(function() { toast.remove(); }, 300);
+            }, 2000);
+        }
+    };
+
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+            .then(function(reg) { console.log('SW registered:', reg.scope); })
+            .catch(function(err) { console.log('SW failed:', err); });
+    }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

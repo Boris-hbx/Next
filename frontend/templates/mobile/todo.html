@@ -1,0 +1,407 @@
+{% extends "mobile/base.html" %}
+
+{% block title %}Todo - Boris Life{% endblock %}
+{% block page_title %}My Tasks{% endblock %}
+
+{% block header_actions %}
+<button class="header-btn" onclick="loadTodos()" title="刷新">🔄</button>
+<button class="header-btn" onclick="showAddModal()" title="添加">+</button>
+{% endblock %}
+
+{% block content %}
+<div class="toast-container" id="toast-container"></div>
+
+<!-- Time Tabs -->
+<div class="mobile-time-tabs">
+    <button class="time-tab active" data-tab="today" onclick="switchTab('today')">
+        Today <span id="count-today">0</span>
+    </button>
+    <button class="time-tab" data-tab="week" onclick="switchTab('week')">
+        Week <span id="count-week">0</span>
+    </button>
+    <button class="time-tab" data-tab="month" onclick="switchTab('month')">
+        Month <span id="count-month">0</span>
+    </button>
+</div>
+
+<!-- Quadrant Filter -->
+<div class="quadrant-filter">
+    <button class="quad-btn active" data-quad="all" onclick="filterQuadrant('all')">全部</button>
+    <button class="quad-btn q1" data-quad="important-urgent" onclick="filterQuadrant('important-urgent')">🔥</button>
+    <button class="quad-btn q2" data-quad="important-not-urgent" onclick="filterQuadrant('important-not-urgent')">🎯</button>
+    <button class="quad-btn q3" data-quad="not-important-urgent" onclick="filterQuadrant('not-important-urgent')">📞</button>
+    <button class="quad-btn q4" data-quad="not-important-not-urgent" onclick="filterQuadrant('not-important-not-urgent')">🎮</button>
+</div>
+
+<!-- Task List -->
+<div class="mobile-section">
+    <div id="task-list">
+        <!-- Tasks rendered here -->
+    </div>
+</div>
+
+<!-- Add FAB -->
+<button class="mobile-fab" onclick="showAddModal()">+</button>
+
+<!-- Add Modal -->
+<div class="mobile-modal" id="add-modal" style="display:none;">
+    <div class="mobile-modal-overlay" onclick="hideAddModal()"></div>
+    <div class="mobile-modal-content">
+        <div class="mobile-modal-header">
+            <h3>添加任务</h3>
+            <button class="mobile-modal-close" onclick="hideAddModal()">×</button>
+        </div>
+        <div class="mobile-modal-body">
+            <input type="text" class="mobile-input" id="task-input" placeholder="任务内容...">
+            <div class="quad-select">
+                <div class="quad-option selected" data-quad="important-urgent">🔥 重要紧急</div>
+                <div class="quad-option" data-quad="important-not-urgent">🎯 重要不紧急</div>
+                <div class="quad-option" data-quad="not-important-urgent">📞 不重要紧急</div>
+                <div class="quad-option" data-quad="not-important-not-urgent">🎮 不重要不紧急</div>
+            </div>
+        </div>
+        <div class="mobile-modal-footer">
+            <button class="mobile-btn mobile-btn-primary" onclick="addTask()">添加</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.mobile-time-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.time-tab {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.8);
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.time-tab.active {
+    background: var(--primary-color);
+    color: white;
+}
+
+.time-tab span {
+    margin-left: 4px;
+    opacity: 0.8;
+}
+
+.quadrant-filter {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.quad-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.6);
+    font-size: 0.8rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+}
+
+.quad-btn.active {
+    background: var(--primary-color);
+    color: white;
+}
+
+.task-card {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.task-checkbox {
+    width: 22px;
+    height: 22px;
+    border: 2px solid #ddd;
+    border-radius: 50%;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.task-checkbox.checked {
+    background: var(--success-color);
+    border-color: var(--success-color);
+    color: white;
+}
+
+.task-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.task-text {
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    word-break: break-word;
+}
+
+.task-text.completed {
+    text-decoration: line-through;
+    opacity: 0.5;
+}
+
+.task-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.task-quad {
+    font-size: 0.9rem;
+}
+
+.task-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.task-action {
+    font-size: 1rem;
+    cursor: pointer;
+    opacity: 0.5;
+}
+
+.quad-select {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.quad-option {
+    padding: 12px;
+    border: 2px solid #eee;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.quad-option.selected {
+    border-color: var(--primary-color);
+    background: rgba(102,126,234,0.1);
+}
+
+.mobile-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+}
+</style>
+
+<script>
+var allTodos = [];
+var currentTab = 'today';
+var currentQuadrant = 'all';
+var selectedQuadrant = 'important-urgent';
+
+function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.time-tab').forEach(function(t) {
+        t.classList.toggle('active', t.dataset.tab === tab);
+    });
+    renderTasks();
+}
+
+function filterQuadrant(quad) {
+    currentQuadrant = quad;
+    document.querySelectorAll('.quad-btn').forEach(function(b) {
+        b.classList.toggle('active', b.dataset.quad === quad);
+    });
+    renderTasks();
+}
+
+function loadTodos() {
+    fetch('/api/todos')
+        .then(r => r.json())
+        .then(data => {
+            allTodos = data.items || [];
+            updateCounts();
+            renderTasks();
+        });
+}
+
+function updateCounts() {
+    var counts = {today: 0, week: 0, month: 0};
+    allTodos.forEach(function(t) {
+        if (!t.completed && counts[t.tab] !== undefined) {
+            counts[t.tab]++;
+        }
+    });
+    document.getElementById('count-today').textContent = counts.today;
+    document.getElementById('count-week').textContent = counts.week;
+    document.getElementById('count-month').textContent = counts.month;
+}
+
+function renderTasks() {
+    var container = document.getElementById('task-list');
+    var filtered = allTodos.filter(function(t) {
+        if (t.tab !== currentTab) return false;
+        if (currentQuadrant !== 'all' && t.quadrant !== currentQuadrant) return false;
+        return true;
+    });
+
+    if (filtered.length === 0) {
+        container.innerHTML = '<div class="mobile-empty">暂无任务</div>';
+        return;
+    }
+
+    var html = '';
+    filtered.forEach(function(task) {
+        html += createTaskHtml(task);
+    });
+    container.innerHTML = html;
+}
+
+function createTaskHtml(task) {
+    var quadIcons = {
+        'important-urgent': '🔥',
+        'important-not-urgent': '🎯',
+        'not-important-urgent': '📞',
+        'not-important-not-urgent': '🎮'
+    };
+    var icon = quadIcons[task.quadrant] || '📌';
+    var checked = task.completed ? 'checked' : '';
+    var completed = task.completed ? 'completed' : '';
+
+    return '<div class="task-card" data-id="' + task.id + '">' +
+        '<div class="task-checkbox ' + checked + '" onclick="toggleTask(\'' + task.id + '\')">' +
+            (task.completed ? '✓' : '') +
+        '</div>' +
+        '<div class="task-content">' +
+            '<div class="task-text ' + completed + '">' + escapeHtml(task.text) + '</div>' +
+            '<div class="task-meta">' +
+                '<span class="task-quad">' + icon + '</span>' +
+            '</div>' +
+        '</div>' +
+        '<div class="task-actions">' +
+            '<span class="task-action" onclick="deleteTask(\'' + task.id + '\')">🗑️</span>' +
+        '</div>' +
+    '</div>';
+}
+
+function toggleTask(id) {
+    var task = allTodos.find(t => t.id === id);
+    if (!task) return;
+
+    var newCompleted = !task.completed;
+
+    var doToggle = function() {
+        fetch('/api/todos/' + id, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({completed: newCompleted})
+        }).then(r => r.json()).then(data => {
+            if (data.success) {
+                loadTodos();
+                showToast(newCompleted ? '已完成' : '已恢复', 'success');
+            }
+        });
+    };
+
+    // 如果是标记为完成，需要确认
+    if (newCompleted) {
+        window.AppUtils.showConfirm('确定要将此任务标记为已完成吗？', doToggle, { confirmText: '完成' });
+    } else {
+        doToggle();
+    }
+}
+
+function deleteTask(id) {
+    window.AppUtils.showConfirm('删除此任务？', function() {
+        fetch('/api/todos/' + id, {method: 'DELETE'})
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    loadTodos();
+                    showToast('已删除', 'success');
+                }
+            });
+    }, { confirmText: '删除', danger: true });
+}
+
+function showAddModal() {
+    document.getElementById('add-modal').style.display = 'flex';
+    document.getElementById('task-input').focus();
+}
+
+function hideAddModal() {
+    document.getElementById('add-modal').style.display = 'none';
+    document.getElementById('task-input').value = '';
+}
+
+document.querySelectorAll('.quad-option').forEach(function(opt) {
+    opt.addEventListener('click', function() {
+        document.querySelectorAll('.quad-option').forEach(o => o.classList.remove('selected'));
+        this.classList.add('selected');
+        selectedQuadrant = this.dataset.quad;
+    });
+});
+
+function addTask() {
+    var text = document.getElementById('task-input').value.trim();
+    if (!text) {
+        showToast('请输入任务内容', 'error');
+        return;
+    }
+
+    fetch('/api/todos', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            text: text,
+            tab: currentTab,
+            quadrant: selectedQuadrant
+        })
+    }).then(r => r.json()).then(data => {
+        if (data.success) {
+            hideAddModal();
+            loadTodos();
+            showToast('已添加', 'success');
+        }
+    });
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function showToast(msg, type) {
+    AppUtils.showToast(msg, type, 'toast-container');
+}
+
+window.refreshContent = loadTodos;
+loadTodos();
+</script>
+{% endblock %}
