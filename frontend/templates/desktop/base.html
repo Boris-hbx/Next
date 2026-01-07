@@ -2,6 +2,330 @@
 
 {% block platform_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/desktop.css') }}">
+<style>
+/* Nav Group 样式 */
+.nav-group {
+    margin: 8px 0;
+}
+.nav-group-header {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.9);
+    border-radius: 8px;
+    transition: background 0.2s;
+    gap: 8px;
+}
+.nav-group-header:hover {
+    background: rgba(255,255,255,0.1);
+}
+.nav-group-icon {
+    font-size: 16px;
+}
+.nav-group-title {
+    flex: 1;
+    font-weight: 500;
+    font-size: 14px;
+}
+.nav-group-arrow {
+    font-size: 10px;
+    transition: transform 0.3s;
+}
+.nav-group.expanded .nav-group-arrow {
+    transform: rotate(180deg);
+}
+.nav-group-items {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    padding-left: 12px;
+}
+.nav-group.expanded .nav-group-items {
+    max-height: 200px;
+}
+.nav-link.sub-link {
+    padding: 8px 12px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 2px 0;
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    transition: all 0.2s;
+}
+.nav-link.sub-link:hover {
+    background: rgba(255,255,255,0.08);
+    color: white;
+}
+.nav-link.sub-link.active {
+    background: linear-gradient(135deg, #ff6b6b, #feca57);
+    color: white;
+}
+.sub-icon {
+    font-size: 14px;
+}
+
+/* 底部区域布局 */
+.sidebar-bottom-section {
+    margin-top: auto;
+    padding: 0 0.5rem;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 漂亮的分隔线 */
+.sidebar-elegant-divider {
+    position: relative;
+    height: 20px;
+    margin: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebar-elegant-divider .divider-line {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg,
+        transparent,
+        rgba(255, 255, 255, 0.3) 20%,
+        rgba(255, 255, 255, 0.5) 50%,
+        rgba(255, 255, 255, 0.3) 80%,
+        transparent
+    );
+}
+
+.sidebar-elegant-divider .divider-glow {
+    position: absolute;
+    width: 60%;
+    height: 1px;
+    background: linear-gradient(90deg,
+        transparent,
+        rgba(255, 200, 150, 0.4) 30%,
+        rgba(255, 200, 150, 0.6) 50%,
+        rgba(255, 200, 150, 0.4) 70%,
+        transparent
+    );
+    filter: blur(2px);
+    animation: dividerPulse 3s ease-in-out infinite;
+}
+
+@keyframes dividerPulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}
+
+/* 版本管理触发按钮 */
+.version-trigger {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.9);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    gap: 8px;
+    margin: 0 0.5rem;
+}
+.version-trigger:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+.version-trigger.active {
+    background: rgba(255, 255, 255, 0.08);
+}
+.version-trigger-icon {
+    font-size: 16px;
+}
+.version-trigger-title {
+    flex: 1;
+    font-weight: 500;
+    font-size: 14px;
+}
+.version-trigger-arrow {
+    font-size: 10px;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.version-trigger.expanded .version-trigger-arrow {
+    transform: rotate(180deg);
+}
+
+/* 分隔线调整 - 紧贴北京上方 */
+.sidebar-elegant-divider {
+    margin: 8px 16px 4px 16px;
+}
+
+/* iOS 26 风格玻璃浮动面板 */
+.version-floating-panel {
+    position: fixed;
+    left: 228px;
+    bottom: 180px;
+    width: 260px;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-10px) scale(0.96);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    filter: drop-shadow(0 25px 50px rgba(0, 0, 0, 0.4));
+}
+.version-floating-panel.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0) scale(1);
+}
+
+/* iOS 风格面板内容 - 液态玻璃效果 */
+.panel-content {
+    position: relative;
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.25) 0%,
+        rgba(255, 255, 255, 0.12) 50%,
+        rgba(255, 255, 255, 0.18) 100%
+    );
+    backdrop-filter: blur(40px) saturate(200%) brightness(1.1);
+    -webkit-backdrop-filter: blur(40px) saturate(200%) brightness(1.1);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 20px;
+    padding: 6px;
+    overflow: hidden;
+    box-shadow:
+        0 0 0 0.5px rgba(255, 255, 255, 0.4) inset,
+        0 2px 4px rgba(255, 255, 255, 0.1) inset,
+        0 -1px 2px rgba(0, 0, 0, 0.05) inset,
+        0 8px 32px rgba(0, 0, 0, 0.2),
+        0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 顶部高光条 */
+.panel-content::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 10%;
+    right: 10%;
+    height: 1px;
+    background: linear-gradient(90deg,
+        transparent,
+        rgba(255, 255, 255, 0.8) 20%,
+        rgba(255, 255, 255, 0.9) 50%,
+        rgba(255, 255, 255, 0.8) 80%,
+        transparent
+    );
+    border-radius: 1px;
+}
+
+/* 内部光泽层 */
+.panel-content::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50%;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.15) 0%,
+        transparent 100%
+    );
+    border-radius: 20px 20px 0 0;
+    pointer-events: none;
+}
+
+/* iOS 风格指针箭头 */
+.panel-pointer {
+    position: absolute;
+    left: -10px;
+    bottom: 20px;
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.25) 0%,
+        rgba(255, 255, 255, 0.15) 100%
+    );
+    backdrop-filter: blur(40px) saturate(200%);
+    -webkit-backdrop-filter: blur(40px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-right: none;
+    border-top: none;
+    transform: rotate(45deg);
+    box-shadow:
+        -2px 2px 4px rgba(0, 0, 0, 0.1),
+        1px -1px 2px rgba(255, 255, 255, 0.2) inset;
+}
+
+/* iOS 风格面板子项 */
+.panel-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    color: rgba(255, 255, 255, 0.95);
+    text-decoration: none;
+    border-radius: 14px;
+    transition: all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    gap: 12px;
+    margin: 2px 0;
+    z-index: 1;
+}
+.panel-item:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    transform: scale(1.02);
+}
+.panel-item:active {
+    transform: scale(0.98);
+    background: rgba(255, 255, 255, 0.25);
+}
+.panel-item.active {
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.3) 0%,
+        rgba(255, 255, 255, 0.15) 100%
+    );
+    color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.panel-item-icon {
+    font-size: 18px;
+    width: 28px;
+    text-align: center;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+}
+.panel-item-text {
+    flex: 1;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: -0.2px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+.panel-item-arrow {
+    font-size: 14px;
+    opacity: 0.5;
+    transition: all 0.25s ease;
+}
+.panel-item:hover .panel-item-arrow {
+    opacity: 1;
+    transform: translateX(3px);
+}
+
+/* 面板遮罩层 */
+.version-panel-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 999;
+    display: none;
+}
+.version-panel-overlay.visible {
+    display: block;
+}
+</style>
 {% endblock %}
 
 {% block body_class %}platform-desktop{% endblock %}
@@ -17,7 +341,7 @@
             <span class="menu-icon">☰</span>
         </button>
         <span class="header-logo" id="header-logo" title="点击设置小球数量" style="cursor:pointer;">⚡</span>
-        <span class="header-title">Boris Life</span>
+        <span class="header-title">Next</span>
     </div>
     <div class="header-right">
         <div class="header-user" id="header-user" style="display:none;">
@@ -50,34 +374,13 @@
     <!-- Left Sidebar -->
     <nav class="sidebar" id="sidebar">
         <div class="nav-links">
-            <a href="{{ url_for('main') }}" class="nav-link {% if current_page == 'main' %}active{% endif %}">主页</a>
             <a href="{{ url_for('todo') }}" class="nav-link {% if current_page == 'todo' %}active{% endif %}">Todo</a>
-            <a href="{{ url_for('motivation') }}" class="nav-link {% if current_page == 'motivation' %}active{% endif %}">程序员鼓励大师</a>
-            <a href="{{ url_for('bubble') }}" class="nav-link {% if current_page == 'bubble' %}active{% endif %}">气泡图工具</a>
-            <a href="{{ url_for('game') }}" class="nav-link {% if current_page == 'game' %}active{% endif %}">松开你的大脑</a>
-            <a href="{{ url_for('leader') }}" class="nav-link {% if current_page == 'leader' %}active{% endif %}">领袖培训班</a>
-            <a href="{{ url_for('english') }}" class="nav-link {% if current_page == 'english' %}active{% endif %}">英文学习天地</a>
-            <a href="{{ url_for('aichat') }}" class="nav-link ai-link {% if current_page == 'aichat' %}active{% endif %}">
-                <span class="ai-glow"></span>
-                智脑中枢
-            </a>
         </div>
 
-        <!-- 底部区域：待执行prompt + prompt历史记录 -->
-        <div class="sidebar-bottom">
-            <a href="{{ url_for('prompt_todo') }}" class="prompt-log-link {% if current_page == 'prompt_todo' %}active{% endif %}">
-                <span class="prompt-icon">📋</span>
-                <span>待执行prompt</span>
-            </a>
-            <a href="{{ url_for('prompts') }}" class="prompt-log-link {% if current_page == 'prompts' %}active{% endif %}">
-                <span class="prompt-icon">📜</span>
-                <span>prompt历史记录</span>
-            </a>
-            <div class="sidebar-divider"></div>
-        </div>
-
-        <!-- 时区显示 -->
-        <div class="timezone-panel" id="timezone-panel">
+        <!-- 底部区域 -->
+        <div class="sidebar-bottom-section">
+            <!-- 时区显示 -->
+            <div class="timezone-panel" id="timezone-panel">
             <div class="timezone-item">
                 <span class="tz-city">北京</span>
                 <div class="tz-info">
@@ -98,6 +401,7 @@
                     <span class="tz-datetime" id="tz-vancouver-date"></span>
                     <span class="tz-time" id="tz-vancouver-time"></span>
                 </div>
+            </div>
             </div>
         </div>
     </nav>
@@ -1264,6 +1568,18 @@
         localStorage.setItem('sidebarCollapsed', 'true');
         var quickAddBar = document.querySelector('.quick-add-bar');
         if (quickAddBar) quickAddBar.classList.add('expanded');
+        // 收起侧边栏时关闭版本管理面板
+        if (typeof closeVersionPanel === 'function') {
+            closeVersionPanel();
+        } else {
+            // 直接操作 DOM
+            var panel = document.getElementById('version-panel');
+            var overlay = document.getElementById('version-overlay');
+            var trigger = document.getElementById('version-trigger');
+            if (panel) panel.classList.remove('visible');
+            if (overlay) overlay.classList.remove('visible');
+            if (trigger) trigger.classList.remove('expanded');
+        }
     }
 
     function expandSidebar() {
@@ -1366,5 +1682,37 @@
     updateTimezones();
     setInterval(updateTimezones, 1000);
 })();
+
+// 版本管理浮动面板
+function toggleVersionPanel() {
+    var panel = document.getElementById('version-panel');
+    var overlay = document.getElementById('version-overlay');
+    var trigger = document.getElementById('version-trigger');
+
+    if (panel.classList.contains('visible')) {
+        closeVersionPanel();
+    } else {
+        panel.classList.add('visible');
+        overlay.classList.add('visible');
+        trigger.classList.add('expanded');
+    }
+}
+
+function closeVersionPanel() {
+    var panel = document.getElementById('version-panel');
+    var overlay = document.getElementById('version-overlay');
+    var trigger = document.getElementById('version-trigger');
+
+    panel.classList.remove('visible');
+    overlay.classList.remove('visible');
+    trigger.classList.remove('expanded');
+}
+
+// ESC 键关闭面板
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeVersionPanel();
+    }
+});
 </script>
 {% endblock %}

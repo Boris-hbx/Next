@@ -6,10 +6,10 @@
     <meta name="theme-color" content="#667eea">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Boris Life">
-    <title>{% block title %}Boris Life{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <meta name="apple-mobile-web-app-title" content="Next">
+    <title>{% block title %}Next - Focus on the Right Thing{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}?v=20260104b">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=20260104b">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
     <script>
@@ -178,6 +178,155 @@
     .sub-icon {
         font-size: 14px;
     }
+    /* 底部区域布局 */
+    .sidebar-bottom-section {
+        margin-top: auto;
+        padding: 0 0.5rem;
+    }
+    /* 漂亮的分隔线 */
+    .sidebar-elegant-divider {
+        position: relative;
+        height: 20px;
+        margin: 12px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .sidebar-elegant-divider .divider-line {
+        width: 100%;
+        height: 1px;
+        background: linear-gradient(90deg,
+            transparent,
+            rgba(255, 255, 255, 0.3) 20%,
+            rgba(255, 255, 255, 0.5) 50%,
+            rgba(255, 255, 255, 0.3) 80%,
+            transparent
+        );
+    }
+    .sidebar-elegant-divider .divider-glow {
+        position: absolute;
+        width: 60%;
+        height: 1px;
+        background: linear-gradient(90deg,
+            transparent,
+            rgba(255, 200, 150, 0.4) 30%,
+            rgba(255, 200, 150, 0.6) 50%,
+            rgba(255, 200, 150, 0.4) 70%,
+            transparent
+        );
+        filter: blur(2px);
+        animation: dividerPulse 3s ease-in-out infinite;
+    }
+    @keyframes dividerPulse {
+        0%, 100% { opacity: 0.5; }
+        50% { opacity: 1; }
+    }
+    /* 版本管理触发按钮 */
+    .version-trigger {
+        display: flex;
+        align-items: center;
+        padding: 10px 16px;
+        cursor: pointer;
+        color: rgba(255, 255, 255, 0.9);
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        gap: 8px;
+        margin: 0 0.5rem;
+    }
+    .version-trigger:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+    .version-trigger.active {
+        background: rgba(255, 255, 255, 0.08);
+    }
+    .version-trigger-icon { font-size: 16px; }
+    .version-trigger-title { flex: 1; font-weight: 500; font-size: 14px; }
+    .version-trigger-arrow {
+        font-size: 10px;
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .version-trigger.expanded .version-trigger-arrow {
+        transform: rotate(180deg);
+    }
+    /* 分隔线调整 */
+    .sidebar-elegant-divider { margin: 8px 16px 4px 16px; }
+    /* 透明玻璃浮动面板 */
+    .version-floating-panel {
+        position: fixed;
+        left: 228px;
+        bottom: 120px;
+        width: 240px;
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateX(-20px) scale(0.95);
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .version-floating-panel.visible {
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(0) scale(1);
+    }
+    .panel-content {
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(24px) saturate(180%);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-top: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+        border-radius: 16px;
+        padding: 8px;
+    }
+    .panel-pointer {
+        position: absolute;
+        left: -8px;
+        bottom: 30px;
+        width: 16px;
+        height: 16px;
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(24px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-right: none;
+        border-top: none;
+        transform: rotate(45deg);
+        box-shadow: -3px 3px 8px rgba(0, 0, 0, 0.15);
+    }
+    .panel-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 14px;
+        color: rgba(255, 255, 255, 0.85);
+        text-decoration: none;
+        border-radius: 10px;
+        transition: all 0.2s ease;
+        gap: 10px;
+        margin: 2px 0;
+    }
+    .panel-item:hover {
+        background: rgba(255, 255, 255, 0.12);
+        color: white;
+        transform: translateX(4px);
+    }
+    .panel-item.active {
+        background: linear-gradient(135deg, rgba(255, 107, 107, 0.3), rgba(254, 202, 87, 0.3));
+        color: white;
+    }
+    .panel-item-icon { font-size: 16px; width: 24px; text-align: center; }
+    .panel-item-text { flex: 1; font-size: 14px; font-weight: 500; }
+    .panel-item-arrow {
+        font-size: 12px;
+        opacity: 0;
+        transform: translateX(-8px);
+        transition: all 0.2s ease;
+    }
+    .panel-item:hover .panel-item-arrow { opacity: 1; transform: translateX(0); }
+    .version-panel-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 999;
+        display: none;
+    }
+    .version-panel-overlay.visible { display: block; }
     </style>
 </head>
 <body>
@@ -196,26 +345,21 @@
     <!-- GitHub风格顶部导航栏 -->
     <header class="top-header" id="top-header">
         <div class="header-left">
-            <button class="header-menu-btn" id="header-menu-btn" title="菜单">
-                <span class="menu-icon">☰</span>
-            </button>
-            <span class="header-logo" id="header-logo" title="点击设置小球数量" style="cursor:pointer;">⚡</span>
-            <span class="header-title">Boris Life</span>
+            <!-- 三横线按钮和闪电已移除，功能迁移到 B 按钮 -->
         </div>
         <div class="header-right">
             <div class="header-user" id="header-user" style="display:none;">
                 <span class="user-name" id="user-display-name"></span>
                 <button class="logout-btn" onclick="handleLogout()" title="登出">退出</button>
             </div>
-            <div class="header-avatar" id="header-avatar" onclick="nextAvatarQuote()">
+            <div class="header-avatar" id="header-avatar" title="点击设置小球参数">
                 <span class="avatar-text">B</span>
-                <div class="avatar-quote-tooltip" id="avatar-quote-tooltip">
-                    <div class="quote-content" id="avatar-quote-content">Loading...</div>
-                    <div class="quote-hint">点击换一句</div>
-                </div>
             </div>
         </div>
     </header>
+
+    <!-- Living Line Canvas（替代旧的呼吸线） -->
+    <canvas id="living-line"></canvas>
 
     <div class="container">
         <!-- 左侧提示条 - 侧边栏收起时显示 -->
@@ -234,69 +378,33 @@
         <!-- Left Sidebar -->
         <nav class="sidebar" id="sidebar">
             <div class="nav-links">
-                <a href="{{ url_for('main') }}" class="nav-link {% if current_page == 'main' %}active{% endif %}">主页</a>
-                <a href="{{ url_for('todo') }}" class="nav-link {% if current_page == 'todo' %}active{% endif %}">Todo</a>
-                <a href="{{ url_for('motivation') }}" class="nav-link {% if current_page == 'motivation' %}active{% endif %}">程序员鼓励大师</a>
-                <a href="{{ url_for('toolbox') }}" class="nav-link {% if current_page == 'toolbox' %}active{% endif %}">工具箱</a>
-                <a href="{{ url_for('game') }}" class="nav-link {% if current_page == 'game' %}active{% endif %}">松开你的大脑</a>
-                <a href="{{ url_for('leader') }}" class="nav-link {% if current_page == 'leader' %}active{% endif %}">领袖培训班</a>
-                <a href="{{ url_for('english') }}" class="nav-link {% if current_page == 'english' %}active{% endif %}">英文学习天地</a>
-                <a href="{{ url_for('aichat') }}" class="nav-link ai-link {% if current_page == 'aichat' %}active{% endif %}">
-                    <span class="ai-glow"></span>
-                    智脑中枢
-                </a>
-
-                <!-- 版本管理 -->
-                <div class="nav-group {% if current_page in ['version', 'prompt_todo', 'prompts', 'learning'] %}expanded{% endif %}">
-                    <div class="nav-group-header" onclick="toggleNavGroup(this)">
-                        <span class="nav-group-icon">🔧</span>
-                        <span class="nav-group-title">版本管理</span>
-                        <span class="nav-group-arrow">▼</span>
-                    </div>
-                    <div class="nav-group-items">
-                        <a href="{{ url_for('version') }}" class="nav-link sub-link {% if current_page == 'version' %}active{% endif %}">
-                            <span class="sub-icon">📋</span>特性验收
-                        </a>
-                        <a href="{{ url_for('prompt_todo') }}" class="nav-link sub-link {% if current_page == 'prompt_todo' %}active{% endif %}">
-                            <span class="sub-icon">📝</span>待执行 Prompt
-                        </a>
-                        <a href="{{ url_for('prompts') }}" class="nav-link sub-link {% if current_page == 'prompts' %}active{% endif %}">
-                            <span class="sub-icon">📜</span>Prompt 历史
-                        </a>
-                        <a href="{{ url_for('learning') }}" class="nav-link sub-link {% if current_page == 'learning' %}active{% endif %}">
-                            <span class="sub-icon">📚</span>学习总结
-                        </a>
-                    </div>
-                </div>
-
+                <a href="{{ url_for('todo') }}" class="nav-link active">Todo</a>
             </div>
 
-            <!-- 底部区域：时区 -->
-            <div class="sidebar-bottom">
-                <div class="sidebar-divider"></div>
-            </div>
-
-            <!-- 时区显示 - 侧边栏底部 -->
-            <div class="timezone-panel" id="timezone-panel">
-                <div class="timezone-item">
-                    <span class="tz-city">北京</span>
-                    <div class="tz-info">
-                        <span class="tz-datetime" id="tz-beijing-date"></span>
-                        <span class="tz-time" id="tz-beijing-time"></span>
+            <!-- 底部区域 -->
+            <div class="sidebar-bottom-section">
+                <!-- 时区显示 -->
+                <div class="timezone-panel" id="timezone-panel">
+                    <div class="timezone-item">
+                        <span class="tz-city">北京</span>
+                        <div class="tz-info">
+                            <span class="tz-datetime" id="tz-beijing-date"></span>
+                            <span class="tz-time" id="tz-beijing-time"></span>
+                        </div>
                     </div>
-                </div>
-                <div class="timezone-item">
-                    <span class="tz-city">滑铁卢</span>
-                    <div class="tz-info">
-                        <span class="tz-datetime" id="tz-waterloo-date"></span>
-                        <span class="tz-time" id="tz-waterloo-time"></span>
+                    <div class="timezone-item">
+                        <span class="tz-city">滑铁卢</span>
+                        <div class="tz-info">
+                            <span class="tz-datetime" id="tz-waterloo-date"></span>
+                            <span class="tz-time" id="tz-waterloo-time"></span>
+                        </div>
                     </div>
-                </div>
-                <div class="timezone-item">
-                    <span class="tz-city">温哥华</span>
-                    <div class="tz-info">
-                        <span class="tz-datetime" id="tz-vancouver-date"></span>
-                        <span class="tz-time" id="tz-vancouver-time"></span>
+                    <div class="timezone-item">
+                        <span class="tz-city">温哥华</span>
+                        <div class="tz-info">
+                            <span class="tz-datetime" id="tz-vancouver-date"></span>
+                            <span class="tz-time" id="tz-vancouver-time"></span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -308,12 +416,6 @@
         </main>
     </div>
 
-    <!-- Theme Toggle Button -->
-    <button class="theme-toggle" id="theme-toggle" title="切换主题 (D)">
-        <span class="icon-sun">☀️</span>
-        <span class="icon-moon">🌙</span>
-    </button>
-
     <!-- Sync Status Indicator -->
     <div class="sync-status" id="sync-status">
         <span class="sync-dot"></span>
@@ -323,23 +425,6 @@
     <!-- Focus Mode Indicator -->
     <div class="focus-mode-indicator" id="focus-indicator">
         🎯 专注模式 · 按 Esc 退出
-    </div>
-
-    <!-- Weather Effect Toggle -->
-    <button class="weather-toggle-fab" id="weather-toggle-fab" title="天气特效开关 (W)">
-        <span class="weather-toggle-icon">❄️</span>
-        <span class="weather-toggle-status"></span>
-    </button>
-
-    <!-- Pomodoro Timer FAB -->
-    <button class="pomodoro-fab" id="pomodoro-fab" title="番茄钟 (P)">🍅</button>
-    <div class="pomodoro-panel" id="pomodoro-panel">
-        <div class="pomodoro-time" id="pomodoro-time">25:00</div>
-        <div class="pomodoro-label" id="pomodoro-label">专注时间</div>
-        <div class="pomodoro-controls">
-            <button class="pomodoro-btn pomodoro-btn-start" id="pomodoro-start">开始</button>
-            <button class="pomodoro-btn pomodoro-btn-reset" id="pomodoro-reset">重置</button>
-        </div>
     </div>
 
     <!-- Keyboard Shortcuts Modal -->
@@ -365,14 +450,6 @@
             <div class="shortcut-item">
                 <span class="shortcut-key"><kbd>F</kbd></span>
                 <span class="shortcut-desc">专注模式</span>
-            </div>
-            <div class="shortcut-item">
-                <span class="shortcut-key"><kbd>P</kbd></span>
-                <span class="shortcut-desc">番茄钟</span>
-            </div>
-            <div class="shortcut-item">
-                <span class="shortcut-key"><kbd>W</kbd></span>
-                <span class="shortcut-desc">天气特效</span>
             </div>
             <div class="shortcut-item">
                 <span class="shortcut-key"><kbd>?</kbd></span>
@@ -504,31 +581,37 @@
         }, { confirmText: '退出' });
     }
 
-    // Nav Group 展开/折叠功能
-    function toggleNavGroup(header) {
-        var navGroup = header.parentElement;
-        navGroup.classList.toggle('expanded');
-        // 保存展开状态到 localStorage
-        var groupTitle = header.querySelector('.nav-group-title').textContent;
-        var expandedGroups = JSON.parse(localStorage.getItem('expandedNavGroups') || '{}');
-        expandedGroups[groupTitle] = navGroup.classList.contains('expanded');
-        localStorage.setItem('expandedNavGroups', JSON.stringify(expandedGroups));
+    // 版本管理浮动面板
+    function toggleVersionPanel() {
+        var panel = document.getElementById('version-panel');
+        var overlay = document.getElementById('version-overlay');
+        var trigger = document.getElementById('version-trigger');
+
+        if (panel.classList.contains('visible')) {
+            closeVersionPanel();
+        } else {
+            panel.classList.add('visible');
+            overlay.classList.add('visible');
+            trigger.classList.add('expanded');
+        }
     }
 
-    // 初始化 Nav Group 状态
-    (function() {
-        var expandedGroups = JSON.parse(localStorage.getItem('expandedNavGroups') || '{}');
-        document.querySelectorAll('.nav-group').forEach(function(group) {
-            var title = group.querySelector('.nav-group-title');
-            if (title && expandedGroups[title.textContent] !== undefined) {
-                if (expandedGroups[title.textContent]) {
-                    group.classList.add('expanded');
-                } else {
-                    group.classList.remove('expanded');
-                }
-            }
-        });
-    })();
+    function closeVersionPanel() {
+        var panel = document.getElementById('version-panel');
+        var overlay = document.getElementById('version-overlay');
+        var trigger = document.getElementById('version-trigger');
+
+        panel.classList.remove('visible');
+        overlay.classList.remove('visible');
+        trigger.classList.remove('expanded');
+    }
+
+    // ESC 键关闭面板
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeVersionPanel();
+        }
+    });
 
     // 全局鼠标位置跟踪（用于 toast 在鼠标附近显示）
     window._mousePos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
@@ -650,105 +733,9 @@
         }
     };
 
-    // Theme Management
-    (function() {
-        var themeToggle = document.getElementById('theme-toggle');
-        var html = document.documentElement;
+    // 头像名言功能已移除，B 按钮现在用于小球设置
 
-        // Load saved theme or detect system preference
-        function initTheme() {
-            var saved = localStorage.getItem('theme');
-            if (saved) {
-                html.setAttribute('data-theme', saved);
-            } else {
-                // Check system preference
-                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                    html.setAttribute('data-theme', 'dark');
-                }
-            }
-        }
-
-        function toggleTheme() {
-            var current = html.getAttribute('data-theme');
-            var newTheme = current === 'dark' ? 'light' : 'dark';
-            html.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-        }
-
-        themeToggle.addEventListener('click', toggleTheme);
-        initTheme();
-
-        // Expose for keyboard shortcut
-        window.toggleTheme = toggleTheme;
-    })();
-
-    // 头像名言功能
-    (function() {
-        var avatarQuotes = [
-            "代码如诗，优雅而简洁。",
-            "今天的bug，是明天的feature。",
-            "先让它工作，再让它优雅。",
-            "简单是最终的复杂。",
-            "好的代码是自己的最佳文档。",
-            "调试是写代码时没做的事。",
-            "保持学习，保持谦逊。",
-            "一次只做一件事，做到极致。",
-            "软件开发是一场马拉松，不是短跑。",
-            "最好的错误处理是不让错误发生。",
-            "重构是开发者的日常修行。",
-            "测试不是找bug，是证明代码正确。",
-            "代码写给人看，顺便让机器执行。",
-            "永远不要相信用户输入。",
-            "提前优化是万恶之源。",
-            "复制粘贴是技术债的开始。"
-        ];
-        var currentQuoteIndex = Math.floor(Math.random() * avatarQuotes.length);
-        var quoteContent = document.getElementById('avatar-quote-content');
-
-        function updateQuote() {
-            if (quoteContent) {
-                quoteContent.textContent = '"' + avatarQuotes[currentQuoteIndex] + '"';
-            }
-        }
-
-        window.nextAvatarQuote = function() {
-            currentQuoteIndex = (currentQuoteIndex + 1) % avatarQuotes.length;
-            updateQuote();
-        };
-
-        updateQuote();
-    })();
-
-    // Top Header - 滚动隐藏
-    (function() {
-        var header = document.getElementById('top-header');
-        var menuBtn = document.getElementById('header-menu-btn');
-        var lastScrollTop = 0;
-        var scrollThreshold = 60;
-
-        // 滚动时隐藏/显示顶部栏
-        window.addEventListener('scroll', function() {
-            var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-
-            if (scrollTop > lastScrollTop && scrollTop > scrollThreshold) {
-                // 向下滚动，隐藏
-                header.classList.add('hidden');
-            } else {
-                // 向上滚动或接近顶部，显示
-                header.classList.remove('hidden');
-            }
-
-            lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
-        }, { passive: true });
-
-        // 菜单按钮点击 - 切换侧边栏
-        if (menuBtn) {
-            menuBtn.addEventListener('click', function() {
-                var pet = document.getElementById('pet');
-                if (pet) pet.click();
-            });
-        }
-    })();
+    // Top Header - 始终固定显示（不再隐藏）
 
     // Header Particles Animation (完整版：尾巴+排斥+恐惧+爆炸+汇合+侧边栏贯通)
     (function() {
@@ -757,7 +744,7 @@
         var ctx = canvas.getContext('2d');
         var header = document.getElementById('top-header');
         var sidebar = document.getElementById('sidebar');
-        var logo = document.getElementById('header-logo');
+        var avatarBtn = document.getElementById('header-avatar'); // B 按钮，用于小球设置
 
         // 区域配置 - L形区域：顶栏全宽 + 侧边栏
         var headerHeight = 48;
@@ -1869,9 +1856,9 @@
             mouse.y = -1000;
         });
 
-        // 点击闪电设置小球参数 - 表格形式
-        if (logo) {
-            logo.addEventListener('click', function(e) {
+        // 点击 B 按钮设置小球参数 - 表格形式
+        if (avatarBtn) {
+            avatarBtn.addEventListener('click', function(e) {
                 e.stopPropagation();
 
                 // 创建设置弹窗
@@ -1949,104 +1936,6 @@
         };
     })();
 
-    // Pomodoro Timer
-    (function() {
-        var fab = document.getElementById('pomodoro-fab');
-        var panel = document.getElementById('pomodoro-panel');
-        var timeDisplay = document.getElementById('pomodoro-time');
-        var labelDisplay = document.getElementById('pomodoro-label');
-        var startBtn = document.getElementById('pomodoro-start');
-        var resetBtn = document.getElementById('pomodoro-reset');
-
-        var WORK_TIME = 25 * 60;
-        var BREAK_TIME = 5 * 60;
-        var timeLeft = WORK_TIME;
-        var isRunning = false;
-        var isBreak = false;
-        var interval = null;
-
-        function formatTime(seconds) {
-            var m = Math.floor(seconds / 60).toString().padStart(2, '0');
-            var s = (seconds % 60).toString().padStart(2, '0');
-            return m + ':' + s;
-        }
-
-        function updateDisplay() {
-            timeDisplay.textContent = formatTime(timeLeft);
-            labelDisplay.textContent = isBreak ? '休息时间' : '专注时间';
-            fab.classList.toggle('active', isRunning);
-        }
-
-        function tick() {
-            if (timeLeft > 0) {
-                timeLeft--;
-                updateDisplay();
-            } else {
-                // Timer finished
-                clearInterval(interval);
-                isRunning = false;
-
-                // Notification
-                if ('Notification' in window && Notification.permission === 'granted') {
-                    new Notification(isBreak ? '休息结束！' : '专注时间结束！', {
-                        body: isBreak ? '开始新一轮专注吧' : '休息一下吧',
-                        icon: '/assets/icons/icon-192.png'
-                    });
-                }
-
-                // Vibrate if supported
-                if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-
-                // Switch mode
-                isBreak = !isBreak;
-                timeLeft = isBreak ? BREAK_TIME : WORK_TIME;
-                updateDisplay();
-                startBtn.textContent = '开始';
-            }
-        }
-
-        function toggleTimer() {
-            if (isRunning) {
-                clearInterval(interval);
-                isRunning = false;
-                startBtn.textContent = '继续';
-            } else {
-                interval = setInterval(tick, 1000);
-                isRunning = true;
-                startBtn.textContent = '暂停';
-            }
-            updateDisplay();
-        }
-
-        function resetTimer() {
-            clearInterval(interval);
-            isRunning = false;
-            isBreak = false;
-            timeLeft = WORK_TIME;
-            startBtn.textContent = '开始';
-            updateDisplay();
-        }
-
-        fab.addEventListener('click', function() {
-            panel.classList.toggle('visible');
-        });
-
-        startBtn.addEventListener('click', toggleTimer);
-        resetBtn.addEventListener('click', resetTimer);
-
-        // Request notification permission
-        if ('Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission();
-        }
-
-        updateDisplay();
-
-        // Expose for keyboard shortcut
-        window.togglePomodoro = function() {
-            panel.classList.toggle('visible');
-        };
-    })();
-
     // Focus Mode
     (function() {
         window.toggleFocusMode = function() {
@@ -2091,21 +1980,9 @@
                     e.preventDefault();
                     if (typeof switchTab === 'function') switchTab('month');
                     break;
-                case 'd':
-                    e.preventDefault();
-                    if (typeof toggleTheme === 'function') toggleTheme();
-                    break;
                 case 'f':
                     e.preventDefault();
                     if (typeof toggleFocusMode === 'function') toggleFocusMode();
-                    break;
-                case 'p':
-                    e.preventDefault();
-                    if (typeof togglePomodoro === 'function') togglePomodoro();
-                    break;
-                case 'w':
-                    e.preventDefault();
-                    if (typeof toggleWeatherEffect === 'function') toggleWeatherEffect();
                     break;
                 case '?':
                     e.preventDefault();
@@ -2432,77 +2309,6 @@
         setInterval(updateWeather, 600000);
     })();
 
-    // 天气特效开关控制
-    (function() {
-        var toggleBtn = document.getElementById('weather-toggle-fab');
-        var iconSpan = toggleBtn.querySelector('.weather-toggle-icon');
-
-        // 天气类型对应的图标
-        var weatherIcons = {
-            sunny: '☀️',
-            cloudy: '☁️',
-            rainy: '🌧️',
-            snowy: '❄️',
-            stormy: '⛈️'
-        };
-
-        // 初始化按钮状态
-        function initToggleState() {
-            var enabled = localStorage.getItem('weatherEffectEnabled') !== 'false';
-            if (enabled) {
-                toggleBtn.classList.remove('disabled');
-            } else {
-                toggleBtn.classList.add('disabled');
-            }
-            updateToggleIcon();
-        }
-
-        // 更新按钮图标（根据当前天气类型）
-        function updateToggleIcon() {
-            var weatherType = (window.currentWeather && window.currentWeather.type) || 'cloudy';
-            iconSpan.textContent = weatherIcons[weatherType] || '☁️';
-        }
-
-        // 切换天气特效
-        function toggleWeatherEffect() {
-            var enabled = localStorage.getItem('weatherEffectEnabled') !== 'false';
-            enabled = !enabled;
-
-            localStorage.setItem('weatherEffectEnabled', enabled ? 'true' : 'false');
-
-            // 更新全局变量（小鱼动画使用）
-            if (typeof weatherEffectEnabled !== 'undefined') {
-                weatherEffectEnabled = enabled;
-            }
-
-            // 更新按钮样式
-            if (enabled) {
-                toggleBtn.classList.remove('disabled');
-            } else {
-                toggleBtn.classList.add('disabled');
-            }
-
-            // 显示提示
-            if (window.AppUtils && window.AppUtils.showToast) {
-                window.AppUtils.showToast(enabled ? '天气特效已开启' : '天气特效已关闭', 'success');
-            }
-        }
-
-        // 绑定点击事件
-        toggleBtn.addEventListener('click', toggleWeatherEffect);
-
-        // 监听天气更新事件，更新图标
-        window.addEventListener('weatherUpdate', function() {
-            updateToggleIcon();
-        });
-
-        // 初始化
-        initToggleState();
-
-        // 暴露切换函数供快捷键使用
-        window.toggleWeatherEffect = toggleWeatherEffect;
-    })();
-
     // Register Service Worker for PWA
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js')
@@ -2514,5 +2320,8 @@
             });
     }
     </script>
+
+    <!-- Living Line 动态底部线 -->
+    <script src="{{ url_for('static', filename='js/living-line.js') }}"></script>
 </body>
 </html>

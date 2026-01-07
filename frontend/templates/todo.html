@@ -4,6 +4,516 @@
 
 {% block content %}
     <style>
+    /* ========== 完成度进度条弹窗样式 ========== */
+    .progress-dialog-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.2s ease;
+    }
+    .progress-dialog {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border-radius: 16px;
+        padding: 24px;
+        min-width: 320px;
+        max-width: 90vw;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.3s ease;
+    }
+    [data-theme="dark"] .progress-dialog {
+        background: rgba(30, 30, 40, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .progress-dialog-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-color, #1f2937);
+        margin-bottom: 12px;
+        text-align: center;
+    }
+    .progress-dialog-task {
+        font-size: 14px;
+        color: var(--text-muted, #6b7280);
+        margin-bottom: 20px;
+        text-align: center;
+        padding: 8px 12px;
+        background: var(--bg-secondary, #f3f4f6);
+        border-radius: 8px;
+        max-height: 60px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .progress-slider-container {
+        margin: 24px 0;
+        text-align: center;
+    }
+    .progress-slider {
+        width: 100%;
+        height: 8px;
+        -webkit-appearance: none;
+        appearance: none;
+        background: linear-gradient(to right,
+            #4f46e5 0%,
+            #4f46e5 var(--val, 0%),
+            #e5e7eb var(--val, 0%),
+            #e5e7eb 100%
+        );
+        border-radius: 4px;
+        outline: none;
+        cursor: pointer;
+    }
+    .progress-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 24px;
+        height: 24px;
+        background: white;
+        border: 3px solid #4f46e5;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        transition: transform 0.2s;
+    }
+    .progress-slider::-webkit-slider-thumb:hover {
+        transform: scale(1.1);
+    }
+    .progress-slider::-moz-range-thumb {
+        width: 24px;
+        height: 24px;
+        background: white;
+        border: 3px solid #4f46e5;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+    .progress-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--text-color, #1f2937);
+        margin-top: 16px;
+        transition: all 0.3s;
+    }
+    .progress-value.complete {
+        color: #10b981;
+        transform: scale(1.1);
+    }
+    .progress-dialog-buttons {
+        display: flex;
+        gap: 12px;
+        margin-top: 20px;
+    }
+    .progress-btn {
+        flex: 1;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .progress-btn.cancel {
+        background: var(--bg-secondary, #e5e7eb);
+        color: var(--text-muted, #6b7280);
+    }
+    .progress-btn.cancel:hover {
+        background: #d1d5db;
+    }
+    .progress-btn.confirm {
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        color: white;
+    }
+    .progress-btn.confirm:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+    }
+    .progress-btn.confirm.complete {
+        background: linear-gradient(135deg, #10b981, #059669);
+    }
+
+    /* ========== 编辑弹窗样式 ========== */
+    .edit-dialog {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border-radius: 16px;
+        padding: 24px;
+        min-width: 400px;
+        max-width: 90vw;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.3s ease;
+    }
+    [data-theme="dark"] .edit-dialog {
+        background: rgba(30, 30, 40, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .edit-dialog-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-color, #1f2937);
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    .edit-form {
+        margin-bottom: 20px;
+    }
+    .edit-field {
+        margin-bottom: 16px;
+    }
+    .edit-field label {
+        display: block;
+        font-size: 13px;
+        color: var(--text-muted, #6b7280);
+        margin-bottom: 6px;
+        font-weight: 500;
+    }
+    .edit-field input,
+    .edit-field textarea {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--border-color, #e5e7eb);
+        border-radius: 10px;
+        font-size: 14px;
+        background: var(--bg-color, #fff);
+        color: var(--text-color, #1f2937);
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .edit-field input:focus,
+    .edit-field textarea:focus {
+        outline: none;
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+    .edit-field textarea {
+        resize: vertical;
+        min-height: 80px;
+    }
+    .edit-row {
+        display: flex;
+        gap: 16px;
+    }
+    .edit-row .edit-field {
+        flex: 1;
+    }
+
+    /* ========== 新版添加任务弹窗样式 ========== */
+    .modal-wide {
+        width: 560px !important;
+        max-width: 90vw !important;
+    }
+    .task-input-large {
+        width: 100%;
+        padding: 14px 16px !important;
+        font-size: 16px !important;
+        border-radius: 10px !important;
+    }
+    .form-row {
+        display: flex;
+        gap: 20px;
+        align-items: flex-start;
+    }
+    .form-group-inline {
+        flex: 1;
+    }
+    .form-group-inline label {
+        margin-bottom: 8px;
+    }
+    .tab-selector-horizontal {
+        display: flex;
+        gap: 8px;
+    }
+    .tab-btn {
+        padding: 8px 16px;
+        border: 1px solid var(--border-color, #e5e7eb);
+        background: var(--bg-secondary, #f9fafb);
+        color: var(--text-muted, #6b7280);
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 13px;
+        transition: all 0.2s;
+    }
+    .tab-btn:hover {
+        background: var(--bg-color, #fff);
+        border-color: var(--accent-color, #4f46e5);
+    }
+    .tab-btn.active {
+        background: var(--accent-color, #4f46e5);
+        color: white;
+        border-color: var(--accent-color, #4f46e5);
+    }
+    .quadrant-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    .quadrant-cell {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        border: 2px solid var(--border-color, #e5e7eb);
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: var(--bg-secondary, #f9fafb);
+    }
+    .quadrant-cell:hover {
+        border-color: var(--accent-color, #4f46e5);
+        background: var(--bg-color, #fff);
+    }
+    .quadrant-cell.selected {
+        border-color: var(--accent-color, #4f46e5);
+        background: rgba(79, 70, 229, 0.08);
+    }
+    .quadrant-cell input[type="radio"] {
+        display: none;
+    }
+    .cell-icon {
+        font-size: 20px;
+    }
+    .cell-text {
+        font-size: 14px;
+        color: var(--text-color, #1f2937);
+    }
+
+    /* ========== 任务详情卡片 - Apple 毛玻璃效果 ========== */
+    .task-card-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 999;
+        background: rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(2px);
+        animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    .task-card {
+        position: fixed;
+        z-index: 1000;
+        min-width: 320px;
+        max-width: 400px;
+        animation: cardSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes cardSlideIn {
+        from {
+            opacity: 0;
+            transform: scale(0.9) translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+    .task-card-content {
+        position: relative;
+        background: linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.85) 0%,
+            rgba(255, 255, 255, 0.75) 50%,
+            rgba(255, 255, 255, 0.8) 100%
+        );
+        backdrop-filter: blur(40px) saturate(180%);
+        -webkit-backdrop-filter: blur(40px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        border-radius: 20px;
+        padding: 20px;
+        box-shadow:
+            0 0 0 0.5px rgba(255, 255, 255, 0.6) inset,
+            0 25px 50px rgba(0, 0, 0, 0.15),
+            0 10px 30px rgba(0, 0, 0, 0.1),
+            0 0 1px rgba(0, 0, 0, 0.1);
+    }
+    /* 顶部高光 */
+    .task-card-content::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 15%;
+        right: 15%;
+        height: 1px;
+        background: linear-gradient(90deg,
+            transparent,
+            rgba(255, 255, 255, 0.9) 30%,
+            rgba(255, 255, 255, 1) 50%,
+            rgba(255, 255, 255, 0.9) 70%,
+            transparent
+        );
+        border-radius: 1px;
+    }
+    /* 内部光泽 */
+    .task-card-content::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50%;
+        background: linear-gradient(180deg,
+            rgba(255, 255, 255, 0.3) 0%,
+            transparent 100%
+        );
+        border-radius: 20px 20px 0 0;
+        pointer-events: none;
+    }
+    .task-card-pointer {
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.85) 0%,
+            rgba(255, 255, 255, 0.75) 100%
+        );
+        backdrop-filter: blur(40px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        border-right: none;
+        border-bottom: none;
+        transform: rotate(45deg);
+        top: 20px;
+        left: -8px;
+        box-shadow: -2px -2px 4px rgba(0, 0, 0, 0.05);
+    }
+    .task-card-text {
+        position: relative;
+        z-index: 1;
+        font-size: 16px;
+        line-height: 1.6;
+        color: #1f2937;
+        font-weight: 500;
+        margin-bottom: 16px;
+        word-wrap: break-word;
+    }
+    .task-card-divider {
+        height: 1px;
+        background: linear-gradient(90deg,
+            transparent,
+            rgba(0, 0, 0, 0.1) 20%,
+            rgba(0, 0, 0, 0.15) 50%,
+            rgba(0, 0, 0, 0.1) 80%,
+            transparent
+        );
+        margin: 12px 0;
+    }
+    .task-card-meta {
+        position: relative;
+        z-index: 1;
+    }
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 0;
+        font-size: 13px;
+    }
+    .meta-icon {
+        font-size: 14px;
+    }
+    .meta-label {
+        color: #6b7280;
+    }
+    .meta-value {
+        color: #374151;
+        font-weight: 500;
+    }
+    .task-card-progress-bar {
+        width: 100%;
+        height: 6px;
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: 3px;
+        margin: 8px 0 12px 0;
+        overflow: hidden;
+    }
+    .task-card-progress-bar .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #4f46e5, #7c3aed);
+        border-radius: 3px;
+        transition: width 0.3s ease;
+    }
+    .task-card-actions {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        gap: 10px;
+        margin-top: 16px;
+        justify-content: flex-end;
+    }
+    .card-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 18px;
+        border: none;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .card-btn-edit {
+        background: rgba(79, 70, 229, 0.1);
+        color: #4f46e5;
+    }
+    .card-btn-edit:hover {
+        background: #4f46e5;
+        color: white;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    }
+    .card-btn-complete {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+    }
+    .card-btn-complete:hover {
+        background: #10b981;
+        color: white;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+    /* 深色模式适配 */
+    @media (prefers-color-scheme: dark) {
+        .task-card-content {
+            background: linear-gradient(
+                135deg,
+                rgba(30, 30, 40, 0.9) 0%,
+                rgba(40, 40, 55, 0.85) 50%,
+                rgba(35, 35, 50, 0.88) 100%
+            );
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+        .task-card-pointer {
+            background: linear-gradient(135deg,
+                rgba(30, 30, 40, 0.9) 0%,
+                rgba(40, 40, 55, 0.85) 100%
+            );
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+        .task-card-text {
+            color: #f3f4f6;
+        }
+        .meta-label {
+            color: #9ca3af;
+        }
+        .meta-value {
+            color: #e5e7eb;
+        }
+    }
+
     /* 任务编辑输入框样式 */
     .task-edit-input {
         width: 100%;
@@ -23,27 +533,938 @@
     .task-text.editing {
         padding: 0;
     }
-    </style>
-    <div class="page-header compact">
-        <div class="header-left">
-            <h1 class="page-title">My Tasks</h1>
-            <p class="quote-text" id="quote-text">{{ quote }}</p>
-        </div>
-        <button class="btn-shuffle" onclick="shuffleQuote()">换一个</button>
-    </div>
+    /* 任务操作按钮组 */
+    .task-actions {
+        display: flex;
+        gap: 4px;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+    .task-item:hover .task-actions {
+        opacity: 1;
+    }
+    .task-edit, .task-delete {
+        width: 24px;
+        height: 24px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        transition: all 0.2s;
+    }
+    .task-edit {
+        background: var(--bg-secondary, #f3f4f6);
+        color: var(--text-muted, #6b7280);
+    }
+    .task-edit:hover {
+        background: var(--accent-color, #4f46e5);
+        color: white;
+    }
+    .task-delete {
+        background: var(--bg-secondary, #f3f4f6);
+        color: var(--text-muted, #6b7280);
+    }
+    .task-delete:hover {
+        background: #ef4444;
+        color: white;
+    }
 
+    /* ========== 统一任务弹窗 ========== */
+    .task-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(4px);
+        z-index: 10000;
+        display: flex;
+        align-items: flex-start;  /* 顶部对齐，展开时向下延展 */
+        justify-content: center;
+        padding-top: 8vh;         /* 距顶部留白 */
+        animation: fadeIn 0.2s ease;
+    }
+    .task-modal {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border-radius: 12px;
+        width: 720px;
+        max-width: 95vw;
+        max-height: 85vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: slideDown 0.3s ease;  /* 改为从上往下 */
+    }
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    [data-theme="dark"] .task-modal {
+        background: rgba(30, 30, 40, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    /* 标题栏：标题输入 + 按钮组 */
+    .task-modal-header {
+        display: flex;
+        align-items: flex-start;
+        padding: 16px 20px 12px;
+        gap: 12px;
+        border-bottom: 1px solid rgba(0,0,0,0.06);
+        flex-shrink: 0;
+    }
+    .task-modal-header .title-input {
+        flex: 1;
+        font-size: 18px;
+        font-weight: 600;
+        border: none;
+        background: transparent;
+        padding: 4px 0;
+        color: var(--text-color, #1f2937);
+        resize: none;
+        line-height: 1.4;
+        max-height: 52px;
+        overflow: hidden;
+    }
+    .task-modal-header .title-input:focus {
+        outline: none;
+        border-bottom: 2px solid #4f46e5;
+    }
+    .task-modal-header .title-input[readonly] {
+        border-bottom: none;
+        background: transparent;
+    }
+    .header-actions {
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
+        padding-top: 4px;
+    }
+    .header-btn {
+        padding: 6px 14px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .header-btn.edit-btn {
+        background: #4f46e5;
+        color: white;
+    }
+    .header-btn.edit-btn:hover {
+        background: #4338ca;
+    }
+    .header-btn.close-btn {
+        background: var(--bg-secondary, #f3f4f6);
+        color: var(--text-muted, #6b7280);
+    }
+    .header-btn.close-btn:hover {
+        background: #e5e7eb;
+        color: #374151;
+    }
+    /* 主体：左属性 + 右内容 */
+    .task-modal-body {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+    }
+    /* 左栏：属性区 */
+    .task-modal-left {
+        width: 200px;
+        flex-shrink: 0;
+        padding: 16px;
+        border-right: 1px solid rgba(0,0,0,0.06);
+        overflow-y: auto;
+        background: rgba(0,0,0,0.02);
+    }
+    .prop-group {
+        margin-bottom: 14px;
+    }
+    .prop-group label {
+        display: block;
+        font-size: 11px;
+        color: var(--text-muted, #6b7280);
+        margin-bottom: 4px;
+        font-weight: 500;
+    }
+    .prop-group input,
+    .prop-group select {
+        width: 100%;
+        padding: 7px 10px;
+        border: 1px solid var(--border-color, #e5e7eb);
+        border-radius: 6px;
+        font-size: 13px;
+        background: var(--bg-color, #fff);
+        color: var(--text-color, #1f2937);
+    }
+    .prop-group input:focus,
+    .prop-group select:focus {
+        outline: none;
+        border-color: #4f46e5;
+    }
+    .prop-group input[readonly],
+    .prop-group select:disabled {
+        background: var(--bg-secondary, #f9fafb);
+        cursor: default;
+    }
+    /* 进度滑块（左栏） */
+    .progress-slider {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .progress-slider input[type="range"] {
+        flex: 1;
+        height: 6px;
+        -webkit-appearance: none;
+        background: linear-gradient(to right,
+            #4f46e5 0%,
+            #4f46e5 var(--val, 0%),
+            #e5e7eb var(--val, 0%),
+            #e5e7eb 100%
+        );
+        border-radius: 3px;
+        border: none;
+        padding: 0;
+    }
+    .progress-slider input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 14px;
+        height: 14px;
+        background: white;
+        border: 2px solid #4f46e5;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .progress-slider .progress-value {
+        min-width: 36px;
+        text-align: right;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-muted);
+    }
+    /* 象限选择（左栏紧凑版） */
+    .quadrant-select-compact {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+    }
+    .quadrant-select-compact .q-option {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        padding: 6px 4px;
+        border: 1px solid var(--border-color, #e5e7eb);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-align: center;
+    }
+    .quadrant-select-compact .q-option:hover {
+        border-color: #4f46e5;
+    }
+    .quadrant-select-compact .q-option.selected {
+        background: rgba(79, 70, 229, 0.1);
+        border-color: #4f46e5;
+    }
+    .quadrant-select-compact .q-option input {
+        display: none;
+    }
+    .quadrant-select-compact .q-icon {
+        font-size: 14px;
+    }
+    .quadrant-select-compact .q-text {
+        font-size: 9px;
+        color: var(--text-muted, #6b7280);
+        line-height: 1.2;
+    }
+    .quadrant-select-compact .q-option.selected .q-text {
+        color: #4f46e5;
+    }
+    .quadrant-select-compact .q-option.disabled {
+        opacity: 0.6;
+        cursor: default;
+        pointer-events: none;
+    }
+    /* 时间段按钮组 */
+    .tab-buttons {
+        display: flex;
+        gap: 4px;
+    }
+    .tab-btn {
+        flex: 1;
+        padding: 6px 8px;
+        border: 1px solid var(--border-color, #e5e7eb);
+        border-radius: 6px;
+        background: var(--bg-color, #fff);
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .tab-btn:hover {
+        border-color: #4f46e5;
+    }
+    .tab-btn.selected {
+        background: #4f46e5;
+        color: white;
+        border-color: #4f46e5;
+    }
+    .tab-btn:disabled {
+        opacity: 0.5;
+        cursor: default;
+    }
+    /* 元信息（左栏） */
+    .meta-section {
+        padding-top: 12px;
+        margin-top: 12px;
+        border-top: 1px solid rgba(0,0,0,0.06);
+    }
+    .meta-item {
+        font-size: 11px;
+        color: var(--text-muted, #9ca3af);
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    /* 右栏：内容区 */
+    .task-modal-right {
+        flex: 1;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+    }
+    .task-modal-right textarea {
+        flex: 1;
+        width: 100%;
+        min-height: 200px;
+        padding: 12px;
+        border: 1px solid var(--border-color, #e5e7eb);
+        border-radius: 8px;
+        font-size: 14px;
+        line-height: 1.6;
+        resize: vertical;
+        background: var(--bg-color, #fff);
+        color: var(--text-color, #1f2937);
+    }
+    .task-modal-right textarea:focus {
+        outline: none;
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+    .task-modal-right textarea[readonly] {
+        background: var(--bg-secondary, #f9fafb);
+        cursor: default;
+        resize: none;
+    }
+    /* 滚动条美化 */
+    .task-modal-left::-webkit-scrollbar,
+    .task-modal-right textarea::-webkit-scrollbar {
+        width: 5px;
+    }
+    .task-modal-left::-webkit-scrollbar-thumb,
+    .task-modal-right textarea::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.15);
+        border-radius: 3px;
+    }
+    /* 兼容旧样式 */
+    .task-modal-field { margin-bottom: 14px; }
+    .task-modal-row { display: flex; gap: 12px; }
+    .task-modal-row .task-modal-field { flex: 1; }
+    /* 进度滑块 */
+    .progress-field {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .progress-field input[type="range"] {
+        flex: 1;
+        height: 6px;
+        -webkit-appearance: none;
+        appearance: none;
+        background: linear-gradient(to right, #4f46e5 0%, #4f46e5 var(--val, 0%), #e5e7eb var(--val, 0%), #e5e7eb 100%);
+        border-radius: 3px;
+        border: none;
+        padding: 0;
+    }
+    .progress-field input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 18px;
+        height: 18px;
+        background: white;
+        border: 2px solid #4f46e5;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .progress-field input[type="range"]:disabled {
+        opacity: 0.6;
+    }
+    .progress-field input[type="range"]:disabled::-webkit-slider-thumb {
+        cursor: default;
+    }
+    .progress-value {
+        min-width: 40px;
+        text-align: right;
+        font-weight: 600;
+        color: var(--text-color, #1f2937);
+    }
+    /* 象限选择器 */
+    .quadrant-select {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+    .quadrant-option {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        border: 1px solid var(--border-color, #e5e7eb);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: var(--bg-color, #fff);
+    }
+    .quadrant-option:hover {
+        border-color: #4f46e5;
+    }
+    .quadrant-option.selected {
+        border-color: #4f46e5;
+        background: rgba(79, 70, 229, 0.05);
+    }
+    .quadrant-option.disabled {
+        opacity: 0.6;
+        cursor: default;
+    }
+    .quadrant-option input {
+        display: none;
+    }
+    .quadrant-option .icon {
+        font-size: 16px;
+    }
+    .quadrant-option .text {
+        font-size: 13px;
+        color: var(--text-color, #1f2937);
+    }
+    /* 底部按钮 */
+    .task-modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        padding: 16px 24px;
+        border-top: 1px solid var(--border-color, #e5e7eb);
+        flex-shrink: 0;
+        background: inherit;
+    }
+    @media (max-height: 700px) {
+        .task-modal-footer {
+            padding: 12px 16px;
+        }
+        .task-modal-body {
+            padding: 8px 16px 16px;
+        }
+        .task-modal-header {
+            padding: 10px 12px 0;
+        }
+    }
+    .task-modal-btn {
+        padding: 10px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .task-modal-btn.secondary {
+        background: var(--bg-secondary, #e5e7eb);
+        color: var(--text-muted, #6b7280);
+    }
+    .task-modal-btn.secondary:hover {
+        background: #d1d5db;
+    }
+    .task-modal-btn.primary {
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        color: white;
+    }
+    .task-modal-btn.primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+    }
+
+    /* ========== 时间信息区 ========== */
+    .task-modal-meta {
+        padding: 12px 24px;
+        background: rgba(0, 0, 0, 0.02);
+        border-top: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85rem;
+        color: var(--text-muted, #6b7280);
+        margin-bottom: 4px;
+    }
+    .meta-item:last-child {
+        margin-bottom: 0;
+    }
+    .meta-icon {
+        font-size: 0.9rem;
+    }
+
+    /* ========== 变更记录区（全宽底部） ========== */
+    .changelog-section.changelog-full-width {
+        padding: 12px 24px;
+        border-top: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    .changelog-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background: rgba(0, 0, 0, 0.03);
+        border: none;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        color: var(--text-muted, #6b7280);
+        cursor: pointer;
+        transition: all 0.2s;
+        width: auto;
+    }
+    .changelog-toggle:hover {
+        background: rgba(0, 0, 0, 0.06);
+        color: var(--text-secondary, #374151);
+    }
+    .changelog-arrow {
+        transition: transform 0.2s;
+        margin-left: 4px;
+    }
+    .changelog-toggle.expanded .changelog-arrow {
+        transform: rotate(180deg);
+    }
+    .changelog-list {
+        margin-top: 0;
+        max-height: 0;
+        overflow: hidden;
+        padding: 0 12px;
+        background: rgba(0, 0, 0, 0.02);
+        border-radius: 6px;
+        transition: max-height 0.3s ease, margin-top 0.3s ease, padding 0.3s ease;
+    }
+    .changelog-list.expanded {
+        margin-top: 10px;
+        max-height: 150px;
+        overflow-y: auto;
+        padding: 8px 12px;
+    }
+    @media (max-height: 700px) {
+        .changelog-list.expanded {
+            max-height: 100px;
+        }
+    }
+    .changelog-item {
+        display: flex;
+        gap: 16px;
+        padding: 5px 0;
+        font-size: 0.8rem;
+        border-bottom: 1px dashed rgba(0, 0, 0, 0.06);
+    }
+    .changelog-item:last-child {
+        border-bottom: none;
+    }
+    .changelog-time {
+        color: var(--text-muted, #9ca3af);
+        white-space: nowrap;
+        min-width: 100px;
+        flex-shrink: 0;
+    }
+    .changelog-text {
+        color: var(--text-secondary, #6b7280);
+        flex: 1;
+    }
+    .changelog-empty {
+        color: var(--text-muted, #9ca3af);
+        font-style: italic;
+        font-size: 0.8rem;
+        padding: 8px 0;
+    }
+
+    /* ========== 进度条 ========== */
+    /* 进度圆环 */
+    .progress-ring {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: conic-gradient(
+            #4f46e5 calc(var(--progress, 0) * 3.6deg),
+            #e5e7eb calc(var(--progress, 0) * 3.6deg)
+        );
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        position: relative;
+        flex-shrink: 0;
+        transition: transform 0.15s;
+    }
+    .progress-ring:hover {
+        transform: scale(1.1);
+    }
+    .progress-ring::before {
+        content: '';
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        background: var(--bg-color, #fff);
+        border-radius: 50%;
+    }
+    .progress-ring-text {
+        position: relative;
+        font-size: 8px;
+        font-weight: 600;
+        color: #4f46e5;
+    }
+    /* 旧进度条样式（保留兼容） */
+    .task-progress-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 4px;
+    }
+    .task-progress-track {
+        flex: 1;
+        height: 6px;
+        background: rgba(0, 0, 0, 0.08);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    .task-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        border-radius: 3px;
+        transition: width 0.3s ease;
+    }
+    .task-progress-text {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #667eea;
+        min-width: 36px;
+        text-align: right;
+    }
+
+    /* ========== 每日例行按钮和面板 ========== */
+    .btn-routine {
+        padding: 0.5rem 1rem;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border: none;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+        position: relative;
+        overflow: hidden;
+    }
+    .btn-routine:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+    .tabs-divider {
+        width: 1px;
+        height: 24px;
+        background: rgba(0, 0, 0, 0.1);
+        margin: 0 0.5rem;
+    }
+
+    /* ========== 任务状态旋转边框动效 ========== */
+    @property --btn-angle {
+        syntax: '<angle>';
+        initial-value: 0deg;
+        inherits: false;
+    }
+    @keyframes btn-border-rotate {
+        0% { --btn-angle: 0deg; }
+        100% { --btn-angle: 360deg; }
+    }
+    .btn-routine.has-pending,
+    .matrix-tab[data-tab="today"].has-pending {
+        position: relative;
+        overflow: visible;
+        isolation: isolate;
+        background: transparent !important;
+    }
+    /* 背景层 */
+    .btn-routine.has-pending::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        z-index: -1;
+    }
+    .matrix-tab[data-tab="today"].has-pending::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        z-index: -1;
+    }
+    .btn-routine.has-pending::before,
+    .matrix-tab[data-tab="today"].has-pending::before {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        border-radius: inherit;
+        padding: 2px;
+        background: conic-gradient(
+            from var(--btn-angle, 0deg),
+            transparent 0%,
+            transparent 92%,
+            rgba(255, 204, 188, 0.5) 93%,
+            rgba(255, 171, 145, 0.6) 94%,
+            rgba(255, 138, 128, 0.8) 95%,
+            #ff5252 97%,
+            #ff6b6b 98%,
+            transparent 100%
+        );
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        animation: btn-border-rotate var(--rotate-speed, 4s) linear infinite;
+        z-index: 0;
+        pointer-events: none;
+    }
+    .btn-routine.speed-fast::before,
+    .matrix-tab.speed-fast::before {
+        --rotate-speed: 2s;
+    }
+    .btn-routine.speed-slow::before,
+    .matrix-tab.speed-slow::before {
+        --rotate-speed: 5s;
+    }
+    .routine-panel-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(2px);
+        z-index: 10000;
+        animation: fadeIn 0.2s ease;
+    }
+    .routine-panel {
+        position: absolute;
+        top: 120px;
+        left: 20px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border-radius: 16px;
+        width: 360px;
+        max-width: calc(100vw - 40px);
+        max-height: 60vh;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        animation: slideDown 0.2s ease;
+        display: flex;
+        flex-direction: column;
+    }
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    [data-theme="dark"] .routine-panel {
+        background: rgba(30, 30, 40, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .routine-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    }
+    .routine-header h3 {
+        margin: 0;
+        font-size: 1.2rem;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    .routine-close {
+        background: rgba(102, 126, 234, 0.15);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(102, 126, 234, 0.2);
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #667eea;
+        cursor: pointer;
+        padding: 0.5rem 1.2rem;
+        transition: all 0.2s;
+    }
+    .routine-close:hover {
+        background: rgba(102, 126, 234, 0.25);
+        transform: translateY(-1px);
+    }
+    .routine-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem;
+        min-height: 200px;
+        max-height: 400px;
+    }
+    .routine-empty {
+        text-align: center;
+        color: #9ca3af;
+        padding: 2rem;
+    }
+    .routine-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        background: var(--bg-secondary, #f9fafb);
+        border-radius: 10px;
+        margin-bottom: 0.5rem;
+        transition: all 0.2s;
+    }
+    .routine-item:hover {
+        background: var(--bg-hover, #f3f4f6);
+    }
+    .routine-item.completed {
+        opacity: 0.6;
+    }
+    .routine-item.completed .routine-text {
+        text-decoration: line-through;
+        color: #9ca3af;
+    }
+    .routine-checkbox {
+        width: 20px;
+        height: 20px;
+        border: 2px solid #d1d5db;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+    .routine-checkbox:hover {
+        border-color: #f5576c;
+    }
+    .routine-checkbox.checked {
+        background: linear-gradient(135deg, #f093fb, #f5576c);
+        border-color: transparent;
+        color: white;
+    }
+    .routine-text {
+        flex: 1;
+        font-size: 0.95rem;
+        color: var(--text-color, #1f2937);
+    }
+    .routine-delete {
+        background: none;
+        border: none;
+        color: #d1d5db;
+        cursor: pointer;
+        font-size: 1.2rem;
+        padding: 0;
+        opacity: 0;
+        transition: all 0.2s;
+    }
+    .routine-item:hover .routine-delete {
+        opacity: 1;
+    }
+    .routine-delete:hover {
+        color: #ef4444;
+    }
+    .routine-footer {
+        display: flex;
+        gap: 0.5rem;
+        padding: 1rem;
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+    }
+    .routine-footer input {
+        flex: 1;
+        padding: 0.75rem 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        font-size: 0.95rem;
+        outline: none;
+    }
+    .routine-footer input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    .btn-add-routine {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 1.5rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .btn-add-routine:hover {
+        transform: scale(1.05);
+    }
+    </style>
     <div class="toast-container" id="toast-container"></div>
 
-    <!-- Search Bar -->
-    <div class="search-container">
-        <input type="text" class="search-input" id="search-input" placeholder="搜索任务... (按 S 快速搜索)">
-        <span class="search-icon">🔍</span>
-        <button class="search-clear" id="search-clear" onclick="clearSearch()">&times;</button>
+    <!-- 每日例行面板 -->
+    <div class="routine-panel-overlay" id="routine-panel-overlay" style="display:none;" onclick="toggleRoutinePanel()">
+        <div class="routine-panel" onclick="event.stopPropagation()">
+            <div class="routine-header">
+                <h3>🔥 你真是强的可怕</h3>
+                <button class="routine-close" onclick="toggleRoutinePanel()">确认</button>
+            </div>
+            <div class="routine-list" id="routine-list">
+                <div class="routine-empty">暂无例行任务</div>
+            </div>
+            <div class="routine-footer">
+                <input type="text" id="routine-input" placeholder="添加例行任务..." onkeypress="if(event.key==='Enter')addRoutine()">
+                <button class="btn-add-routine" onclick="addRoutine()">+</button>
+            </div>
+        </div>
     </div>
 
+    <div class="todo-main-layout">
     <div class="todo-matrix-container">
+        <!-- 名言栏 -->
+        <div class="page-header compact">
+            <div class="header-left">
+                <p class="quote-text" id="quote-text">{{ quote }}</p>
+            </div>
+            <button class="btn-shuffle" onclick="shuffleQuote()">换一个</button>
+        </div>
         <!-- Tab Navigation -->
         <div class="matrix-tabs">
+            <button class="btn-routine" onclick="toggleRoutinePanel()">例行</button>
+            <div class="tabs-divider"></div>
             <button class="matrix-tab active" data-tab="today" onclick="switchTab('today')">
                 Today
                 <span class="tab-count" id="count-today">0</span>
@@ -58,10 +1479,6 @@
             </button>
             <div class="tab-actions">
                 <button class="btn-add-task" onclick="showAddModal()">+ 添加任务</button>
-                <label class="show-completed-toggle">
-                    <input type="checkbox" id="show-completed" onchange="toggleShowCompleted()">
-                    <span>显示已完成</span>
-                </label>
             </div>
         </div>
 
@@ -70,76 +1487,33 @@
             <div class="tab-drop-zone" data-target-tab="today">
                 <div class="drop-zone-title">拖到 Today</div>
                 <div class="drop-zone-matrix">
-                    <!-- Cross lines with arrows -->
-                    <div class="drop-cross-center">
-                        <div class="drop-line vertical">
-                            <div class="drop-arrow-head top"></div>
-                            <div class="drop-arrow-head bottom"></div>
-                        </div>
-                        <div class="drop-line horizontal">
-                            <div class="drop-arrow-head left"></div>
-                            <div class="drop-arrow-head right"></div>
-                        </div>
-                        <span class="drop-axis-label top">重要</span>
-                        <span class="drop-axis-label bottom">不重要</span>
-                        <span class="drop-axis-label left">紧急</span>
-                        <span class="drop-axis-label right">不紧急</span>
-                    </div>
                     <div class="drop-zone-quadrants">
                         <div class="drop-quadrant" data-target-tab="today" data-target-quadrant="important-urgent">🔥</div>
                         <div class="drop-quadrant" data-target-tab="today" data-target-quadrant="important-not-urgent">🎯</div>
-                        <div class="drop-quadrant" data-target-tab="today" data-target-quadrant="not-important-urgent">📞</div>
-                        <div class="drop-quadrant" data-target-tab="today" data-target-quadrant="not-important-not-urgent">🎮</div>
+                        <div class="drop-quadrant" data-target-tab="today" data-target-quadrant="not-important-urgent">📥</div>
+                        <div class="drop-quadrant" data-target-tab="today" data-target-quadrant="not-important-not-urgent">⚡</div>
                     </div>
                 </div>
             </div>
             <div class="tab-drop-zone" data-target-tab="week">
                 <div class="drop-zone-title">拖到 This Week</div>
                 <div class="drop-zone-matrix">
-                    <div class="drop-cross-center">
-                        <div class="drop-line vertical">
-                            <div class="drop-arrow-head top"></div>
-                            <div class="drop-arrow-head bottom"></div>
-                        </div>
-                        <div class="drop-line horizontal">
-                            <div class="drop-arrow-head left"></div>
-                            <div class="drop-arrow-head right"></div>
-                        </div>
-                        <span class="drop-axis-label top">重要</span>
-                        <span class="drop-axis-label bottom">不重要</span>
-                        <span class="drop-axis-label left">紧急</span>
-                        <span class="drop-axis-label right">不紧急</span>
-                    </div>
                     <div class="drop-zone-quadrants">
                         <div class="drop-quadrant" data-target-tab="week" data-target-quadrant="important-urgent">🔥</div>
                         <div class="drop-quadrant" data-target-tab="week" data-target-quadrant="important-not-urgent">🎯</div>
-                        <div class="drop-quadrant" data-target-tab="week" data-target-quadrant="not-important-urgent">📞</div>
-                        <div class="drop-quadrant" data-target-tab="week" data-target-quadrant="not-important-not-urgent">🎮</div>
+                        <div class="drop-quadrant" data-target-tab="week" data-target-quadrant="not-important-urgent">📥</div>
+                        <div class="drop-quadrant" data-target-tab="week" data-target-quadrant="not-important-not-urgent">⚡</div>
                     </div>
                 </div>
             </div>
             <div class="tab-drop-zone" data-target-tab="month">
                 <div class="drop-zone-title">拖到 Next 30 Days</div>
                 <div class="drop-zone-matrix">
-                    <div class="drop-cross-center">
-                        <div class="drop-line vertical">
-                            <div class="drop-arrow-head top"></div>
-                            <div class="drop-arrow-head bottom"></div>
-                        </div>
-                        <div class="drop-line horizontal">
-                            <div class="drop-arrow-head left"></div>
-                            <div class="drop-arrow-head right"></div>
-                        </div>
-                        <span class="drop-axis-label top">重要</span>
-                        <span class="drop-axis-label bottom">不重要</span>
-                        <span class="drop-axis-label left">紧急</span>
-                        <span class="drop-axis-label right">不紧急</span>
-                    </div>
                     <div class="drop-zone-quadrants">
                         <div class="drop-quadrant" data-target-tab="month" data-target-quadrant="important-urgent">🔥</div>
                         <div class="drop-quadrant" data-target-tab="month" data-target-quadrant="important-not-urgent">🎯</div>
-                        <div class="drop-quadrant" data-target-tab="month" data-target-quadrant="not-important-urgent">📞</div>
-                        <div class="drop-quadrant" data-target-tab="month" data-target-quadrant="not-important-not-urgent">🎮</div>
+                        <div class="drop-quadrant" data-target-tab="month" data-target-quadrant="not-important-urgent">📥</div>
+                        <div class="drop-quadrant" data-target-tab="month" data-target-quadrant="not-important-not-urgent">⚡</div>
                     </div>
                 </div>
             </div>
@@ -149,72 +1523,57 @@
         <div class="eisenhower-matrix">
             <!-- Matrix Grid -->
             <div class="matrix-grid">
-                <!-- Cross lines with arrows -->
-                <div class="matrix-cross-center">
-                    <!-- Vertical axis -->
-                    <div class="cross-line vertical">
-                        <div class="arrow-head top"></div>
-                        <div class="arrow-head bottom"></div>
-                    </div>
-                    <!-- Horizontal axis -->
-                    <div class="cross-line horizontal">
-                        <div class="arrow-head left"></div>
-                        <div class="arrow-head right"></div>
-                    </div>
-                    <!-- Labels -->
-                    <span class="axis-label top">重要</span>
-                    <span class="axis-label bottom">不重要</span>
-                    <span class="axis-label left">紧急</span>
-                    <span class="axis-label right">不紧急</span>
-                </div>
-
-                <!-- Quadrant 1: Important & Urgent -->
+                <!-- Quadrant 1: 优先处理 (默认展开) -->
                 <div class="quadrant q1" data-quadrant="important-urgent"
                      ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="dropItem(event)">
-                    <div class="quadrant-header" ondragover="allowDrop(event)" ondrop="dropItem(event)">
+                    <div class="quadrant-header" onclick="toggleQuadrant(this)" ondragover="allowDrop(event)" ondrop="dropItem(event)">
+                        <span class="quadrant-toggle">▼</span>
                         <span class="quadrant-icon">🔥</span>
-                        <span class="quadrant-title">重要且紧急</span>
-                        <span class="quadrant-hint">立即做</span>
-                        <button class="btn-quadrant-add" onclick="showAddModalForQuadrant('important-urgent')">+</button>
+                        <span class="quadrant-title">优先处理</span>
+                        <span class="quadrant-count" id="qcount-important-urgent"></span>
+                        <button class="btn-quadrant-add" onclick="event.stopPropagation(); showAddModalForQuadrant('important-urgent')">+</button>
                     </div>
                     <div class="quadrant-items" id="items-important-urgent"
                          ondragover="allowDrop(event)" ondrop="dropItem(event)"></div>
                 </div>
 
-                <!-- Quadrant 2: Important & Not Urgent -->
-                <div class="quadrant q2" data-quadrant="important-not-urgent"
+                <!-- Quadrant 2: 就等你翻牌子了 (默认折叠) -->
+                <div class="quadrant q2 collapsed" data-quadrant="important-not-urgent"
                      ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="dropItem(event)">
-                    <div class="quadrant-header" ondragover="allowDrop(event)" ondrop="dropItem(event)">
+                    <div class="quadrant-header" onclick="toggleQuadrant(this)" ondragover="allowDrop(event)" ondrop="dropItem(event)">
+                        <span class="quadrant-toggle">▼</span>
                         <span class="quadrant-icon">🎯</span>
-                        <span class="quadrant-title">重要不紧急</span>
-                        <span class="quadrant-hint">计划做</span>
-                        <button class="btn-quadrant-add" onclick="showAddModalForQuadrant('important-not-urgent')">+</button>
+                        <span class="quadrant-title">就等你翻牌子了</span>
+                        <span class="quadrant-count" id="qcount-important-not-urgent"></span>
+                        <button class="btn-quadrant-add" onclick="event.stopPropagation(); showAddModalForQuadrant('important-not-urgent')">+</button>
                     </div>
                     <div class="quadrant-items" id="items-important-not-urgent"
                          ondragover="allowDrop(event)" ondrop="dropItem(event)"></div>
                 </div>
 
-                <!-- Quadrant 3: Not Important & Urgent -->
-                <div class="quadrant q3" data-quadrant="not-important-urgent"
+                <!-- Quadrant 3: 待分类 (默认折叠) -->
+                <div class="quadrant q3 collapsed" data-quadrant="not-important-urgent"
                      ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="dropItem(event)">
-                    <div class="quadrant-header" ondragover="allowDrop(event)" ondrop="dropItem(event)">
-                        <span class="quadrant-icon">📞</span>
-                        <span class="quadrant-title">不重要但紧急</span>
-                        <span class="quadrant-hint">委托做</span>
-                        <button class="btn-quadrant-add" onclick="showAddModalForQuadrant('not-important-urgent')">+</button>
+                    <div class="quadrant-header" onclick="toggleQuadrant(this)" ondragover="allowDrop(event)" ondrop="dropItem(event)">
+                        <span class="quadrant-toggle">▼</span>
+                        <span class="quadrant-icon">📥</span>
+                        <span class="quadrant-title">待分类</span>
+                        <span class="quadrant-count" id="qcount-not-important-urgent"></span>
+                        <button class="btn-quadrant-add" onclick="event.stopPropagation(); showAddModalForQuadrant('not-important-urgent')">+</button>
                     </div>
                     <div class="quadrant-items" id="items-not-important-urgent"
                          ondragover="allowDrop(event)" ondrop="dropItem(event)"></div>
                 </div>
 
-                <!-- Quadrant 4: Not Important & Not Urgent -->
-                <div class="quadrant q4" data-quadrant="not-important-not-urgent"
+                <!-- Quadrant 4: 短平快 (默认折叠) -->
+                <div class="quadrant q4 collapsed" data-quadrant="not-important-not-urgent"
                      ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="dropItem(event)">
-                    <div class="quadrant-header" ondragover="allowDrop(event)" ondrop="dropItem(event)">
-                        <span class="quadrant-icon">🎮</span>
-                        <span class="quadrant-title">不重要不紧急</span>
-                        <span class="quadrant-hint">少做或不做</span>
-                        <button class="btn-quadrant-add" onclick="showAddModalForQuadrant('not-important-not-urgent')">+</button>
+                    <div class="quadrant-header" onclick="toggleQuadrant(this)" ondragover="allowDrop(event)" ondrop="dropItem(event)">
+                        <span class="quadrant-toggle">▼</span>
+                        <span class="quadrant-icon">⚡</span>
+                        <span class="quadrant-title">短平快</span>
+                        <span class="quadrant-count" id="qcount-not-important-not-urgent"></span>
+                        <button class="btn-quadrant-add" onclick="event.stopPropagation(); showAddModalForQuadrant('not-important-not-urgent')">+</button>
                     </div>
                     <div class="quadrant-items" id="items-not-important-not-urgent"
                          ondragover="allowDrop(event)" ondrop="dropItem(event)"></div>
@@ -222,72 +1581,122 @@
             </div>
         </div>
 
-        <!-- Completed Tasks Section -->
-        <div class="completed-section" id="completed-section" style="display:none;">
-            <div class="completed-header" onclick="toggleCompletedList()">
-                <h3>已完成的任务</h3>
-                <span class="collapse-icon" id="completed-icon">▼</span>
+    </div>
+    <!-- 右侧边栏 -->
+    <div class="right-sidebar">
+        <!-- 已完成区 -->
+        <div class="sidebar-section" id="completed-section">
+            <div class="section-header" onclick="toggleSidebarSection('completed-section')">
+                <h3><span>✓</span> 已完成</h3>
+                <span class="expand-icon">▶</span>
             </div>
-            <div class="completed-list" id="completed-list"></div>
+            <div class="section-content">
+                <div class="section-list" id="completed-list"></div>
+            </div>
+        </div>
+        <!-- 已删除区 -->
+        <div class="sidebar-section" id="deleted-section">
+            <div class="section-header" onclick="toggleSidebarSection('deleted-section')">
+                <h3><span>🗑</span> 已删除</h3>
+                <span class="expand-icon">▶</span>
+            </div>
+            <div class="section-content">
+                <div class="section-list" id="deleted-list"></div>
+            </div>
         </div>
     </div>
+    </div>
 
-    <!-- Add Task Modal -->
-    <div class="modal-overlay" id="add-modal" style="display:none;" onclick="hideAddModal(event)">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h3>添加新任务</h3>
-                <button class="modal-close" onclick="hideAddModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>任务内容</label>
-                    <input type="text" id="new-task-text" placeholder="输入任务内容..." autofocus>
-                </div>
-                <div class="form-group">
-                    <label>所属时间段</label>
-                    <div class="tab-selector" id="tab-selector">
-                        <button type="button" class="tab-option active" data-tab="today">Today</button>
-                        <button type="button" class="tab-option" data-tab="week">This Week</button>
-                        <button type="button" class="tab-option" data-tab="month">Next 30 Days</button>
-                    </div>
-                    <input type="hidden" id="new-task-tab" value="today">
-                </div>
-                <div class="form-group">
-                    <label>标签</label>
-                    <div class="tag-input-container" id="tag-input-container">
-                        <input type="text" class="tag-input" id="tag-input" placeholder="输入标签后按 Enter 添加...">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>优先级象限</label>
-                    <div class="quadrant-selector">
-                        <label class="quadrant-option selected" data-q="important-urgent">
-                            <input type="radio" name="quadrant" value="important-urgent" checked>
-                            <span class="option-icon">🔥</span>
-                            <span class="option-text">重要且紧急</span>
-                        </label>
-                        <label class="quadrant-option" data-q="important-not-urgent">
-                            <input type="radio" name="quadrant" value="important-not-urgent">
-                            <span class="option-icon">🎯</span>
-                            <span class="option-text">重要不紧急</span>
-                        </label>
-                        <label class="quadrant-option" data-q="not-important-urgent">
-                            <input type="radio" name="quadrant" value="not-important-urgent">
-                            <span class="option-icon">📞</span>
-                            <span class="option-text">不重要但紧急</span>
-                        </label>
-                        <label class="quadrant-option" data-q="not-important-not-urgent">
-                            <input type="radio" name="quadrant" value="not-important-not-urgent">
-                            <span class="option-icon">🎮</span>
-                            <span class="option-text">不重要不紧急</span>
-                        </label>
-                    </div>
+    <!-- 统一任务弹窗（查看/编辑/新建） -->
+    <div class="task-modal-overlay" id="task-modal-overlay" style="display:none;" onclick="closeTaskModal()">
+        <div class="task-modal" onclick="event.stopPropagation()">
+            <!-- 标题栏 -->
+            <div class="task-modal-header">
+                <textarea id="modal-title" class="title-input" placeholder="任务标题（限50字）" maxlength="50" rows="2"></textarea>
+                <div class="header-actions">
+                    <button class="header-btn edit-btn" id="header-edit-btn" onclick="switchToEditMode()">编辑</button>
+                    <button class="header-btn close-btn" onclick="closeTaskModal()">关闭</button>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button class="btn-cancel" onclick="hideAddModal()">取消</button>
-                <button class="btn-save" onclick="addTask()">添加</button>
+            <!-- 主体：左属性 + 右内容 -->
+            <div class="task-modal-body">
+                <!-- 左栏：属性 -->
+                <div class="task-modal-left">
+                    <div class="prop-group">
+                        <label>📅 计划完成</label>
+                        <input type="date" id="modal-due-date">
+                    </div>
+                    <div class="prop-group">
+                        <label>👤 相关人</label>
+                        <input type="text" id="modal-assignee" placeholder="相关人员">
+                    </div>
+                    <div class="prop-group">
+                        <label>🕐 时间段</label>
+                        <div class="tab-buttons" id="modal-tab-buttons">
+                            <button type="button" class="tab-btn selected" data-tab="today">Today</button>
+                            <button type="button" class="tab-btn" data-tab="week">Week</button>
+                            <button type="button" class="tab-btn" data-tab="month">Month</button>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label>📊 象限</label>
+                        <div class="quadrant-select-compact" id="modal-quadrant-select">
+                            <label class="q-option selected" data-q="important-urgent">
+                                <input type="radio" name="modal-quadrant" value="important-urgent" checked>
+                                <span class="q-icon">🔥</span><span class="q-text">优先处理</span>
+                            </label>
+                            <label class="q-option" data-q="important-not-urgent">
+                                <input type="radio" name="modal-quadrant" value="important-not-urgent">
+                                <span class="q-icon">🎯</span><span class="q-text">等你翻牌</span>
+                            </label>
+                            <label class="q-option" data-q="not-important-urgent">
+                                <input type="radio" name="modal-quadrant" value="not-important-urgent">
+                                <span class="q-icon">📥</span><span class="q-text">待分类</span>
+                            </label>
+                            <label class="q-option" data-q="not-important-not-urgent">
+                                <input type="radio" name="modal-quadrant" value="not-important-not-urgent">
+                                <span class="q-icon">⚡</span><span class="q-text">短平快</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label>进度</label>
+                        <div class="progress-slider">
+                            <input type="range" id="modal-progress" min="0" max="100" value="0">
+                            <span class="progress-value" id="modal-progress-value">0%</span>
+                        </div>
+                    </div>
+                    <!-- 元信息 -->
+                    <div class="meta-section" id="modal-meta-section">
+                        <div class="meta-item" id="modal-created-at">
+                            <span>📅</span>
+                            <span class="meta-text">创建于 --</span>
+                        </div>
+                        <div class="meta-item" id="modal-completed-at" style="display:none;">
+                            <span>✅</span>
+                            <span class="meta-text">完成于 --</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- 右栏：内容 -->
+                <div class="task-modal-right">
+                    <textarea id="modal-content" placeholder="详细描述、备注、相关信息..."></textarea>
+                </div>
+            </div>
+            <!-- 变更记录（全宽） -->
+            <div class="changelog-section changelog-full-width" id="modal-changelog-section">
+                <button class="changelog-toggle" id="changelog-toggle" onclick="toggleChangelog()">
+                    <span>📋 变更记录</span>
+                    <span class="changelog-arrow" id="changelog-arrow">▼</span>
+                </button>
+                <div class="changelog-list" id="modal-changelog">
+                    <div class="changelog-empty">暂无变更记录</div>
+                </div>
+            </div>
+            <!-- 底部按钮（编辑/新建模式显示） -->
+            <div class="task-modal-footer" id="modal-footer-edit" style="display:none;">
+                <button class="task-modal-btn secondary" onclick="closeTaskModal()">取消</button>
+                <button class="task-modal-btn primary" id="modal-save-btn" onclick="saveTask()">保存</button>
             </div>
         </div>
     </div>
@@ -295,8 +1704,136 @@
     <script>
     var currentTab = 'today';
     var allItems = [];
-    var showCompleted = false;
+    var showCompleted = true;  // 默认显示已完成任务
     var draggedItem = null;
+    var routines = [];  // 每日例行任务
+
+    // ========== 每日例行功能 ==========
+    function toggleRoutinePanel() {
+        var overlay = document.getElementById('routine-panel-overlay');
+        if (overlay.style.display === 'none') {
+            overlay.style.display = 'flex';
+            loadRoutines();
+        } else {
+            overlay.style.display = 'none';
+        }
+    }
+
+    function loadRoutines() {
+        fetch('/api/routines')
+            .then(response => response.json())
+            .then(data => {
+                routines = data.items || [];
+                renderRoutines();
+            })
+            .catch(() => {
+                routines = [];
+                renderRoutines();
+            });
+    }
+
+    function renderRoutines() {
+        var list = document.getElementById('routine-list');
+        if (routines.length === 0) {
+            list.innerHTML = '<div class="routine-empty">暂无例行任务</div>';
+            updateButtonAnimations();
+            return;
+        }
+        var html = '';
+        routines.forEach(function(r) {
+            var checkedClass = r.completed_today ? 'checked' : '';
+            var completedClass = r.completed_today ? 'completed' : '';
+            html += '<div class="routine-item ' + completedClass + '" data-id="' + r.id + '">' +
+                '<div class="routine-checkbox ' + checkedClass + '" onclick="toggleRoutine(\'' + r.id + '\')">' +
+                    (r.completed_today ? '✓' : '') +
+                '</div>' +
+                '<span class="routine-text">' + escapeHtml(r.text) + '</span>' +
+                '<button class="routine-delete" onclick="deleteRoutine(\'' + r.id + '\')">&times;</button>' +
+            '</div>';
+        });
+        list.innerHTML = html;
+        updateButtonAnimations();
+    }
+
+    function addRoutine() {
+        var input = document.getElementById('routine-input');
+        var text = input.value.trim();
+        if (!text) return;
+
+        fetch('/api/routines', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: text })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                input.value = '';
+                loadRoutines();
+                showToast('例行任务已添加');
+            }
+        });
+    }
+
+    function toggleRoutine(id) {
+        fetch('/api/routines/' + id + '/toggle', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadRoutines();
+                }
+            });
+    }
+
+    function deleteRoutine(id) {
+        if (!confirm('确定删除此例行任务？')) return;
+        fetch('/api/routines/' + id, { method: 'DELETE' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadRoutines();
+                    showToast('例行任务已删除');
+                }
+            });
+    }
+
+
+    // ========== 按钮动效更新 ==========
+    function updateButtonAnimations() {
+        // 例行按钮
+        var routineBtn = document.querySelector('.btn-routine');
+        if (routineBtn) {
+            var pendingRoutines = routines.filter(function(r) { return !r.completed_today; }).length;
+            var totalRoutines = routines.length;
+
+            if (totalRoutines > 0 && pendingRoutines > 0) {
+                routineBtn.classList.add('has-pending');
+                var completion = (totalRoutines - pendingRoutines) / totalRoutines;
+                routineBtn.classList.toggle('speed-fast', completion < 0.5);
+                routineBtn.classList.toggle('speed-slow', completion >= 0.5);
+            } else {
+                routineBtn.classList.remove('has-pending', 'speed-fast', 'speed-slow');
+            }
+        }
+
+        // Today 按钮
+        var todayBtn = document.querySelector('.matrix-tab[data-tab="today"]');
+        if (todayBtn) {
+            var todayItems = allItems.filter(function(i) { return i.tab === 'today' && !i.deleted; });
+            var pendingToday = todayItems.filter(function(i) { return !i.completed; }).length;
+            var totalToday = todayItems.length;
+
+            if (totalToday > 0 && pendingToday > 0) {
+                todayBtn.classList.add('has-pending');
+                var completion = (totalToday - pendingToday) / totalToday;
+                todayBtn.classList.toggle('speed-fast', completion < 0.5);
+                todayBtn.classList.toggle('speed-slow', completion >= 0.5);
+            } else {
+                todayBtn.classList.remove('has-pending', 'speed-fast', 'speed-slow');
+            }
+        }
+    }
+
 
     function shuffleQuote() {
         var btn = document.querySelector('.btn-shuffle');
@@ -321,8 +1858,39 @@
                 t.classList.add('active');
             }
         });
-        document.getElementById('new-task-tab').value = tab;
+        // 更新 modal 中的时间段按钮
+        document.querySelectorAll('#modal-tab-buttons .tab-btn').forEach(function(btn) {
+            btn.classList.toggle('selected', btn.dataset.tab === tab);
+        });
+        updateCounts();  // 更新象限计数（依赖 currentTab）
         renderItems();
+    }
+
+    // 象限折叠功能
+    function toggleQuadrant(header) {
+        var quadrant = header.closest('.quadrant');
+        quadrant.classList.toggle('collapsed');
+        saveQuadrantState();
+    }
+
+    function saveQuadrantState() {
+        var states = {};
+        document.querySelectorAll('.quadrant').forEach(function(q) {
+            states[q.dataset.quadrant] = q.classList.contains('collapsed');
+        });
+        localStorage.setItem('quadrantStates', JSON.stringify(states));
+    }
+
+    function loadQuadrantState() {
+        var saved = localStorage.getItem('quadrantStates');
+        if (!saved) return; // 使用 HTML 默认状态
+        var states = JSON.parse(saved);
+        document.querySelectorAll('.quadrant').forEach(function(q) {
+            var key = q.dataset.quadrant;
+            if (states[key] !== undefined) {
+                q.classList.toggle('collapsed', states[key]);
+            }
+        });
     }
 
     function loadItems() {
@@ -337,14 +1905,29 @@
 
     function updateCounts() {
         var counts = { today: 0, week: 0, month: 0 };
+        var qcounts = {
+            'important-urgent': 0,
+            'important-not-urgent': 0,
+            'not-important-urgent': 0,
+            'not-important-not-urgent': 0
+        };
         allItems.forEach(function(item) {
-            if (!item.completed) {
+            if (!item.completed && !item.deleted) {
                 counts[item.tab] = (counts[item.tab] || 0) + 1;
+                // 当前 tab 的象限计数
+                if (item.tab === currentTab) {
+                    qcounts[item.quadrant] = (qcounts[item.quadrant] || 0) + 1;
+                }
             }
         });
         document.getElementById('count-today').textContent = counts.today;
         document.getElementById('count-week').textContent = counts.week;
         document.getElementById('count-month').textContent = counts.month;
+        // 更新象限计数
+        Object.keys(qcounts).forEach(function(q) {
+            var el = document.getElementById('qcount-' + q);
+            if (el) el.textContent = '(' + qcounts[q] + ')';
+        });
     }
 
     function renderItems() {
@@ -355,55 +1938,117 @@
         });
 
         var completedHtml = '';
-        var hasCompleted = false;
+        var deletedHtml = '';
 
+        // 渲染未完成任务（按 tab 过滤，排除已删除）
         allItems.forEach(function(item) {
+            if (item.deleted) return;
             if (item.tab !== currentTab) return;
+            if (item.completed) return;
 
-            if (item.completed) {
-                hasCompleted = true;
-                if (showCompleted) {
-                    completedHtml += createCompletedItemHtml(item);
-                }
-            } else {
-                var container = document.getElementById('items-' + item.quadrant);
-                if (container) {
-                    container.innerHTML += createItemHtml(item);
-                }
+            var container = document.getElementById('items-' + item.quadrant);
+            if (container) {
+                container.innerHTML += createItemHtml(item);
             }
         });
 
-        document.getElementById('completed-list').innerHTML = completedHtml;
-        document.getElementById('completed-section').style.display = hasCompleted ? 'block' : 'none';
+        // 渲染已完成任务（不过滤 tab，排除已删除）
+        allItems.forEach(function(item) {
+            if (item.deleted) return;
+            if (item.completed) {
+                completedHtml += createCompletedItemHtml(item);
+            }
+        });
+
+        // 渲染已删除任务
+        allItems.forEach(function(item) {
+            if (item.deleted) {
+                deletedHtml += createDeletedItemHtml(item);
+            }
+        });
+
+        document.getElementById('completed-list').innerHTML = completedHtml || '<div class="empty-hint">暂无已完成任务</div>';
+        document.getElementById('deleted-list').innerHTML = deletedHtml || '<div class="empty-hint">暂无已删除任务</div>';
+
+        // Re-attach touch handlers for mobile
+        attachTouchHandlers();
+        // Re-attach tooltip handlers
+        attachTooltipHandlers();
+        // 检查各象限任务数量，决定是否需要滚动
+        updateQuadrantScroll();
+        // 更新按钮动效
+        updateButtonAnimations();
+    }
+
+    // 检查象限任务数量，超过15个则添加滚动
+    function updateQuadrantScroll() {
+        var quadrants = ['important-urgent', 'important-not-urgent', 'not-important-urgent', 'not-important-not-urgent'];
+        quadrants.forEach(function(q) {
+            var container = document.getElementById('items-' + q);
+            if (container) {
+                var taskCount = container.querySelectorAll('.task-item').length;
+                if (taskCount > 15) {
+                    container.classList.add('has-scroll');
+                } else {
+                    container.classList.remove('has-scroll');
+                }
+            }
+        });
     }
 
     function createItemHtml(item) {
-        var tagsHtml = '';
-        if (item.tags && item.tags.length > 0) {
-            tagsHtml = '<div class="task-tags">';
-            item.tags.forEach(function(tag) {
-                tagsHtml += '<span class="task-tag">' + escapeHtml(tag) + '</span>';
-            });
-            tagsHtml += '</div>';
-        }
+        var progress = item.progress || 0;
+        // 进度圆环（显示进度百分比，点击可更新）
+        var progressRing = '<div class="progress-ring" style="--progress:' + progress + '" onclick="event.stopPropagation(); showProgressPopup(\'' + item.id + '\', this)" onmousedown="event.stopPropagation()" title="点击更新进度">' +
+            '<span class="progress-ring-text">' + progress + '</span>' +
+        '</div>';
+
+        // 相关人显示
+        var assigneeHtml = item.assignee
+            ? '<span class="task-assignee" title="' + escapeHtml(item.assignee) + '">' + escapeHtml(item.assignee) + '</span>'
+            : '';
+
         return '<div class="task-item" data-id="' + item.id + '" onmousedown="startCustomDrag(event)">' +
             '<div class="drag-handle">⋮⋮</div>' +
-            '<div class="task-checkbox" onclick="toggleComplete(\'' + item.id + '\')" onmousedown="event.stopPropagation()"></div>' +
-            '<div class="task-content">' +
-                '<div class="task-text" ondblclick="editTask(\'' + item.id + '\')">' + escapeHtml(item.text) + '</div>' +
-                tagsHtml +
+            '<div class="task-checkbox" onclick="event.stopPropagation(); toggleComplete(\'' + item.id + '\')" onmousedown="event.stopPropagation()"></div>' +
+            progressRing +
+            '<div class="task-content" onclick="showTaskCard(\'' + item.id + '\', this.closest(\'.task-item\'))">' +
+                '<div class="task-text">' + escapeHtml(item.text) + '</div>' +
             '</div>' +
-            '<button class="task-delete" onclick="deleteTask(\'' + item.id + '\')" onmousedown="event.stopPropagation()">&times;</button>' +
+            assigneeHtml +
+            '<button class="task-delete" onmousedown="event.stopPropagation()" onclick="event.stopPropagation(); deleteTask(\'' + item.id + '\')" title="删除">&times;</button>' +
         '</div>';
     }
 
+    function getCompletionStatus(item) {
+        if (!item.due_date || !item.completed_at) return '';
+        var due = new Date(item.due_date);
+        due.setHours(23, 59, 59); // 截止日期算到当天结束
+        var completed = new Date(item.completed_at);
+        var diff = Math.floor((due - completed) / (1000 * 60 * 60 * 24));
+        if (diff > 0) return '<span class="status-early">提前' + diff + '天</span>';
+        if (diff < 0) return '<span class="status-late">超期' + Math.abs(diff) + '天</span>';
+        return '<span class="status-ontime">按时</span>';
+    }
+
     function createCompletedItemHtml(item) {
-        var completedAt = item.completed_at ? formatDate(item.completed_at) : '';
-        return '<div class="task-item completed" data-id="' + item.id + '">' +
-            '<div class="task-checkbox checked" onclick="toggleComplete(\'' + item.id + '\')">✓</div>' +
-            '<div class="task-text">' + escapeHtml(item.text) + '</div>' +
-            '<div class="task-completed-time">' + completedAt + '</div>' +
-            '<button class="task-delete" onclick="deleteTask(\'' + item.id + '\')">&times;</button>' +
+        var assignee = item.assignee ? escapeHtml(item.assignee) : '--';
+        var status = getCompletionStatus(item);
+        return '<div class="task-item completed" data-id="' + item.id + '" onclick="showTaskCard(\'' + item.id + '\')">' +
+            '<div class="task-checkbox checked" onclick="event.stopPropagation(); toggleComplete(\'' + item.id + '\')">✓</div>' +
+            '<div class="completed-task-name">' + escapeHtml(item.text) + '</div>' +
+            '<div class="completed-task-assignee">' + assignee + '</div>' +
+            '<div class="completed-task-status">' + status + '</div>' +
+        '</div>';
+    }
+
+    function createDeletedItemHtml(item) {
+        return '<div class="task-item deleted" data-id="' + item.id + '">' +
+            '<div class="deleted-task-name">' + escapeHtml(item.text) + '</div>' +
+            '<div class="deleted-task-actions">' +
+                '<button class="btn-restore" onclick="restoreTask(\'' + item.id + '\')" title="恢复">↩</button>' +
+                '<button class="btn-permanent-delete" onclick="permanentDeleteTask(\'' + item.id + '\')" title="永久删除">×</button>' +
+            '</div>' +
         '</div>';
     }
 
@@ -646,7 +2291,7 @@
         .then(data => {
             if (data.success) {
                 allItems = allItems.map(function(i) {
-                    if (i.id === itemId) i.quadrant = newQuadrant;
+                    if (i.id === itemId) return data.item || Object.assign(i, {quadrant: newQuadrant});
                     return i;
                 });
                 renderItems();
@@ -667,7 +2312,7 @@
         .then(data => {
             if (data.success) {
                 allItems = allItems.map(function(i) {
-                    if (i.id === itemId) i.tab = newTab;
+                    if (i.id === itemId) return data.item || Object.assign(i, {tab: newTab});
                     return i;
                 });
                 updateCounts();
@@ -693,10 +2338,7 @@
         .then(data => {
             if (data.success) {
                 allItems = allItems.map(function(i) {
-                    if (i.id === itemId) {
-                        i.tab = newTab;
-                        i.quadrant = newQuadrant;
-                    }
+                    if (i.id === itemId) return data.item || Object.assign(i, {tab: newTab, quadrant: newQuadrant});
                     return i;
                 });
                 updateCounts();
@@ -708,10 +2350,10 @@
 
     function getQuadrantName(q) {
         var names = {
-            'important-urgent': '重要且紧急',
-            'important-not-urgent': '重要不紧急',
-            'not-important-urgent': '不重要但紧急',
-            'not-important-not-urgent': '不重要不紧急'
+            'important-urgent': '优先处理',
+            'important-not-urgent': '就等你翻牌子了',
+            'not-important-urgent': '待分类',
+            'not-important-not-urgent': '短平快'
         };
         return names[q] || q;
     }
@@ -748,41 +2390,180 @@
         return names[tab] || tab;
     }
 
-    // Task Actions
+    // Task Actions - 设置完成度进度条
     function toggleComplete(itemId) {
         var item = allItems.find(function(i) { return i.id === itemId; });
         if (!item) return;
 
-        var newCompleted = !item.completed;
-
-        var doToggle = function() {
+        // 如果已完成，直接恢复为未完成
+        if (item.completed) {
             fetch('/api/todos/' + itemId, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ completed: newCompleted })
+                body: JSON.stringify({ completed: false, progress: 0 })
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
                     allItems = allItems.map(function(i) {
-                        if (i.id === itemId) {
-                            return data.item;
-                        }
-                        return i;
+                        return i.id === itemId ? data.item : i;
                     });
                     updateCounts();
                     renderItems();
-                    showToast(newCompleted ? '已完成' : '已恢复', 'success');
+                    showToast('已恢复', 'success');
                 }
             });
-        };
-
-        // 如果是标记为完成，需要确认
-        if (newCompleted) {
-            window.AppUtils.showConfirm('确定要将此任务标记为已完成吗？', doToggle, { confirmText: '完成' });
-        } else {
-            doToggle();
+            return;
         }
+
+        // 显示设置完成度弹窗
+        showProgressDialog(item);
+    }
+
+    // 通过 ID 显示进度弹窗（供圆环点击调用）
+    function showProgressPopup(itemId, element) {
+        var item = allItems.find(function(i) { return i.id === itemId; });
+        if (item) {
+            showProgressDialog(item);
+        }
+    }
+
+    // 显示完成度进度条弹窗
+    function showProgressDialog(item) {
+        var currentProgress = item.progress || 0;
+
+        var overlay = document.createElement('div');
+        overlay.className = 'progress-dialog-overlay';
+        overlay.innerHTML =
+            '<div class="progress-dialog">' +
+                '<div class="progress-dialog-title">设置完成度</div>' +
+                '<div class="progress-dialog-task">' + escapeHtml(item.text) + '</div>' +
+                '<div class="progress-slider-container">' +
+                    '<input type="range" class="progress-slider" id="progress-slider" min="0" max="100" value="' + currentProgress + '" style="--val:' + currentProgress + '%">' +
+                    '<div class="progress-value" id="progress-value">' + currentProgress + '%</div>' +
+                '</div>' +
+                '<div class="progress-dialog-buttons">' +
+                    '<button class="progress-btn cancel" id="progress-cancel">取消</button>' +
+                    '<button class="progress-btn confirm" id="progress-confirm">确定</button>' +
+                '</div>' +
+            '</div>';
+
+        document.body.appendChild(overlay);
+
+        var slider = document.getElementById('progress-slider');
+        var valueDisplay = document.getElementById('progress-value');
+        var confirmBtn = document.getElementById('progress-confirm');
+        var cancelBtn = document.getElementById('progress-cancel');
+
+        // 进度条拖拽状态
+        var lastSliderValue = currentProgress;
+        var sliderVelocity = 0;
+
+        // 更新进度显示
+        slider.addEventListener('input', function() {
+            var val = parseInt(slider.value);
+            valueDisplay.textContent = val + '%';
+            slider.style.setProperty('--val', val + '%');
+
+            // 计算拖拽速度
+            sliderVelocity = Math.abs(val - lastSliderValue);
+            lastSliderValue = val;
+
+            // Living Line 联动 - 计算滑块在屏幕上的位置
+            if (window.syncLineWithProgress) {
+                var sliderRect = slider.getBoundingClientRect();
+                var sliderX = sliderRect.left + (val / 100) * sliderRect.width;
+                window.syncLineWithProgress(sliderX, sliderVelocity);
+            }
+
+            if (val >= 100) {
+                valueDisplay.classList.add('complete');
+                confirmBtn.textContent = '确定完成';
+                confirmBtn.classList.add('complete');
+            } else {
+                valueDisplay.classList.remove('complete');
+                confirmBtn.textContent = '确定';
+                confirmBtn.classList.remove('complete');
+            }
+        });
+
+        // 松手时释放 Living Line
+        slider.addEventListener('mouseup', function() {
+            if (window.releaseLineProgress) {
+                window.releaseLineProgress();
+            }
+        });
+        slider.addEventListener('touchend', function() {
+            if (window.releaseLineProgress) {
+                window.releaseLineProgress();
+            }
+        });
+
+        // 取消按钮
+        cancelBtn.addEventListener('click', function() {
+            document.body.removeChild(overlay);
+        });
+
+        // 点击背景关闭
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) {
+                document.body.removeChild(overlay);
+            }
+        });
+
+        // 确定按钮
+        confirmBtn.addEventListener('click', function() {
+            var newProgress = parseInt(slider.value);
+
+            // 如果是100%，二次确认
+            if (newProgress >= 100) {
+                document.body.removeChild(overlay);
+                window.AppUtils.showConfirm(
+                    '确定要将此任务标记为已完成吗？\n完成后任务将移至已完成列表。',
+                    function() {
+                        saveProgress(item.id, 100, true);
+                    },
+                    { confirmText: '确定完成' }
+                );
+            } else {
+                saveProgress(item.id, newProgress, false);
+                document.body.removeChild(overlay);
+            }
+        });
+    }
+
+    // 保存进度
+    function saveProgress(itemId, progress, completed) {
+        fetch('/api/todos/' + itemId, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ progress: progress, completed: completed })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                allItems = allItems.map(function(i) {
+                    return i.id === itemId ? data.item : i;
+                });
+                updateCounts();
+                renderItems();
+                showToast(completed ? '已完成' : '进度已更新', 'success');
+                // 触发 Living Line 成功脉冲
+                if (window.triggerLinePulse) {
+                    window.triggerLinePulse('success');
+                }
+            } else {
+                // 触发 Living Line 失败脉冲
+                if (window.triggerLinePulse) {
+                    window.triggerLinePulse('error');
+                }
+            }
+        })
+        .catch(function() {
+            if (window.triggerLinePulse) {
+                window.triggerLinePulse('error');
+            }
+        });
     }
 
     function deleteTask(itemId) {
@@ -791,13 +2572,49 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        allItems = allItems.filter(function(i) { return i.id !== itemId; });
+                        // 软删除：更新本地状态
+                        var item = allItems.find(function(i) { return i.id === itemId; });
+                        if (item) {
+                            item.deleted = true;
+                            item.deleted_at = new Date().toISOString();
+                        }
                         updateCounts();
                         renderItems();
-                        showToast('已删除', 'success');
+                        showToast('已移入回收站', 'success');
                     }
                 });
         }, { confirmText: '删除', danger: true });
+    }
+
+    function restoreTask(itemId) {
+        fetch('/api/todos/' + itemId + '/restore', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    var item = allItems.find(function(i) { return i.id === itemId; });
+                    if (item) {
+                        item.deleted = false;
+                        delete item.deleted_at;
+                    }
+                    updateCounts();
+                    renderItems();
+                    showToast('已恢复', 'success');
+                }
+            });
+    }
+
+    function permanentDeleteTask(itemId) {
+        window.AppUtils.showConfirm('永久删除后无法恢复，确定吗？', function() {
+            fetch('/api/todos/' + itemId + '/permanent', { method: 'DELETE' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        allItems = allItems.filter(function(i) { return i.id !== itemId; });
+                        renderItems();
+                        showToast('已永久删除', 'success');
+                    }
+                });
+        }, { confirmText: '永久删除', danger: true });
     }
 
     function editTask(itemId) {
@@ -881,46 +2698,455 @@
     }
 
     // Modal
+    // ========== 统一任务弹窗 ==========
+    var modalMode = 'view';  // 'view', 'edit', 'create'
+    var modalTaskId = null;
+    var modalTaskItem = null;
+
     function showAddModal() {
-        document.getElementById('add-modal').style.display = 'flex';
-        document.getElementById('new-task-text').value = '';
-        // Sync tab selector with current tab
-        setModalTab(currentTab);
-        document.getElementById('new-task-text').focus();
+        openTaskModal('create', null, currentTab, 'important-urgent');
     }
 
     function showAddModalForQuadrant(quadrant) {
-        document.getElementById('add-modal').style.display = 'flex';
-        document.getElementById('new-task-text').value = '';
-        // Sync tab selector with current tab
-        setModalTab(currentTab);
-        // Select the quadrant
-        document.querySelectorAll('.quadrant-option').forEach(function(opt) {
+        openTaskModal('create', null, currentTab, quadrant);
+    }
+
+    function showTaskCard(taskId, element) {
+        var item = allItems.find(function(i) { return i.id === taskId; });
+        if (!item) return;
+        openTaskModal('view', item);
+    }
+
+    function openTaskModal(mode, item, tab, quadrant) {
+        modalMode = mode;
+        modalTaskId = item ? item.id : null;
+        modalTaskItem = item;
+
+        var overlay = document.getElementById('task-modal-overlay');
+        var titleInput = document.getElementById('modal-title');
+        var contentInput = document.getElementById('modal-content');
+        var progressInput = document.getElementById('modal-progress');
+        var progressValue = document.getElementById('modal-progress-value');
+        var dueDateInput = document.getElementById('modal-due-date');
+        var assigneeInput = document.getElementById('modal-assignee');
+
+        // 重置 textarea 尺寸
+        contentInput.style.height = '';
+
+        // 填充数据
+        if (item) {
+            titleInput.value = item.text || '';
+            contentInput.value = item.content || '';
+            progressInput.value = item.progress || 0;
+            progressValue.textContent = (item.progress || 0) + '%';
+            progressInput.style.setProperty('--val', (item.progress || 0) + '%');
+            dueDateInput.value = item.due_date || '';
+            assigneeInput.value = item.assignee || '';
+            setModalTab(item.tab || 'today');
+            setModalQuadrant(item.quadrant || 'important-urgent');
+        } else {
+            titleInput.value = '';
+            contentInput.value = '';
+            progressInput.value = 0;
+            progressValue.textContent = '0%';
+            progressInput.style.setProperty('--val', '0%');
+            dueDateInput.value = '';
+            assigneeInput.value = '';
+            setModalTab(tab || currentTab);
+            setModalQuadrant(quadrant || 'important-urgent');
+        }
+
+        // 填充时间信息
+        var createdAtEl = document.getElementById('modal-created-at');
+        var completedAtEl = document.getElementById('modal-completed-at');
+        if (item && item.created_at) {
+            createdAtEl.querySelector('.meta-text').textContent = '创建于 ' + formatDateTime(item.created_at);
+            createdAtEl.style.display = 'flex';
+        } else {
+            createdAtEl.style.display = mode === 'create' ? 'none' : 'flex';
+            createdAtEl.querySelector('.meta-text').textContent = '创建于 --';
+        }
+        if (item && item.completed && item.completed_at) {
+            completedAtEl.querySelector('.meta-text').textContent = '完成于 ' + formatDateTime(item.completed_at);
+            completedAtEl.style.display = 'flex';
+        } else {
+            completedAtEl.style.display = 'none';
+        }
+
+        // 填充变更记录
+        var changelogList = document.getElementById('modal-changelog');
+        var changelog = (item && item.changelog) || [];
+        if (changelog.length > 0) {
+            var html = '';
+            changelog.slice(-10).reverse().forEach(function(log) {
+                html += '<div class="changelog-item">' +
+                    '<span class="changelog-time">' + formatShortTime(log.time) + '</span>' +
+                    '<span class="changelog-text">' + escapeHtml(log.label) + '</span>' +
+                '</div>';
+            });
+            changelogList.innerHTML = html;
+        } else {
+            changelogList.innerHTML = '<div class="changelog-empty">暂无变更记录</div>';
+        }
+        // 重置变更记录折叠状态（使用class控制，支持过渡动画）
+        changelogList.classList.remove('expanded');
+        document.getElementById('changelog-toggle').classList.remove('expanded');
+
+        // 新建模式隐藏时间信息和变更记录
+        document.getElementById('modal-meta-section').style.display = mode === 'create' ? 'none' : 'block';
+        document.getElementById('modal-changelog-section').style.display = mode === 'create' ? 'none' : 'block';
+
+        // 设置模式
+        setModalMode(mode);
+
+        // 显示弹窗
+        overlay.style.display = 'flex';
+
+        // 聚焦
+        if (mode === 'create' || mode === 'edit') {
+            setTimeout(function() { titleInput.focus(); }, 100);
+        }
+    }
+
+    function formatDateTime(isoString) {
+        if (!isoString) return '--';
+        var date = new Date(isoString);
+        var now = new Date();
+        var y = date.getFullYear();
+        var m = String(date.getMonth() + 1).padStart(2, '0');
+        var d = String(date.getDate()).padStart(2, '0');
+        var h = String(date.getHours()).padStart(2, '0');
+        var min = String(date.getMinutes()).padStart(2, '0');
+        if (y === now.getFullYear()) {
+            return m + '-' + d + ' ' + h + ':' + min;
+        }
+        return y + '-' + m + '-' + d + ' ' + h + ':' + min;
+    }
+
+    function formatShortTime(isoString) {
+        if (!isoString) return '--';
+        var date = new Date(isoString);
+        var m = String(date.getMonth() + 1).padStart(2, '0');
+        var d = String(date.getDate()).padStart(2, '0');
+        var h = String(date.getHours()).padStart(2, '0');
+        var min = String(date.getMinutes()).padStart(2, '0');
+        return m + '-' + d + ' ' + h + ':' + min;
+    }
+
+    function toggleChangelog() {
+        var btn = document.getElementById('changelog-toggle');
+        var list = document.getElementById('modal-changelog');
+        btn.classList.toggle('expanded');
+        list.classList.toggle('expanded');
+    }
+
+    function setModalMode(mode) {
+        modalMode = mode;
+        var isEditable = (mode === 'edit' || mode === 'create');
+
+        // 字段可编辑性
+        document.getElementById('modal-title').readOnly = !isEditable;
+        document.getElementById('modal-content').readOnly = !isEditable;
+        document.getElementById('modal-progress').disabled = !isEditable;
+        document.getElementById('modal-due-date').readOnly = !isEditable;
+        document.getElementById('modal-assignee').readOnly = !isEditable;
+
+        // 时间段按钮
+        document.querySelectorAll('#modal-tab-buttons .tab-btn').forEach(function(btn) {
+            btn.disabled = !isEditable;
+        });
+
+        // 象限选择器
+        document.querySelectorAll('.q-option').forEach(function(opt) {
+            if (isEditable) {
+                opt.classList.remove('disabled');
+                opt.style.pointerEvents = 'auto';
+            } else {
+                opt.classList.add('disabled');
+                opt.style.pointerEvents = 'none';
+            }
+        });
+
+        // 标题栏编辑按钮（仅查看模式显示）
+        document.getElementById('header-edit-btn').style.display = (mode === 'view') ? 'inline-block' : 'none';
+
+        // 底部按钮（编辑/新建模式显示）
+        document.getElementById('modal-footer-edit').style.display = (mode !== 'view') ? 'flex' : 'none';
+
+        // 保存按钮文字
+        var saveBtn = document.getElementById('modal-save-btn');
+        saveBtn.textContent = (mode === 'create') ? '创建' : '保存';
+    }
+
+    function setModalQuadrant(quadrant) {
+        document.querySelectorAll('.q-option').forEach(function(opt) {
             opt.classList.remove('selected');
             if (opt.dataset.q === quadrant) {
                 opt.classList.add('selected');
                 opt.querySelector('input').checked = true;
             }
         });
-        document.getElementById('new-task-text').focus();
     }
 
     function setModalTab(tab) {
-        document.getElementById('new-task-tab').value = tab;
-        document.querySelectorAll('.tab-option').forEach(function(btn) {
-            btn.classList.remove('active');
-            if (btn.dataset.tab === tab) {
-                btn.classList.add('active');
-            }
+        document.querySelectorAll('#modal-tab-buttons .tab-btn').forEach(function(btn) {
+            btn.classList.toggle('selected', btn.dataset.tab === tab);
         });
     }
 
-    function hideAddModal(e) {
-        if (e && e.target !== document.getElementById('add-modal')) return;
-        document.getElementById('add-modal').style.display = 'none';
+    function getModalTab() {
+        var selectedBtn = document.querySelector('#modal-tab-buttons .tab-btn.selected');
+        return selectedBtn ? selectedBtn.dataset.tab : 'today';
     }
 
-    // Tag management for modal
+    function switchToEditMode() {
+        setModalMode('edit');
+        document.getElementById('modal-title').focus();
+    }
+
+    function closeTaskModal() {
+        document.getElementById('task-modal-overlay').style.display = 'none';
+        modalMode = 'view';
+        modalTaskId = null;
+        modalTaskItem = null;
+    }
+
+    function saveTask() {
+        var title = document.getElementById('modal-title').value.trim();
+        var content = document.getElementById('modal-content').value.trim();
+        var progress = parseInt(document.getElementById('modal-progress').value) || 0;
+        var dueDate = document.getElementById('modal-due-date').value || null;
+        var assignee = document.getElementById('modal-assignee').value.trim();
+        var tab = getModalTab();
+        var quadrant = document.querySelector('.q-option.selected input').value;
+
+        if (!title) {
+            showToast('请输入任务标题', 'error');
+            return;
+        }
+
+        var data = {
+            text: title,
+            content: content,
+            progress: progress,
+            due_date: dueDate,
+            assignee: assignee,
+            tab: tab,
+            quadrant: quadrant
+        };
+
+        if (modalMode === 'create') {
+            // 创建新任务
+            fetch('/api/todos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    allItems.push(result.item);
+                    updateCounts();
+                    renderItems();
+                    closeTaskModal();
+                    showToast('任务已创建', 'success');
+                } else {
+                    showToast('创建失败', 'error');
+                }
+            });
+        } else {
+            // 更新任务
+            fetch('/api/todos/' + modalTaskId, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    allItems = allItems.map(function(i) {
+                        return i.id === modalTaskId ? result.item : i;
+                    });
+                    updateCounts();
+                    renderItems();
+                    closeTaskModal();
+                    showToast('已保存', 'success');
+                } else {
+                    showToast('保存失败', 'error');
+                }
+            });
+        }
+    }
+
+    // 兼容旧函数
+    function closeTaskCard() {
+        closeTaskModal();
+    }
+
+    function hideAddModal(e) {
+        closeTaskModal();
+    }
+
+    function getQuadrantName(quadrant) {
+        var names = {
+            'important-urgent': '🔥 优先处理',
+            'important-not-urgent': '🎯 就等你翻牌子了',
+            'not-important-urgent': '📥 待分类',
+            'not-important-not-urgent': '⚡ 短平快'
+        };
+        return names[quadrant] || quadrant;
+    }
+
+    function getTabName(tab) {
+        var names = {
+            'today': 'Today',
+            'week': 'This Week',
+            'month': 'Next 30 Days'
+        };
+        return names[tab] || tab;
+    }
+
+    function formatDateTime(isoString) {
+        if (!isoString) return '-';
+        var date = new Date(isoString);
+        var m = (date.getMonth() + 1).toString().padStart(2, '0');
+        var d = date.getDate().toString().padStart(2, '0');
+        var h = date.getHours().toString().padStart(2, '0');
+        var min = date.getMinutes().toString().padStart(2, '0');
+        return m + '-' + d + ' ' + h + ':' + min;
+    }
+
+    function formatDate(dateString) {
+        if (!dateString) return '-';
+        var date = new Date(dateString);
+        var y = date.getFullYear();
+        var m = (date.getMonth() + 1).toString().padStart(2, '0');
+        var d = date.getDate().toString().padStart(2, '0');
+        return y + '-' + m + '-' + d;
+    }
+
+    function editTaskFromCard() {
+        // 已被统一弹窗取代，这个函数保留兼容性
+        if (modalTaskItem) {
+            switchToEditMode();
+        }
+    }
+
+    // 显示编辑弹窗
+    function showEditDialog(item) {
+        var overlay = document.createElement('div');
+        overlay.className = 'progress-dialog-overlay';
+        overlay.innerHTML =
+            '<div class="edit-dialog">' +
+                '<div class="edit-dialog-title">编辑任务</div>' +
+                '<div class="edit-form">' +
+                    '<div class="edit-field">' +
+                        '<label>任务内容</label>' +
+                        '<textarea id="edit-text" rows="3">' + escapeHtml(item.text) + '</textarea>' +
+                    '</div>' +
+                    '<div class="edit-row">' +
+                        '<div class="edit-field">' +
+                            '<label>相关人</label>' +
+                            '<input type="text" id="edit-assignee" value="' + (item.assignee || '') + '" placeholder="输入相关人">' +
+                        '</div>' +
+                        '<div class="edit-field">' +
+                            '<label>计划完成时间</label>' +
+                            '<input type="date" id="edit-due-date" value="' + (item.due_date || '') + '">' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="progress-dialog-buttons">' +
+                    '<button class="progress-btn cancel" id="edit-cancel">取消</button>' +
+                    '<button class="progress-btn confirm" id="edit-save">保存</button>' +
+                '</div>' +
+            '</div>';
+
+        document.body.appendChild(overlay);
+
+        // 取消按钮
+        document.getElementById('edit-cancel').addEventListener('click', function() {
+            document.body.removeChild(overlay);
+        });
+
+        // 点击背景关闭
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) {
+                document.body.removeChild(overlay);
+            }
+        });
+
+        // 保存按钮
+        document.getElementById('edit-save').addEventListener('click', function() {
+            var newText = document.getElementById('edit-text').value.trim();
+            var newAssignee = document.getElementById('edit-assignee').value.trim();
+            var newDueDate = document.getElementById('edit-due-date').value || null;
+
+            if (!newText) {
+                showToast('任务内容不能为空', 'error');
+                return;
+            }
+
+            fetch('/api/todos/' + item.id, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text: newText,
+                    assignee: newAssignee,
+                    due_date: newDueDate
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    allItems = allItems.map(function(i) {
+                        return i.id === item.id ? data.item : i;
+                    });
+                    renderItems();
+                    showToast('已保存', 'success');
+                    document.body.removeChild(overlay);
+                }
+            });
+        });
+    }
+
+    // ESC 键关闭弹窗
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeTaskModal();
+        }
+    });
+
+    // 进度滑块更新
+    document.getElementById('modal-progress').addEventListener('input', function(e) {
+        var val = e.target.value;
+        document.getElementById('modal-progress-value').textContent = val + '%';
+        e.target.style.setProperty('--val', val + '%');
+    });
+
+    // 象限选择
+    document.querySelectorAll('.q-option').forEach(function(opt) {
+        opt.addEventListener('click', function() {
+            if (modalMode === 'view') return;
+            document.querySelectorAll('.q-option').forEach(function(o) {
+                o.classList.remove('selected');
+            });
+            opt.classList.add('selected');
+            opt.querySelector('input').checked = true;
+        });
+    });
+
+    // 时间段按钮点击
+    document.querySelectorAll('#modal-tab-buttons .tab-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            if (modalMode === 'view') return;
+            document.querySelectorAll('#modal-tab-buttons .tab-btn').forEach(function(b) {
+                b.classList.remove('selected');
+            });
+            btn.classList.add('selected');
+        });
+    });
+
+    // Tag management for modal (deprecated - keeping for compatibility)
     var modalTags = [];
 
     function addTagToModal(tag) {
@@ -949,51 +3175,25 @@
         });
     }
 
-    // Tag input handling
-    document.getElementById('tag-input').addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' || e.key === ',') {
-            e.preventDefault();
-            addTagToModal(this.value);
-            this.value = '';
-        } else if (e.key === 'Backspace' && !this.value && modalTags.length > 0) {
-            modalTags.pop();
-            renderModalTags();
-        }
-    });
-
-    function addTask() {
-        var text = document.getElementById('new-task-text').value.trim();
-        var tab = document.getElementById('new-task-tab').value;
-        var quadrant = document.querySelector('input[name="quadrant"]:checked').value;
-
-        if (!text) {
-            showToast('请输入任务内容', 'error');
-            return;
-        }
-
-        fetch('/api/todos', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: text, tab: tab, quadrant: quadrant, tags: modalTags })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                allItems.push(data.item);
-                updateCounts();
-                renderItems();
-                hideAddModal();
-                modalTags = [];
+    // Tag input handling (deprecated - element removed)
+    var tagInput = document.getElementById('tag-input');
+    if (tagInput) {
+        tagInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ',') {
+                e.preventDefault();
+                addTagToModal(this.value);
+                this.value = '';
+            } else if (e.key === 'Backspace' && !this.value && modalTags.length > 0) {
+                modalTags.pop();
                 renderModalTags();
-                showToast('已添加', 'success');
             }
         });
     }
 
-    // Quadrant selector
-    document.querySelectorAll('.quadrant-option').forEach(function(opt) {
+    // Quadrant selector (new grid style)
+    document.querySelectorAll('.quadrant-cell').forEach(function(opt) {
         opt.addEventListener('click', function() {
-            document.querySelectorAll('.quadrant-option').forEach(function(o) {
+            document.querySelectorAll('.quadrant-cell').forEach(function(o) {
                 o.classList.remove('selected');
             });
             opt.classList.add('selected');
@@ -1001,124 +3201,16 @@
         });
     });
 
-    // Tab selector in modal
-    document.querySelectorAll('.tab-option').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            document.querySelectorAll('.tab-option').forEach(function(b) {
-                b.classList.remove('active');
-            });
-            btn.classList.add('active');
-            document.getElementById('new-task-tab').value = btn.dataset.tab;
-        });
-    });
-
-    // Enter key to add task
-    document.getElementById('new-task-text').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            addTask();
-        }
-    });
-
-    function toggleShowCompleted() {
-        showCompleted = document.getElementById('show-completed').checked;
-        renderItems();
-    }
-
-    function toggleCompletedList() {
-        var list = document.getElementById('completed-list');
-        var icon = document.getElementById('completed-icon');
-        if (list.style.display === 'none') {
-            list.style.display = 'block';
-            icon.textContent = '▲';
-        } else {
-            list.style.display = 'none';
-            icon.textContent = '▼';
+    function toggleSidebarSection(sectionId) {
+        var section = document.getElementById(sectionId);
+        if (section) {
+            section.classList.toggle('expanded');
         }
     }
 
     function showToast(message, type) {
         AppUtils.showToast(message, type);
     }
-
-    // Search functionality
-    var searchQuery = '';
-    var searchInput = document.getElementById('search-input');
-    var searchClear = document.getElementById('search-clear');
-
-    searchInput.addEventListener('input', function(e) {
-        searchQuery = e.target.value.toLowerCase().trim();
-        searchClear.style.display = searchQuery ? 'flex' : 'none';
-        renderItems();
-    });
-
-    function clearSearch() {
-        searchInput.value = '';
-        searchQuery = '';
-        searchClear.style.display = 'none';
-        renderItems();
-    }
-
-    function matchesSearch(item) {
-        if (!searchQuery) return true;
-        return item.text.toLowerCase().indexOf(searchQuery) >= 0;
-    }
-
-    function highlightText(text) {
-        if (!searchQuery) return escapeHtml(text);
-        var escaped = escapeHtml(text);
-        var regex = new RegExp('(' + escapeHtml(searchQuery).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
-        return escaped.replace(regex, '<span class="search-highlight">$1</span>');
-    }
-
-    // Override createItemHtml to support search highlighting
-    var originalCreateItemHtml = createItemHtml;
-    createItemHtml = function(item) {
-        if (!searchQuery) return originalCreateItemHtml(item);
-        return '<div class="task-item" data-id="' + item.id + '" onmousedown="startCustomDrag(event)" ontouchstart="startTouchDrag(event)">' +
-            '<div class="drag-handle">⋮⋮</div>' +
-            '<div class="task-checkbox" onclick="toggleComplete(\'' + item.id + '\')" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()"></div>' +
-            '<div class="task-text" ondblclick="editTask(\'' + item.id + '\')">' + highlightText(item.text) + '</div>' +
-            '<button class="task-delete" onclick="deleteTask(\'' + item.id + '\')" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()">&times;</button>' +
-        '</div>';
-    };
-
-    // Override renderItems to filter by search
-    var originalRenderItems = renderItems;
-    renderItems = function() {
-        var quadrants = ['important-urgent', 'important-not-urgent', 'not-important-urgent', 'not-important-not-urgent'];
-
-        quadrants.forEach(function(q) {
-            document.getElementById('items-' + q).innerHTML = '';
-        });
-
-        var completedHtml = '';
-        var hasCompleted = false;
-        var visibleCount = 0;
-
-        allItems.forEach(function(item) {
-            if (item.tab !== currentTab) return;
-            if (!matchesSearch(item)) return;
-
-            if (item.completed) {
-                hasCompleted = true;
-                if (showCompleted) {
-                    completedHtml += createCompletedItemHtml(item);
-                }
-            } else {
-                visibleCount++;
-                var container = document.getElementById('items-' + item.quadrant);
-                if (container) {
-                    container.innerHTML += createItemHtml(item);
-                }
-            }
-        });
-
-        document.getElementById('completed-list').innerHTML = completedHtml;
-        document.getElementById('completed-section').style.display = hasCompleted ? 'block' : 'none';
-
-        // Re-attach touch handlers
-        attachTouchHandlers();
-    };
 
     // Touch Drag and Drop Support
     var touchDragItem = null;
@@ -1241,6 +3333,62 @@
         });
     }
 
+    // 毛玻璃 Tooltip 功能
+    var glassTooltip = null;
+    var tooltipTimer = null;
+    var TOOLTIP_DELAY = 500; // 悬浮延迟时间（毫秒）
+
+    function initTooltip() {
+        if (!glassTooltip) {
+            glassTooltip = document.createElement('div');
+            glassTooltip.className = 'glass-tooltip';
+            document.body.appendChild(glassTooltip);
+        }
+    }
+
+    function showTooltip(text, x, y) {
+        if (!glassTooltip) initTooltip();
+        glassTooltip.textContent = text;
+
+        // 计算位置，确保不超出屏幕
+        var tooltipRect = glassTooltip.getBoundingClientRect();
+        var maxX = window.innerWidth - 320;
+        var maxY = window.innerHeight - 100;
+
+        glassTooltip.style.left = Math.min(x, maxX) + 'px';
+        glassTooltip.style.top = Math.min(y + 10, maxY) + 'px';
+        glassTooltip.classList.add('visible');
+    }
+
+    function hideTooltip() {
+        if (glassTooltip) {
+            glassTooltip.classList.remove('visible');
+        }
+        if (tooltipTimer) {
+            clearTimeout(tooltipTimer);
+            tooltipTimer = null;
+        }
+    }
+
+    function attachTooltipHandlers() {
+        document.querySelectorAll('.task-text').forEach(function(textEl) {
+            // 检查文字是否被截断
+            textEl.addEventListener('mouseenter', function(e) {
+                var el = e.target;
+                // 只有当文字被截断时才显示 tooltip
+                if (el.scrollWidth > el.clientWidth) {
+                    var rect = el.getBoundingClientRect();
+                    tooltipTimer = setTimeout(function() {
+                        showTooltip(el.textContent, rect.left, rect.bottom);
+                    }, TOOLTIP_DELAY);
+                }
+            });
+
+            textEl.addEventListener('mouseleave', hideTooltip);
+            textEl.addEventListener('mousedown', hideTooltip);
+        });
+    }
+
     document.addEventListener('touchmove', onTouchMove, { passive: false });
     document.addEventListener('touchend', onTouchEnd);
 
@@ -1286,8 +3434,10 @@
     }
 
     // Initialize
-    console.log('=== Todo page loaded (v11 - with search, touch drag, gestures) ===');
+    console.log('=== Todo page loaded (v12 - simplified) ===');
+    loadQuadrantState();  // 加载象限折叠状态
     loadItems();
+    loadRoutines();  // 加载例行任务以更新按钮动效
     </script>
 
     <!-- Daily Review Button (F601) -->
@@ -1372,45 +3522,4 @@
     });
     </script>
 
-    <!-- Quick Add Bar -->
-    <div class="quick-add-bar">
-        <input type="text" class="quick-add-input" id="quick-add-input" placeholder="快速添加任务到今日...">
-        <button class="quick-add-btn" onclick="quickAddTask()">+</button>
-    </div>
-
-    <script>
-    // Quick Add functionality
-    function quickAddTask() {
-        var input = document.getElementById('quick-add-input');
-        var text = input.value.trim();
-        if (!text) return;
-
-        fetch('/api/todos', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                text: text,
-                tab: 'today',
-                quadrant: 'important-urgent'
-            })
-        })
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-            if (data.success) {
-                allItems.push(data.item);
-                updateCounts();
-                if (currentTab === 'today') renderItems();
-                input.value = '';
-                showToast('已添加到今日', 'success');
-            }
-        })
-        .catch(function() {
-            showToast('添加失败', 'error');
-        });
-    }
-
-    document.getElementById('quick-add-input').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') quickAddTask();
-    });
-    </script>
 {% endblock %}

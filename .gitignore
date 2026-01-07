@@ -25,20 +25,30 @@ Thumbs.db
 # PRIVATE DATA - NEVER COMMIT TO GIT
 # ============================================
 
-# Private data folder (all contents excluded)
+# Private data folder
 private-data/*
 !private-data/.gitkeep
 
 # Config folder (contains API keys)
 config/
 
-# data folder is now tracked in git
+# ============================================
+# BUILD ARTIFACTS
+# ============================================
+
+# PyInstaller
+build/
+dist/
+*.spec.bak
+
+# Tauri
+src-tauri/target/
 
 # ============================================
 # OTHER EXCLUSIONS
 # ============================================
 
-# Backup files and folders
+# Backup files
 backupfiles/
 backups/
 docs/backup/
@@ -47,5 +57,5 @@ docs/backup/
 *.tmp
 *.log
 
-# Screenshots (optional - remove if you want to track)
+# Screenshots (optional)
 # PrtSc/

@@ -1,7 +1,7 @@
 {
-  "name": "Boris Life",
-  "short_name": "Boris Life",
-  "description": "Personal life management and productivity tool",
+  "name": "Next - Focus on the Right Thing",
+  "short_name": "Next",
+  "description": "Focus on the right thing - Personal productivity tool",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f8f9fa",

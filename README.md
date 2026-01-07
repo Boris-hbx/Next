@@ -2,57 +2,47 @@
 
 **Focus on the Right Thing.**
 
-A personal life management PWA built with Flask. Organize tasks with the Eisenhower Matrix, maintain motivation, manage prompts, and visualize data with bubble charts.
+A personal task management desktop application built with Tauri + Flask. Organize tasks with the Eisenhower Matrix across different time horizons.
 
 ## Features
 
-### Core Features
-- **Todo (Eisenhower Matrix)**: Organize tasks by importance and urgency across three time horizons (Today, This Week, Next 30 Days)
-- **Motivation**: Personal motivation text organized by categories
-- **Prompt Todo**: Track and manage prompts with status workflow
-- **Prompt History**: Archive executed prompts with auto-tagging
-- **Bubble Chart Tool**: Create and save bubble chart visualizations
-- **Games**: Spider game and Breakout for brain relaxation
-- **AI Chat**: Integrated AI assistant interface (development)
-
-### New Features (v2.1)
-- **Task Labels**: Custom tags for task categorization (multi-tag support)
-- **Daily Review**: End-of-day task summary with motivational messages (press `R`)
-
-### Features (v2.0)
-- **Dark Mode**: Automatic system preference detection + manual toggle (press `D`)
-- **Keyboard Shortcuts**: Quick actions without mouse (press `?` for help)
-- **Search**: Real-time task search with highlighting (press `S`)
-- **Quick Add Bar**: Fast task creation from any view
-- **Pomodoro Timer**: 25/5 work-break cycles with notifications (press `P`)
-- **Focus Mode**: Distraction-free interface (press `F`)
-- **Touch Drag & Drop**: Mobile-friendly task reordering
-- **Gesture Navigation**: Swipe between tabs on mobile
-- **Sync Status**: Visual feedback for save operations
-- **Data Export/Import**: Backup and restore all data
-- **Statistics API**: Task completion analytics
-
-### Platform Features
-- **PWA Support**: Install on mobile devices, works offline
-- **Responsive Design**: Separate optimized layouts for desktop and mobile
-- **Local-First**: All data stored in JSON/text files
+- **Eisenhower Matrix**: Organize tasks by importance and urgency
+- **Time Horizons**: Today, This Week, Next 30 Days views
+- **Dark Mode**: System preference detection + manual toggle
+- **Keyboard Shortcuts**: Quick actions without mouse
+- **Search**: Real-time task search with highlighting
+- **Pomodoro Timer**: 25/5 work-break cycles
+- **Focus Mode**: Distraction-free interface
 
 ## Quick Start
 
-1. **Install Dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+### Development Mode
 
-2. **Run the Application**
-   ```bash
-   cd backend
-   python app.py
-   ```
+```bash
+# Start Flask backend
+cd backend
+python app.py
 
-3. **Open in Browser**
-   - Desktop: `http://localhost:3000`
-   - Mobile: Same URL (auto-detects device)
+# Open http://localhost:2026
+```
+
+### Build Desktop App
+
+```bash
+# Run build script (requires Python + Rust)
+build.bat
+
+# Output:
+#   - MSI installer: src-tauri/target/release/bundle/msi/
+#   - NSIS installer: src-tauri/target/release/bundle/nsis/
+```
+
+## Tech Stack
+
+- **Backend**: Flask (Python)
+- **Frontend**: HTML/CSS/JS + Jinja2 templates
+- **Desktop**: Tauri (Rust)
+- **Data**: JSON files (local storage)
 
 ## Keyboard Shortcuts
 
@@ -61,139 +51,36 @@ A personal life management PWA built with Flask. Organize tasks with the Eisenho
 | `N` | New task |
 | `S` | Search |
 | `R` | Daily review |
-| `1` `2` `3` | Switch tabs (Today/Week/Month) |
+| `1` `2` `3` | Switch tabs |
 | `D` | Toggle dark mode |
 | `F` | Focus mode |
 | `P` | Pomodoro timer |
-| `?` | Show shortcuts help |
-| `Esc` | Close modals |
+| `?` | Show help |
 
 ## Project Structure
 
 ```
-work-engine/
-├── backend/
-│   ├── app.py                 # Flask application with platform routing
-│   └── test_app.py            # Tests
-├── frontend/
+Next/
+├── backend/           # Flask backend
+│   └── app.py
+├── frontend/          # Jinja2 templates
 │   └── templates/
-│       ├── shared/            # Shared base templates
-│       │   └── base_core.html
-│       ├── desktop/           # Desktop-specific templates
-│       │   ├── base.html
-│       │   └── *.html
-│       ├── mobile/            # Mobile-specific templates
-│       │   ├── base.html
-│       │   └── *.html
-│       └── *.html             # Legacy/fallback templates
-├── assets/
-│   ├── css/
-│   │   ├── base.css           # Shared styles (with dark mode)
-│   │   ├── desktop.css        # Desktop-only styles
-│   │   ├── mobile.css         # Mobile-only styles
-│   │   └── style.css          # Legacy styles
-│   ├── images/
-│   ├── icons/
-│   └── sw.js                  # Service worker
-├── data/
-│   ├── todos.json             # Task data
-│   ├── prompts.json           # Prompt history
-│   ├── prompt-todo.json       # Pending prompts
-│   ├── bubbles.json           # Bubble chart data
-│   └── quotes.txt             # Random quotes
-├── config/
-│   └── config.json            # App configuration
-├── docs/
-│   └── PRODUCT_DESIGN.md      # Product design document
-└── requirements.txt           # Python dependencies
+├── assets/            # CSS, JS, icons
+├── src-tauri/         # Tauri desktop wrapper
+│   ├── src/main.rs
+│   └── tauri.conf.json
+├── data/              # JSON data files
+├── build.bat          # Build script
+└── flask-backend.spec # PyInstaller config
 ```
 
-## Platform Architecture
+## Build Requirements
 
-The app automatically detects the device type and serves optimized templates:
+- Python 3.10+
+- Rust (rustup.rs)
+- Tauri CLI (`cargo install tauri-cli`)
+- PyInstaller (`pip install pyinstaller`)
 
-- **Desktop**: Full sidebar layout with pet companion, timezone display
-- **Mobile**: Bottom navigation bar, touch-optimized cards, pull-to-refresh
+## License
 
-### Platform API
-
-```javascript
-// Get current platform
-GET /api/platform/current
-// Response: { "platform": "desktop", "is_mobile": false, "override": null }
-
-// Switch platform manually
-POST /api/platform/switch
-// Body: { "platform": "mobile" }  // or "desktop" or "auto"
-```
-
-## API Endpoints
-
-### Todos
-- `GET /api/todos` - List all todos
-- `POST /api/todos` - Create todo
-- `PUT /api/todos/<id>` - Update todo
-- `DELETE /api/todos/<id>` - Delete todo
-
-### Prompts
-- `GET /api/prompt-todos` - List all prompt todos
-- `POST /api/prompt-todos` - Create new prompt todo
-- `PUT /api/prompt-todos/<id>` - Update prompt (content/status)
-- `DELETE /api/prompt-todos/<id>` - Delete prompt
-- `POST /api/prompt-todos/<id>/complete` - Archive to history
-
-### Data Management
-- `GET /api/export` - Export all data as JSON
-- `GET /api/export/csv` - Export todos as CSV
-- `POST /api/import` - Import data from JSON backup
-- `GET /api/stats` - Get task statistics
-
-### Others
-- `GET /api/quote/random` - Get random quote
-- `GET /api/bubbles` - Get bubble chart data
-
-## Mobile Usage
-
-1. Open `http://<your-ip>:3000` on your phone (same network)
-2. The app auto-detects mobile and shows optimized UI
-3. Add to home screen via browser menu for app-like experience
-
-### Mobile Gestures
-- **Swipe left/right**: Switch between tabs
-- **Long press + drag**: Move tasks between quadrants
-- **Pull down**: Refresh content
-
-## Philosophy
-
-This tool is designed for clarity and simplicity:
-- Reduce cognitive noise
-- Keep important information visible
-- Focus on thinking rather than task management mechanics
-- Separate concerns between platforms for optimal UX
-
-## Version History
-
-### v2.1 (2025-12-27)
-- Added task labels/tags system (F401)
-- Added daily review modal (F601)
-- Added keyboard shortcut R for daily review
-
-### v2.0 (2025-12-27)
-- Added dark mode with system preference detection
-- Added keyboard shortcuts for all major actions
-- Added task search with real-time filtering
-- Added quick add bar for fast task creation
-- Added Pomodoro timer with notifications
-- Added focus mode for distraction-free work
-- Added touch drag & drop for mobile
-- Added gesture navigation on mobile
-- Added sync status indicator
-- Added data export/import functionality
-- Added statistics API
-- Fixed mobile drag and drop support
-- Improved accessibility and keyboard navigation
-
-### v1.0
-- Initial release with Eisenhower Matrix
-- Desktop and mobile responsive layouts
-- PWA support
+MIT

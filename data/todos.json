@@ -8,7 +8,8 @@
       "completed": false,
       "completed_at": null,
       "created_at": "2025-01-01T09:00:00",
-      "updated_at": "2025-12-31T19:45:04.124989"
+      "updated_at": "2025-12-31T19:45:04.124989",
+      "assignee": "Boris"
     },
     {
       "id": "t003",
@@ -18,17 +19,45 @@
       "completed": false,
       "completed_at": null,
       "created_at": "2025-01-01T09:00:00",
-      "updated_at": "2025-12-29T21:15:02.713636"
+      "updated_at": "2025-12-29T21:15:02.713636",
+      "assignee": "Ruby"
     },
     {
       "id": "t004",
-      "text": "zhiwei情况梳理，总结",
+      "text": "zhiwei讨论，总结",
       "tab": "today",
-      "quadrant": "not-important-urgent",
+      "quadrant": "not-important-not-urgent",
       "completed": false,
       "completed_at": null,
       "created_at": "2025-01-01T09:00:00",
-      "updated_at": "2025-12-31T19:45:08.278951"
+      "updated_at": "2026-01-07T09:04:20.720414",
+      "changelog": [
+        {
+          "time": "2026-01-05T08:42:19.660360",
+          "field": "progress",
+          "from": null,
+          "to": 0,
+          "label": "进度: (空) → 0%"
+        },
+        {
+          "time": "2026-01-05T08:42:19.660360",
+          "field": "assignee",
+          "from": null,
+          "to": "",
+          "label": "相关人: (空) → (空)"
+        },
+        {
+          "time": "2026-01-07T09:04:20.720414",
+          "field": "quadrant",
+          "from": "not-important-urgent",
+          "to": "not-important-not-urgent",
+          "label": "象限: 📥待分类 → ⚡短平快"
+        }
+      ],
+      "content": "",
+      "assignee": "",
+      "due_date": null,
+      "progress": 0
     },
     {
       "id": "t005",
@@ -38,7 +67,8 @@
       "completed": false,
       "completed_at": null,
       "created_at": "2025-01-01T09:00:00",
-      "updated_at": "2025-12-30T17:22:20.267765"
+      "updated_at": "2025-12-30T17:22:20.267765",
+      "assignee": "DongQiu"
     },
     {
       "id": "w001",
@@ -224,11 +254,20 @@
       "id": "e92ac481",
       "text": "sdfsdf",
       "tab": "today",
-      "quadrant": "not-important-urgent",
+      "quadrant": "important-urgent",
       "completed": false,
       "completed_at": null,
       "created_at": "2025-12-27T09:22:43.219408",
-      "updated_at": "2025-12-27T09:39:15.310918"
+      "updated_at": "2026-01-05T10:08:05.060567",
+      "changelog": [
+        {
+          "time": "2026-01-05T10:08:05.060567",
+          "field": "quadrant",
+          "from": "not-important-urgent",
+          "to": "important-urgent",
+          "label": "象限: 📞不重要紧急 → 🔥重要紧急"
+        }
+      ]
     },
     {
       "id": "96d4850d",
@@ -257,10 +296,653 @@
       "tab": "today",
       "quadrant": "important-urgent",
       "tags": [],
+      "completed": true,
+      "completed_at": "2026-01-02T08:29:02.540191",
+      "created_at": "2025-12-30T17:21:56.832948",
+      "updated_at": "2026-01-02T08:29:02.540200"
+    },
+    {
+      "id": "1363e9a4",
+      "text": "发发发",
+      "content": "",
+      "tab": "today",
+      "quadrant": "important-not-urgent",
+      "tags": [],
+      "assignee": "放",
+      "due_date": null,
+      "progress": 0,
       "completed": false,
       "completed_at": null,
-      "created_at": "2025-12-30T17:21:56.832948",
-      "updated_at": "2025-12-31T17:54:41.701390"
+      "created_at": "2026-01-04T21:49:13.991102",
+      "updated_at": "2026-01-04T21:49:13.991102"
+    },
+    {
+      "id": "14a6f095",
+      "text": "方法反反复复反反复复",
+      "content": "",
+      "tab": "today",
+      "quadrant": "not-important-not-urgent",
+      "tags": [],
+      "assignee": "张三",
+      "due_date": null,
+      "progress": 0,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-04T21:49:31.649486",
+      "updated_at": "2026-01-05T08:40:18.128841",
+      "changelog": [
+        {
+          "time": "2026-01-05T08:40:18.128841",
+          "field": "assignee",
+          "from": "反反复复",
+          "to": "张三",
+          "label": "相关人: 反反复复 → 张三"
+        }
+      ]
+    },
+    {
+      "id": "e345b7db",
+      "text": "反反复复反反复复凤飞飞发发发发发发发发发发发发发发发发",
+      "content": "",
+      "tab": "today",
+      "quadrant": "not-important-not-urgent",
+      "tags": [],
+      "assignee": "发发发",
+      "due_date": null,
+      "progress": 0,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-04T21:49:39.715025",
+      "updated_at": "2026-01-04T21:49:39.715025"
+    },
+    {
+      "id": "d660b021",
+      "text": "testtesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttest",
+      "content": "testtesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttest",
+      "tab": "month",
+      "quadrant": "important-urgent",
+      "tags": [],
+      "assignee": "",
+      "due_date": null,
+      "progress": 0,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-05T08:28:47.282510",
+      "updated_at": "2026-01-05T08:28:47.282510"
+    },
+    {
+      "id": "ba079eef",
+      "text": "this is 啊 特色他说他this is 啊 特色他说他this is 啊 特色他说他this",
+      "content": "他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他他说他this is 啊 特色他",
+      "tab": "today",
+      "quadrant": "not-important-not-urgent",
+      "tags": [],
+      "assignee": "张三",
+      "due_date": "2026-01-07",
+      "progress": 46,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-05T08:39:23.294952",
+      "updated_at": "2026-01-05T08:40:40.142801",
+      "changelog": [
+        {
+          "time": "2026-01-05T08:39:59.990887",
+          "field": "quadrant",
+          "from": "important-urgent",
+          "to": "not-important-not-urgent",
+          "label": "象限: 🔥重要紧急 → 🎮不重要不紧急"
+        },
+        {
+          "time": "2026-01-05T08:39:59.990887",
+          "field": "assignee",
+          "from": "",
+          "to": "反反复复",
+          "label": "相关人: (空) → 反反复复"
+        },
+        {
+          "time": "2026-01-05T08:39:59.990887",
+          "field": "due_date",
+          "from": null,
+          "to": "2026-01-07",
+          "label": "计划完成: (空) → 2026-01-07"
+        },
+        {
+          "time": "2026-01-05T08:40:27.414485",
+          "field": "assignee",
+          "from": "反反复复",
+          "to": "张三",
+          "label": "相关人: 反反复复 → 张三"
+        },
+        {
+          "time": "2026-01-05T08:40:40.142801",
+          "field": "progress",
+          "from": 0,
+          "to": 46,
+          "label": "进度: 0% → 46%"
+        }
+      ]
+    },
+    {
+      "id": "c9b718f0",
+      "text": "test11",
+      "content": "",
+      "tab": "today",
+      "quadrant": "important-not-urgent",
+      "tags": [],
+      "assignee": "",
+      "due_date": null,
+      "progress": 0,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-05T08:40:53.504173",
+      "updated_at": "2026-01-05T12:15:23.258127",
+      "changelog": [
+        {
+          "time": "2026-01-05T12:15:23.258127",
+          "field": "quadrant",
+          "from": "not-important-not-urgent",
+          "to": "important-not-urgent",
+          "label": "象限: 🎮不重要不紧急 → 🎯重要不紧急"
+        }
+      ]
+    },
+    {
+      "id": "787a5983",
+      "text": "test",
+      "content": "",
+      "tab": "today",
+      "quadrant": "important-urgent",
+      "tags": [],
+      "assignee": "",
+      "due_date": null,
+      "progress": 0,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-05T08:41:04.570324",
+      "updated_at": "2026-01-05T08:41:04.570324"
+    },
+    {
+      "id": "2649ed4d",
+      "text": "testtesttesttesttesttesttesttesttesttesttesttestte",
+      "content": "",
+      "tab": "today",
+      "quadrant": "important-urgent",
+      "tags": [],
+      "assignee": "",
+      "due_date": null,
+      "progress": 0,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-05T08:41:10.657628",
+      "updated_at": "2026-01-05T08:41:10.657628"
+    },
+    {
+      "id": "5a401734",
+      "text": "中国中国中国中国中国中国中国中国中国中国中国中国中国中国中国中国中国中国中国中国中国中国中国中国中国",
+      "content": "",
+      "tab": "today",
+      "quadrant": "important-urgent",
+      "tags": [],
+      "assignee": "张三",
+      "due_date": null,
+      "progress": 100,
+      "completed": true,
+      "completed_at": "2026-01-05T09:00:51.186809",
+      "created_at": "2026-01-05T08:41:21.076120",
+      "updated_at": "2026-01-05T09:00:51.186809",
+      "changelog": [
+        {
+          "time": "2026-01-05T08:47:49.230704",
+          "field": "assignee",
+          "from": "",
+          "to": "张三",
+          "label": "相关人: (空) → 张三"
+        },
+        {
+          "time": "2026-01-05T09:00:51.186809",
+          "field": "progress",
+          "from": 0,
+          "to": 100,
+          "label": "进度: 0% → 100%"
+        },
+        {
+          "time": "2026-01-05T09:00:51.186809",
+          "field": "completed",
+          "from": false,
+          "to": true,
+          "label": "状态: 未完成 → 已完成"
+        }
+      ],
+      "deleted": false
+    },
+    {
+      "id": "b349ac84",
+      "text": "中国中国中国中国中国中国中国中国中国中国中国",
+      "content": "",
+      "tab": "today",
+      "quadrant": "important-not-urgent",
+      "tags": [],
+      "assignee": "",
+      "due_date": null,
+      "progress": 0,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-05T08:41:28.949734",
+      "updated_at": "2026-01-05T08:43:15.830312"
+    },
+    {
+      "id": "dc8f1b60",
+      "text": "中国中国中国中国中国中国中国中国中国中国中国中国中国中国中国中国中国中国中国中国中国中国中国中国中国",
+      "content": "",
+      "tab": "today",
+      "quadrant": "important-urgent",
+      "tags": [],
+      "assignee": "",
+      "due_date": null,
+      "progress": 0,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-05T08:44:50.616102",
+      "updated_at": "2026-01-05T08:44:50.616102",
+      "deleted": true,
+      "deleted_at": "2026-01-05T09:00:43.638501"
+    },
+    {
+      "id": "246ce9a6",
+      "text": "1",
+      "content": "",
+      "tab": "today",
+      "quadrant": "important-urgent",
+      "tags": [],
+      "assignee": "",
+      "due_date": null,
+      "progress": 100,
+      "completed": true,
+      "completed_at": "2026-01-07T08:56:56.310054",
+      "created_at": "2026-01-05T09:07:59.896985",
+      "updated_at": "2026-01-07T08:56:56.310054",
+      "changelog": [
+        {
+          "time": "2026-01-07T08:56:56.310054",
+          "field": "progress",
+          "from": 0,
+          "to": 100,
+          "label": "进度: 0% → 100%"
+        },
+        {
+          "time": "2026-01-07T08:56:56.310054",
+          "field": "completed",
+          "from": false,
+          "to": true,
+          "label": "状态: 未完成 → 已完成"
+        }
+      ]
+    },
+    {
+      "id": "659f2ca6",
+      "text": "1",
+      "content": "",
+      "tab": "today",
+      "quadrant": "important-not-urgent",
+      "tags": [],
+      "assignee": "",
+      "due_date": null,
+      "progress": 0,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-05T09:08:03.200912",
+      "updated_at": "2026-01-05T16:56:10.556118",
+      "changelog": [
+        {
+          "time": "2026-01-05T16:56:10.556118",
+          "field": "quadrant",
+          "from": "important-urgent",
+          "to": "important-not-urgent",
+          "label": "象限: 🔥重要紧急 → 🎯重要不紧急"
+        }
+      ]
+    },
+    {
+      "id": "3aa7634d",
+      "text": "1",
+      "content": "",
+      "tab": "today",
+      "quadrant": "important-urgent",
+      "tags": [],
+      "assignee": "",
+      "due_date": null,
+      "progress": 100,
+      "completed": true,
+      "completed_at": "2026-01-07T08:57:00.297741",
+      "created_at": "2026-01-05T09:08:05.597182",
+      "updated_at": "2026-01-07T08:57:00.297741",
+      "changelog": [
+        {
+          "time": "2026-01-07T08:57:00.297741",
+          "field": "progress",
+          "from": 0,
+          "to": 100,
+          "label": "进度: 0% → 100%"
+        },
+        {
+          "time": "2026-01-07T08:57:00.297741",
+          "field": "completed",
+          "from": false,
+          "to": true,
+          "label": "状态: 未完成 → 已完成"
+        }
+      ]
+    },
+    {
+      "id": "7284e1a3",
+      "text": "1",
+      "content": "",
+      "tab": "today",
+      "quadrant": "not-important-urgent",
+      "tags": [],
+      "assignee": "",
+      "due_date": null,
+      "progress": 0,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-05T09:08:08.206400",
+      "updated_at": "2026-01-05T10:08:16.830464",
+      "changelog": [
+        {
+          "time": "2026-01-05T10:08:16.830464",
+          "field": "quadrant",
+          "from": "important-urgent",
+          "to": "not-important-urgent",
+          "label": "象限: 🔥重要紧急 → 📞不重要紧急"
+        }
+      ]
+    },
+    {
+      "id": "da979e3b",
+      "text": "1",
+      "content": "",
+      "tab": "today",
+      "quadrant": "important-urgent",
+      "tags": [],
+      "assignee": "",
+      "due_date": null,
+      "progress": 0,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-05T09:08:10.675102",
+      "updated_at": "2026-01-05T09:08:10.675102",
+      "deleted": true,
+      "deleted_at": "2026-01-07T08:57:20.696967"
+    },
+    {
+      "id": "bf6002cb",
+      "text": "1",
+      "content": "",
+      "tab": "today",
+      "quadrant": "not-important-not-urgent",
+      "tags": [],
+      "assignee": "",
+      "due_date": null,
+      "progress": 0,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-05T09:08:14.424831",
+      "updated_at": "2026-01-05T09:08:14.424831"
+    },
+    {
+      "id": "4a83c337",
+      "text": "1",
+      "content": "",
+      "tab": "today",
+      "quadrant": "not-important-not-urgent",
+      "tags": [],
+      "assignee": "",
+      "due_date": null,
+      "progress": 0,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-05T09:08:15.953877",
+      "updated_at": "2026-01-05T09:08:15.953877"
+    },
+    {
+      "id": "df69054c",
+      "text": "1",
+      "content": "",
+      "tab": "today",
+      "quadrant": "not-important-not-urgent",
+      "tags": [],
+      "assignee": "",
+      "due_date": null,
+      "progress": 0,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-05T09:08:18.262727",
+      "updated_at": "2026-01-05T09:08:18.262727"
+    },
+    {
+      "id": "a2657a57",
+      "text": "1",
+      "content": "",
+      "tab": "today",
+      "quadrant": "not-important-not-urgent",
+      "tags": [],
+      "assignee": "",
+      "due_date": null,
+      "progress": 0,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-05T09:08:20.796969",
+      "updated_at": "2026-01-05T09:08:20.796969"
+    },
+    {
+      "id": "490d6553",
+      "text": "1",
+      "content": "",
+      "tab": "today",
+      "quadrant": "not-important-not-urgent",
+      "tags": [],
+      "assignee": "",
+      "due_date": null,
+      "progress": 0,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-05T09:08:22.997363",
+      "updated_at": "2026-01-05T09:08:22.997363"
+    },
+    {
+      "id": "fea0418c",
+      "text": "1",
+      "content": "",
+      "tab": "today",
+      "quadrant": "not-important-not-urgent",
+      "tags": [],
+      "assignee": "",
+      "due_date": null,
+      "progress": 0,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-05T09:08:25.512561",
+      "updated_at": "2026-01-05T09:08:25.512561"
+    },
+    {
+      "id": "e4ee7074",
+      "text": "1",
+      "content": "",
+      "tab": "today",
+      "quadrant": "important-urgent",
+      "tags": [],
+      "assignee": "",
+      "due_date": null,
+      "progress": 0,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-05T09:08:29.944484",
+      "updated_at": "2026-01-05T09:08:29.944484",
+      "deleted": true,
+      "deleted_at": "2026-01-07T08:57:04.758531"
+    },
+    {
+      "id": "83ce6219",
+      "text": "1",
+      "content": "",
+      "tab": "today",
+      "quadrant": "not-important-urgent",
+      "tags": [],
+      "assignee": "",
+      "due_date": null,
+      "progress": 0,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-05T09:08:32.297087",
+      "updated_at": "2026-01-05T10:08:07.980326",
+      "changelog": [
+        {
+          "time": "2026-01-05T10:08:07.980326",
+          "field": "quadrant",
+          "from": "important-urgent",
+          "to": "not-important-urgent",
+          "label": "象限: 🔥重要紧急 → 📞不重要紧急"
+        }
+      ]
+    },
+    {
+      "id": "3158d729",
+      "text": "1",
+      "content": "",
+      "tab": "today",
+      "quadrant": "not-important-not-urgent",
+      "tags": [],
+      "assignee": "",
+      "due_date": null,
+      "progress": 0,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-05T09:15:00.802589",
+      "updated_at": "2026-01-05T09:15:00.802589"
+    },
+    {
+      "id": "d6eff726",
+      "text": "1",
+      "content": "",
+      "tab": "today",
+      "quadrant": "not-important-not-urgent",
+      "tags": [],
+      "assignee": "",
+      "due_date": null,
+      "progress": 0,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-05T09:15:03.139888",
+      "updated_at": "2026-01-05T09:15:03.139888"
+    },
+    {
+      "id": "07afdf3b",
+      "text": "1",
+      "content": "",
+      "tab": "today",
+      "quadrant": "not-important-not-urgent",
+      "tags": [],
+      "assignee": "",
+      "due_date": null,
+      "progress": 0,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-05T09:15:05.124965",
+      "updated_at": "2026-01-05T09:15:05.124965"
+    },
+    {
+      "id": "44b88a43",
+      "text": "1",
+      "content": "",
+      "tab": "today",
+      "quadrant": "not-important-not-urgent",
+      "tags": [],
+      "assignee": "",
+      "due_date": null,
+      "progress": 0,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-05T09:15:07.666603",
+      "updated_at": "2026-01-05T09:15:07.666603"
+    },
+    {
+      "id": "849cfe0e",
+      "text": "1",
+      "content": "",
+      "tab": "today",
+      "quadrant": "not-important-not-urgent",
+      "tags": [],
+      "assignee": "",
+      "due_date": null,
+      "progress": 0,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-05T09:15:16.986780",
+      "updated_at": "2026-01-05T09:15:16.986780"
+    },
+    {
+      "id": "5172ac2f",
+      "text": "1",
+      "content": "",
+      "tab": "today",
+      "quadrant": "not-important-not-urgent",
+      "tags": [],
+      "assignee": "",
+      "due_date": null,
+      "progress": 0,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-05T09:15:19.588424",
+      "updated_at": "2026-01-05T09:15:19.588424"
+    },
+    {
+      "id": "997b6ae3",
+      "text": "2",
+      "content": "",
+      "tab": "today",
+      "quadrant": "important-urgent",
+      "tags": [],
+      "assignee": "",
+      "due_date": null,
+      "progress": 0,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-05T10:12:18.549198",
+      "updated_at": "2026-01-05T10:12:18.549198",
+      "deleted": true,
+      "deleted_at": "2026-01-07T08:57:07.577520"
+    },
+    {
+      "id": "74d74796",
+      "text": "2",
+      "content": "",
+      "tab": "today",
+      "quadrant": "not-important-not-urgent",
+      "tags": [],
+      "assignee": "",
+      "due_date": null,
+      "progress": 0,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-05T10:12:22.070355",
+      "updated_at": "2026-01-05T10:12:22.070355"
+    },
+    {
+      "id": "5f4dd3f5",
+      "text": "2",
+      "content": "",
+      "tab": "today",
+      "quadrant": "important-urgent",
+      "tags": [],
+      "assignee": "",
+      "due_date": null,
+      "progress": 0,
+      "completed": false,
+      "completed_at": null,
+      "created_at": "2026-01-05T10:12:25.219863",
+      "updated_at": "2026-01-05T10:12:25.219863",
+      "deleted": true,
+      "deleted_at": "2026-01-07T08:57:09.412450"
     }
   ]
 }

@@ -1,10 +1,74 @@
-你的时间有限，不要浪费在别人的生活里。——乔布斯
-成功不是终点，失败也不是末日，重要的是继续前行的勇气。——丘吉尔
-不是因为看到希望才坚持，而是因为坚持才能看到希望。
-真正的强者，不是没有眼泪的人，而是含着眼泪依然奔跑的人。
-你现在的努力，是为了让未来的自己感谢今天的你。
-每一个不曾起舞的日子，都是对生命的辜负。——尼采
-世界上只有一种真正的英雄主义，那就是认清生活的真相后依然热爱生活。——罗曼·罗兰
-当你觉得累的时候，说明你在走上坡路。
-优秀是一种习惯，而不是一次行动。——亚里士多德
-所有的伟大，都源于一个勇敢的开始。
+Focus on the right thing.
+专注于重要的事情。
+今天的努力是明天的收获。
+不积跬步，无以至千里。
+Done is better than perfect.
+先完成，再完美。
+把大象装进冰箱需要三步。
+千里之行，始于足下。
+Stay hungry, stay foolish.
+保持饥饿，保持愚蠢。
+The best time to plant a tree was 20 years ago. The second best time is now.
+种一棵树最好的时间是二十年前，其次是现在。
+Less is more.
+少即是多。
+Keep it simple, stupid.
+保持简单，别想太多。
+Fail fast, learn faster.
+快速失败，更快学习。
+Think different.
+不同凡想。
+Make it work, make it right, make it fast.
+先让它能用，再让它正确，最后让它快速。
+The journey of a thousand miles begins with a single step.
+合抱之木，生于毫末。
+Actions speak louder than words.
+行动胜于言语。
+Time is money.
+时间就是金钱。
+No pain, no gain.
+不经历风雨，怎能见彩虹。
+Practice makes perfect.
+熟能生巧。
+Where there's a will, there's a way.
+有志者事竟成。
+Rome wasn't built in a day.
+罗马不是一天建成的。
+Every cloud has a silver lining.
+黑暗中总有一线光明。
+Better late than never.
+迟做总比不做好。
+Knowledge is power.
+知识就是力量。
+Simplicity is the ultimate sophistication.
+简约是终极的精致。
+The only way to do great work is to love what you do.
+做伟大工作的唯一方法是热爱你所做的事。
+Innovation distinguishes between a leader and a follower.
+创新区分领导者和追随者。
+Your time is limited, don't waste it living someone else's life.
+你的时间有限，不要浪费在过别人的生活上。
+Quality is not an act, it is a habit.
+质量不是一种行为，而是一种习惯。
+The only limit to our realization of tomorrow is our doubts of today.
+实现明天的唯一限制是我们今天的怀疑。
+In the middle of difficulty lies opportunity.
+困难之中蕴藏着机遇。
+Success is not final, failure is not fatal.
+成功不是终点，失败也不是致命的。
+The future belongs to those who believe in the beauty of their dreams.
+未来属于那些相信梦想之美的人。
+It always seems impossible until it's done.
+在完成之前，一切看起来都是不可能的。
+The best way to predict the future is to create it.
+预测未来的最好方法就是创造它。
+Code is poetry.
+代码如诗。
+Talk is cheap. Show me the code.
+空谈不如代码。
+First, solve the problem. Then, write the code.
+先解决问题，再写代码。
+Any fool can write code that a computer can understand.
+任何傻瓜都能写出计算机能理解的代码。
+Good code is its own best documentation.
+好代码本身就是最好的文档。

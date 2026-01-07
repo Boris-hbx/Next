@@ -12,7 +12,7 @@
     <header class="mobile-header">
         <div class="header-title">
             <img src="{{ url_for('static', filename='images/avatar.jpg') }}" alt="Boris" class="mobile-avatar">
-            <span>{% block page_title %}Boris Life{% endblock %}</span>
+            <span>{% block page_title %}Next{% endblock %}</span>
         </div>
         <div class="header-actions">
             {% block header_actions %}{% endblock %}
@@ -36,18 +36,6 @@
         <a href="{{ url_for('todo') }}" class="nav-item {% if current_page == 'todo' %}active{% endif %}">
             <span class="nav-icon">✓</span>
             <span class="nav-label">Todo</span>
-        </a>
-        <a href="{{ url_for('motivation') }}" class="nav-item {% if current_page == 'motivation' %}active{% endif %}">
-            <span class="nav-icon">💪</span>
-            <span class="nav-label">鼓励</span>
-        </a>
-        <a href="{{ url_for('bubble') }}" class="nav-item {% if current_page == 'bubble' %}active{% endif %}">
-            <span class="nav-icon">🫧</span>
-            <span class="nav-label">气泡图</span>
-        </a>
-        <a href="{{ url_for('game') }}" class="nav-item {% if current_page == 'game' %}active{% endif %}">
-            <span class="nav-icon">🎮</span>
-            <span class="nav-label">游戏</span>
         </a>
     </nav>
 </div>

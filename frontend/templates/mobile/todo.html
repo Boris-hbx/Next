@@ -29,8 +29,8 @@
     <button class="quad-btn active" data-quad="all" onclick="filterQuadrant('all')">全部</button>
     <button class="quad-btn q1" data-quad="important-urgent" onclick="filterQuadrant('important-urgent')">🔥</button>
     <button class="quad-btn q2" data-quad="important-not-urgent" onclick="filterQuadrant('important-not-urgent')">🎯</button>
-    <button class="quad-btn q3" data-quad="not-important-urgent" onclick="filterQuadrant('not-important-urgent')">📞</button>
-    <button class="quad-btn q4" data-quad="not-important-not-urgent" onclick="filterQuadrant('not-important-not-urgent')">🎮</button>
+    <button class="quad-btn q3" data-quad="not-important-urgent" onclick="filterQuadrant('not-important-urgent')">📥</button>
+    <button class="quad-btn q4" data-quad="not-important-not-urgent" onclick="filterQuadrant('not-important-not-urgent')">⚡</button>
 </div>
 
 <!-- Task List -->
@@ -54,10 +54,10 @@
         <div class="mobile-modal-body">
             <input type="text" class="mobile-input" id="task-input" placeholder="任务内容...">
             <div class="quad-select">
-                <div class="quad-option selected" data-quad="important-urgent">🔥 重要紧急</div>
-                <div class="quad-option" data-quad="important-not-urgent">🎯 重要不紧急</div>
-                <div class="quad-option" data-quad="not-important-urgent">📞 不重要紧急</div>
-                <div class="quad-option" data-quad="not-important-not-urgent">🎮 不重要不紧急</div>
+                <div class="quad-option selected" data-quad="important-urgent">🔥 优先处理</div>
+                <div class="quad-option" data-quad="important-not-urgent">🎯 等你翻牌</div>
+                <div class="quad-option" data-quad="not-important-urgent">📥 待分类</div>
+                <div class="quad-option" data-quad="not-important-not-urgent">⚡ 短平快</div>
             </div>
         </div>
         <div class="mobile-modal-footer">
@@ -287,8 +287,8 @@ function createTaskHtml(task) {
     var quadIcons = {
         'important-urgent': '🔥',
         'important-not-urgent': '🎯',
-        'not-important-urgent': '📞',
-        'not-important-not-urgent': '🎮'
+        'not-important-urgent': '📥',
+        'not-important-not-urgent': '⚡'
     };
     var icon = quadIcons[task.quadrant] || '📌';
     var checked = task.completed ? 'checked' : '';
