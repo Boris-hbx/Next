@@ -1272,8 +1272,6 @@
     }
     .routine-panel {
         position: absolute;
-        top: 120px;
-        left: 20px;
         background: rgba(255, 255, 255, 0.95);
         backdrop-filter: blur(20px);
         border-radius: 16px;
@@ -1712,7 +1710,15 @@
     function toggleRoutinePanel() {
         var overlay = document.getElementById('routine-panel-overlay');
         if (overlay.style.display === 'none') {
-            overlay.style.display = 'flex';
+            overlay.style.display = 'block';
+            // 定位面板到"例行"按钮右下角
+            var btn = document.querySelector('.btn-routine');
+            var panel = document.querySelector('.routine-panel');
+            if (btn && panel) {
+                var rect = btn.getBoundingClientRect();
+                panel.style.top = (rect.bottom + 8) + 'px';
+                panel.style.left = rect.left + 'px';
+            }
             loadRoutines();
         } else {
             overlay.style.display = 'none';
