@@ -688,9 +688,14 @@ body {
 .main-content {
     flex: 1;
     margin-left: 220px;
-    padding: calc(48px + 2rem) 2rem 2rem 2rem; /* 顶部48px为固定导航栏高度 */
+    padding: calc(48px + 2rem) 1rem 2rem 1rem;
+    width: calc(100vw - 220px);
     max-width: calc(100vw - 220px);
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 100vh;
+    box-sizing: border-box;
 }
 
 .main-content.expanded {
@@ -1380,14 +1385,15 @@ body {
 /* 主布局：四象限 + 右侧边栏 */
 .todo-main-layout {
     display: flex;
-    gap: 32px;
-    max-width: 2200px;
-    margin: 0 auto;
+    gap: 16px;
+    width: 100%;
     align-items: flex-start;
+    min-width: 0;
 }
 
 .todo-matrix-container {
-    flex-shrink: 0;
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -1397,15 +1403,16 @@ body {
 .right-sidebar {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
     flex-shrink: 0;
+    width: 280px;
     position: sticky;
     top: 20px;
 }
 
 /* 侧边栏区块（已完成/已删除） */
 .sidebar-section {
-    width: 300px;
+    width: 280px;
     background: rgba(255, 255, 255, 0.9);
     border-radius: 16px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
@@ -1414,7 +1421,7 @@ body {
 }
 
 .sidebar-section.expanded {
-    width: 666px;
+    width: 280px; /* 展开时保持原宽度，不向右扩展 */
 }
 
 .sidebar-section .section-header {
@@ -1824,7 +1831,7 @@ body {
 
 /* Eisenhower Matrix */
 .eisenhower-matrix {
-    width: 1428px;
+    width: 100%;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -1856,11 +1863,12 @@ body {
 
 .matrix-grid {
     display: grid;
-    grid-template-columns: 666px 666px;
+    grid-template-columns: 1fr 1fr;
     grid-template-rows: auto auto;
-    gap: 2rem;
+    gap: 1rem;
     position: relative;
-    padding: 2rem;
+    padding: 1rem;
+    min-width: 0;
 }
 
 /* Cross lines container */
@@ -2028,16 +2036,16 @@ body {
 .quadrant {
     background: rgba(255, 255, 255, 0.9);
     border-radius: 16px;
-    padding: 1rem;
-    min-height: 200px; /* 最小高度，避免太扁 */
+    padding: 0.75rem;
+    min-height: 120px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     transition: all 0.2s ease;
     display: flex;
     flex-direction: column;
     position: relative;
     box-sizing: border-box;
-    overflow: visible; /* 允许内容自然展开 */
-    min-width: 0; /* 允许收缩 */
+    overflow: visible;
+    min-width: 0;
 }
 
 .quadrant.drag-over {
@@ -2132,9 +2140,8 @@ body {
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
-    min-height: 100px;
+    min-height: 50px;
     padding-right: 4px;
-    /* 默认不限制高度，任务全部可见 */
 }
 
 /* 超过15个任务时添加滚动 */
@@ -8467,3 +8474,77 @@ textarea.ocr-text:focus {
 }
 
 /* ========== Living Line 已由 Canvas 实现，旧样式已移除 ==========*/
+
+/* ========== 小屏幕适配（笔记本 1366x768 等） ========== */
+
+/* 小屏幕宽度：压缩右侧边栏 */
+@media (max-width: 1400px) {
+    .todo-main-layout {
+        gap: 12px;
+    }
+
+    .right-sidebar {
+        width: 200px;
+    }
+
+    .sidebar-section {
+        width: 200px;
+    }
+
+    .matrix-grid {
+        gap: 8px;
+        padding: 8px;
+    }
+}
+
+/* 更小屏幕：进一步压缩 */
+@media (max-width: 1200px) {
+    .right-sidebar {
+        width: 160px;
+    }
+
+    .sidebar-section {
+        width: 160px;
+    }
+
+    .sidebar-section .section-header {
+        padding: 0.5rem;
+        font-size: 0.8rem;
+    }
+
+    .matrix-grid {
+        gap: 6px;
+        padding: 6px;
+    }
+}
+
+/* 小屏幕高度：压缩间距 */
+@media (max-height: 800px) {
+    .main-content {
+        padding: calc(48px + 0.5rem) 0.75rem 0.5rem 0.75rem;
+    }
+
+    .page-header.compact {
+        display: none;
+    }
+
+    .matrix-tabs {
+        padding: 0.25rem 0.5rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .matrix-tab {
+        padding: 0.35rem 0.6rem;
+        font-size: 0.8rem;
+    }
+
+    .quadrant {
+        min-height: 80px;
+        padding: 0.4rem;
+    }
+
+    .task-item {
+        padding: 0.3rem 0.4rem;
+        font-size: 0.85rem;
+    }
+}
