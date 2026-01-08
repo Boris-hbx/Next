@@ -719,7 +719,7 @@ body {
 
 /* Page Header */
 .page-header {
-    width: 1428px;
+    width: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1408,6 +1408,12 @@ body {
     width: 280px;
     position: sticky;
     top: 20px;
+    transition: width 0.3s ease;
+}
+
+/* 当有展开的 section 时，右侧边栏变宽，挤压左边四象限 */
+.right-sidebar:has(.sidebar-section.expanded) {
+    width: 500px;
 }
 
 /* 侧边栏区块（已完成/已删除） */
@@ -1421,7 +1427,7 @@ body {
 }
 
 .sidebar-section.expanded {
-    width: 280px; /* 展开时保持原宽度，不向右扩展 */
+    width: 100%; /* 填满右侧边栏容器 */
 }
 
 .sidebar-section .section-header {
@@ -1463,8 +1469,8 @@ body {
     border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-/* 响应式：窄屏回退到底部布局 */
-@media (max-width: 1600px) {
+/* 响应式：极窄屏回退到底部布局 */
+@media (max-width: 900px) {
     .todo-main-layout {
         flex-direction: column;
         align-items: center;
@@ -1473,19 +1479,14 @@ body {
         flex-direction: row;
         position: static;
         width: 100%;
-        max-width: 1364px;
     }
     .sidebar-section {
         flex: 1;
     }
-    .sidebar-section.expanded {
-        width: auto;
-        flex: 2;
-    }
 }
 
 .matrix-tabs {
-    width: 1428px;
+    width: 100%;
     display: flex;
     align-items: center;
     justify-content: flex-start;
@@ -8487,6 +8488,10 @@ textarea.ocr-text:focus {
         width: 200px;
     }
 
+    .right-sidebar:has(.sidebar-section.expanded) {
+        width: 350px;
+    }
+
     .sidebar-section {
         width: 200px;
     }
@@ -8501,6 +8506,10 @@ textarea.ocr-text:focus {
 @media (max-width: 1200px) {
     .right-sidebar {
         width: 160px;
+    }
+
+    .right-sidebar:has(.sidebar-section.expanded) {
+        width: 280px;
     }
 
     .sidebar-section {

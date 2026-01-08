@@ -862,8 +862,13 @@
     }
     .task-modal-right textarea[readonly] {
         background: var(--bg-secondary, #f9fafb);
-        cursor: default;
+        cursor: text;
         resize: none;
+        transition: background 0.2s ease, border-color 0.2s ease;
+    }
+    .task-modal-right textarea[readonly]:hover {
+        background: rgba(79, 70, 229, 0.05);
+        border-color: rgba(79, 70, 229, 0.3);
     }
     /* 滚动条美化 */
     .task-modal-left::-webkit-scrollbar,
@@ -1678,7 +1683,7 @@
                 </div>
                 <!-- 右栏：内容 -->
                 <div class="task-modal-right">
-                    <textarea id="modal-content" placeholder="详细描述、备注、相关信息..."></textarea>
+                    <textarea id="modal-content" placeholder="详细描述、备注、相关信息..." onclick="onContentClick()"></textarea>
                 </div>
             </div>
             <!-- 变更记录（全宽） -->
@@ -2908,6 +2913,14 @@
     function switchToEditMode() {
         setModalMode('edit');
         document.getElementById('modal-title').focus();
+    }
+
+    // 点击 content 区域直接进入编辑模式
+    function onContentClick() {
+        if (modalMode === 'view') {
+            setModalMode('edit');
+            document.getElementById('modal-content').focus();
+        }
     }
 
     function closeTaskModal() {
