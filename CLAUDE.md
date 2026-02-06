@@ -6,97 +6,95 @@
 - 用户提到"截图"或"看一下效果"时，自动读取 `PrtSc/` 下最新的图片文件
 
 ## 项目概述
-**Next** 是一个专注的任务管理桌面应用，核心功能是艾森豪威尔矩阵（四象限法则）。从 Work Engine 精简而来，只保留 Todo 核心功能。
+**Next** 是一个专注的任务管理桌面应用 (Windows)，基于艾森豪威尔矩阵的四象限 + 时间维度管理任务。
 
 ## 技术栈
 | 层级 | 技术 |
 |------|------|
 | 桌面框架 | Tauri 2.0 (Rust) |
-| 后端 | Flask (Python) |
-| 前端 | HTML/CSS/JS + Jinja2 |
-| 打包 | PyInstaller + Cargo |
-| 数据存储 | JSON 文件 |
-| 端口 | localhost:2026 |
+| 后端 | Rust (Tauri Commands) |
+| 前端 | Vanilla HTML/CSS/JS |
+| 数据存储 | JSON 文件 (`%LOCALAPPDATA%\Next\data\`) |
+| 通信方式 | Tauri IPC (无 HTTP) |
+| 打包格式 | NSIS (.exe 安装包) |
 
 ## 项目结构
 ```
 Next/
-├── backend/
-│   └── app.py                 # Flask 主应用 (~480 行)
-├── frontend/templates/
-│   ├── base.html              # 主基础模板
-│   ├── todo.html              # 四象限界面 (~2900 行)
-│   ├── desktop/
-│   │   └── base.html          # 桌面端布局
-│   ├── mobile/
-│   │   ├── base.html
-│   │   └── todo.html
-│   └── shared/
-│       └── base_core.html
-├── assets/
-│   ├── css/
-│   │   ├── base.css           # 基础样式
-│   │   ├── style.css          # 主样式 (~8000 行)
-│   │   ├── desktop.css
-│   │   └── mobile.css
-│   ├── js/
-│   │   └── living-line.js     # 呼吸线动画
-│   ├── icons/                 # 应用图标
-│   ├── manifest.json          # PWA 配置
-│   └── sw.js                  # Service Worker
-├── data/
-│   ├── todos.json             # 任务数据
-│   └── quotes.txt             # 名言库 (75条)
-├── config/
-│   └── config.json            # API 配置
-├── src-tauri/                 # Tauri 桌面应用
-│   ├── src/main.rs            # Rust 主程序
-│   ├── tauri.conf.json        # Tauri 配置
-│   ├── resources/             # Flask exe 存放处
-│   └── icons/
-├── docs/                      # 功能规格文档
-│   ├── SPEC-*.md              # 各功能规格
-│   └── PENDING_ACCEPTANCE.md  # 待验收功能
-├── build.bat                  # 构建脚本
-├── start.bat                  # 启动脚本
-├── flask-backend.spec         # PyInstaller 配置
-└── requirements.txt           # Python 依赖
+├── frontend/                      # 前端 (Tauri frontendDist)
+│   ├── index.html                 # 主页面 HTML (~2200 行)
+│   └── assets/
+│       ├── css/
+│       │   ├── base.css           # 基础样式、CSS 变量、主题
+│       │   ├── style.css          # 主样式 (~8500 行)
+│       │   ├── desktop.css        # 桌面端适配
+│       │   └── mobile.css         # 移动端适配
+│       ├── js/
+│       │   ├── api.js             # API 层 (Tauri IPC 封装)
+│       │   ├── utils.js           # 工具函数 (escapeHtml, showToast 等)
+│       │   ├── app.js             # 全局状态、Tab 切换
+│       │   ├── tasks.js           # 任务渲染、CRUD、象限逻辑
+│       │   ├── modal.js           # 任务弹窗 (查看/编辑/创建)
+│       │   ├── drag.js            # 鼠标拖拽
+│       │   ├── touch.js           # 触屏拖拽
+│       │   ├── routines.js        # 例行任务面板、About 弹窗
+│       │   ├── features.js        # 工具提示、每日回顾、手势、快捷键
+│       │   ├── particles.js       # 彗星粒子效果
+│       │   └── living-line.js     # 呼吸线动画
+│       └── icons/                 # 应用图标 (favicon, PWA icons)
+├── src-tauri/                     # Rust 后端
+│   ├── src/
+│   │   ├── main.rs                # Tauri 入口、命令注册
+│   │   ├── models/
+│   │   │   ├── mod.rs             # 模块导出
+│   │   │   ├── todo.rs            # Todo 模型 (含 Changelog)
+│   │   │   └── routine.rs         # Routine 模型
+│   │   ├── db/
+│   │   │   └── mod.rs             # JSON 持久化层 (原子写入)
+│   │   └── commands/
+│   │       ├── mod.rs             # 命令导出
+│   │       ├── todos.rs           # Todo CRUD 命令
+│   │       ├── routines.rs        # Routine 命令
+│   │       └── quotes.rs          # 随机名言命令
+│   ├── tauri.conf.json            # Tauri 配置
+│   ├── Cargo.toml                 # Rust 依赖
+│   ├── nsis-hooks.nsi             # NSIS 安装钩子
+│   └── icons/                     # 安装包图标
+├── data/                          # 开发数据
+│   ├── todos.json
+│   ├── routines.json
+│   └── quotes.txt
+├── docs/                          # Spec 文档
+│   ├── SPEC-025 ~ SPEC-031        # 活跃文档
+│   ├── PENDING_ACCEPTANCE.md
+│   └── archive/                   # 已归档文档
+├── scripts/
+│   ├── build.bat                  # cargo tauri build
+│   └── release.bat                # 构建 + 复制安装包到 release/
+├── release/                       # 安装包输出 (gitignored)
+├── PrtSc/                         # 截图
+├── .gitignore
+└── CLAUDE.md
 ```
 
-## 核心功能
+## Tauri Commands
 
-### 四象限任务管理
-- **艾森豪威尔矩阵**: 优先处理/就等你翻牌子了/待分类/短平快
-- **时间维度**: Today / This Week / Next 30 Days
-- **拖拽操作**: 拖拽任务到不同象限或时间标签
-- **进度追踪**: 0-100% 进度条，100% 自动完成
-- **变更日志**: 自动记录任务变更历史（最多50条）
-- **点击编辑**: 任务详情中点击内容区域直接进入编辑模式
-
-### 视觉效果
-- **呼吸线动画**: 底部的动态线条，会响应鼠标和滚动
-- **彗星小球**: 顶栏和侧边栏的动态粒子效果
-- **深色/浅色主题**: 跟随系统或手动切换
-
-### 其他功能
-- **名言展示**: 随机显示激励名言
-- **PWA 支持**: 可添加到手机桌面
-- **响应式设计**: 适配桌面和移动端，支持小屏幕笔记本 (1366x768)
-- **窗口最大化**: 默认启动时最大化窗口
-
-## API 路由
-
-| 路由 | 方法 | 功能 |
-|------|------|------|
-| `/` | GET | 重定向到 /todo |
-| `/todo` | GET | 任务页面 |
-| `/api/todos` | GET | 获取任务列表 |
-| `/api/todos` | POST | 创建任务 |
-| `/api/todos/<id>` | PUT | 更新任务 |
-| `/api/todos/<id>` | DELETE | 删除任务 |
-| `/api/todos/batch` | PUT | 批量更新 |
-| `/api/quote/random` | GET | 随机名言 |
-| `/api/health` | GET | 健康检查 |
+| 命令 | 功能 |
+|------|------|
+| `get_todos` | 获取任务列表 (可按 tab 过滤) |
+| `get_todo` | 获取单个任务 |
+| `create_todo` | 创建任务 |
+| `update_todo` | 更新任务 |
+| `delete_todo` | 软删除任务 |
+| `restore_todo` | 恢复已删除任务 |
+| `permanent_delete_todo` | 永久删除任务 |
+| `batch_update_todos` | 批量更新任务 |
+| `get_todo_counts` | 获取各 tab 任务数量 |
+| `get_routines` | 获取例行任务 |
+| `create_routine` | 创建例行任务 |
+| `toggle_routine` | 切换例行任务状态 |
+| `delete_routine` | 删除例行任务 |
+| `get_random_quote` | 随机名言 |
 
 ## 任务数据结构
 
@@ -114,118 +112,88 @@ Next/
   "tags": ["标签1", "标签2"],
   "created_at": "ISO时间戳",
   "updated_at": "ISO时间戳",
-  "changelog": [...]
+  "changelog": [{ "time": "...", "field": "...", "from": "...", "to": "...", "label": "..." }]
 }
 ```
 
 ## 构建与运行
 
-### 开发模式
 ```bash
-# 方式1: 直接启动 Flask
-cd backend && python app.py
-# 访问 http://localhost:2026
+# 开发模式
+cargo tauri dev
 
-# 方式2: 使用启动脚本
-start.bat
-```
-
-### 生产构建
-```bash
-# 三步构建流程
-build.bat
-
-# 或手动执行:
-# 1. 打包 Flask
-python -m PyInstaller flask-backend.spec --noconfirm
-
-# 2. 复制到 Tauri 资源
-copy dist\flask-backend.exe src-tauri\resources\
-
-# 3. 构建 Tauri
+# 生产构建
 cargo tauri build
+
+# 构建 + 复制安装包到 release/
+scripts\release.bat
 ```
 
-### 构建产物
-```
-src-tauri/target/release/bundle/
-├── msi/Next_1.0.0_x64_en-US.msi    # MSI 安装包
-└── nsis/Next_1.0.0_x64-setup.exe   # NSIS 安装包
-```
+构建产物: `src-tauri/target/release/bundle/nsis/Next_1.0.0_x64-setup.exe`
 
 ## 开发约定
 
 ### 代码风格
-- API 返回格式: `{ "success": true/false, ... }`
-- 前端用 `fetch` 调用 API，`showToast()` 显示反馈
-- CSS 使用变量: `var(--primary-color)` 等
-- 响应式: 区分 desktop/mobile 模板
+- Tauri Command 返回: `{ "success": true/false, ... }`
+- 前端调用: `API.xxx()` → Tauri IPC → Rust Command
+- 用户反馈: `showToast(message, type)`
+- CSS 变量: `var(--primary-color)` 等
 
 ### 数据文件
-- 生产环境数据位置: `%LOCALAPPDATA%\Next\data\`
-- 开发环境数据位置: 项目目录下 `data/`
-- UTF-8 编码
+- 生产环境: `%LOCALAPPDATA%\Next\data\`
+- 开发环境: 项目目录下 `data/`
+- 编码: UTF-8
 
-### 新功能开发
-1. 后端: 在 `app.py` 添加路由
-2. 前端: 在 `todo.html` 添加 HTML + JS
-3. 样式: 在 `style.css` 或模板内 `<style>` 添加
+### 新功能开发流程
+1. 后端: `src-tauri/src/commands/` 添加 Command → `main.rs` 注册
+2. 前端 HTML: `frontend/index.html` 添加结构
+3. 前端 JS: 对应 `frontend/assets/js/*.js` 模块添加逻辑
+4. 样式: `frontend/assets/css/style.css` 添加样式
 
-## 架构说明
-
-### Tauri 启动流程
-1. Tauri 启动，清理残留 Flask 进程
-2. 启动 `flask-backend.exe` (端口 2026)
-3. 等待 1.5 秒让 Flask 初始化
-4. WebView 加载 `http://localhost:2026`
-5. 关闭窗口时杀死 Flask 进程树
-
-### 模板继承
+### 前端 JS 加载顺序
 ```
-shared/base_core.html
-    └── desktop/base.html
-        └── base.html
-            └── todo.html
-
-shared/base_core.html
-    └── mobile/base.html
-        └── mobile/todo.html
+api.js → utils.js → app.js → tasks.js → modal.js → drag.js → touch.js → routines.js → features.js → particles.js → living-line.js
 ```
 
-## 重要文件索引
+## 核心功能
 
-| 文件 | 说明 |
+### 四象限任务管理
+- **艾森豪威尔矩阵**: 优先处理 / 就等你翻牌子了 / 待分类 / 短平快
+- **时间维度**: Today / This Week / Next 30 Days
+- **拖拽**: 鼠标拖拽 + 触屏长按拖拽，可跨象限和时间标签
+- **进度**: 0-100% 进度条，100% 自动标记完成
+- **变更日志**: 自动记录变更历史 (VecDeque, 最多 50 条)
+- **点击编辑**: 详情中点击内容直接编辑
+- **软删除**: 删除 → 回收站 → 恢复 / 永久删除
+
+### 视觉效果
+- **呼吸线**: 底部 Canvas 动态线条，响应鼠标和滚动
+- **彗星粒子**: 顶栏 Canvas 粒子动画
+- **主题**: 深色 / 浅色 / 跟随系统
+
+### 快捷键
+| 按键 | 功能 |
 |------|------|
-| `backend/app.py` | Flask 主应用，所有 API |
-| `frontend/templates/todo.html` | 四象限界面和交互逻辑 |
-| `assets/css/style.css` | 主样式文件 |
-| `assets/js/living-line.js` | 呼吸线动画 |
-| `src-tauri/src/main.rs` | Tauri 启动和进程管理 |
-| `src-tauri/tauri.conf.json` | Tauri 配置 |
-| `flask-backend.spec` | PyInstaller 打包配置 |
+| N | 新建任务 |
+| S | 搜索 |
+| 1/2/3 | 切换 Today/Week/Month |
+| D | 切换主题 |
+| R | 每日回顾 |
+| ? | 快捷键帮助 |
 
 ## Spec 文档规范
 
-功能规格文档存放在 `docs/` 目录，命名格式：
+存放: `docs/SPEC-{三位序号}-{功能名}.md`
 
-```
-SPEC-{序号}-{功能名}.md
-```
-
-**示例**: `SPEC-025-quadrant-ui-overhaul.md`
-
-**文档头部必须包含**:
+头部格式:
 ```markdown
-# SPEC-025: 四象限 UI 改版
+# SPEC-032: 功能名称
 
 > 起草日期: 2026-01-07
 > 状态: 草稿 | 实施中 | 已完成 | 已废弃
 ```
 
-**序号规则**:
-- 三位数字，从 001 开始
-- 新建 spec 时查看现有最大序号 +1
-- 序号越大越新
+新建 spec 时查看现有最大序号 +1 (当前最大: 031)。
 
 ## 项目所有者
 Boris Huai

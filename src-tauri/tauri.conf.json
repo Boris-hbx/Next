@@ -6,10 +6,10 @@
   "build": {
     "beforeBuildCommand": "",
     "beforeDevCommand": "",
-    "frontendDist": "http://localhost:2026",
-    "devUrl": "http://localhost:2026"
+    "frontendDist": "../frontend"
   },
   "app": {
+    "withGlobalTauri": true,
     "windows": [
       {
         "title": "Next - Focus on the Right Thing",
@@ -33,10 +33,7 @@
       "icons/icon.ico",
       "icons/icon.png"
     ],
-    "targets": "all",
-    "resources": {
-      "resources/*": "./"
-    },
+    "targets": ["nsis"],
     "windows": {
       "nsis": {
         "installerHooks": "nsis-hooks.nsi"

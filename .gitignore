@@ -1,12 +1,3 @@
-# Python
-__pycache__/
-*.py[cod]
-*.pyo
-.Python
-env/
-venv/
-.venv/
-
 # IDE
 .vscode/
 .idea/
@@ -18,7 +9,8 @@ venv/
 Thumbs.db
 
 # Local config
-.claude/
+.claude/*
+!.claude/commands/
 .continue/
 
 # ============================================
@@ -29,20 +21,15 @@ Thumbs.db
 private-data/*
 !private-data/.gitkeep
 
-# Config folder (contains API keys)
-config/
-
 # ============================================
 # BUILD ARTIFACTS
 # ============================================
 
-# PyInstaller
-build/
-dist/
-*.spec.bak
-
 # Tauri
 src-tauri/target/
+
+# Release output
+release/
 
 # ============================================
 # OTHER EXCLUSIONS
@@ -57,5 +44,5 @@ docs/backup/
 *.tmp
 *.log
 
-# Screenshots (optional)
-# PrtSc/
+# Screenshots
+PrtSc/

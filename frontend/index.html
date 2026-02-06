@@ -1,0 +1,2239 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Next">
+    <title>Todo - Time Management</title>
+    <link rel="stylesheet" href="assets/css/base.css?v=20260104b">
+    <link rel="stylesheet" href="assets/css/style.css?v=20260108">
+    <link rel="manifest" href="assets/manifest.json">
+    <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+    <script>
+    // 早期执行：在页面渲染前应用主题和侧边栏状态，避免闪烁
+    (function() {
+        var theme = localStorage.getItem('theme');
+        if (theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+        // 通过 CSS 类提前标记侧边栏状态
+        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+            document.documentElement.classList.add('sidebar-will-collapse');
+        }
+    })();
+    </script>
+    <style>
+    /* 防止侧边栏状态切换时闪烁 */
+    html.sidebar-will-collapse .sidebar {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+    html.sidebar-will-collapse .main-content {
+        margin-left: 0;
+    }
+    html.sidebar-will-collapse .sidebar-hint {
+        opacity: 1;
+    }
+    /* Prompt 中心导航组样式 */
+    .nav-group {
+        margin: 8px 0;
+    }
+    .nav-group-header {
+        display: flex;
+        align-items: center;
+        padding: 10px 16px;
+        cursor: pointer;
+        color: var(--sidebar-text, #e5e7eb);
+        border-radius: 8px;
+        transition: background 0.2s;
+        gap: 8px;
+    }
+    .nav-group-header:hover {
+        background: rgba(255,255,255,0.1);
+    }
+    .nav-group-icon {
+        font-size: 16px;
+    }
+    .nav-group-title {
+        flex: 1;
+        font-weight: 500;
+        font-size: 14px;
+    }
+    .nav-group-arrow {
+        font-size: 10px;
+        transition: transform 0.3s;
+    }
+    .nav-group.expanded .nav-group-arrow {
+        transform: rotate(180deg);
+    }
+    .nav-group-items {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+        padding-left: 12px;
+    }
+    .nav-group.expanded .nav-group-items {
+        max-height: 200px;
+    }
+    .nav-link.sub-link {
+        padding: 8px 12px;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 2px 0;
+        border-radius: 6px;
+        color: var(--sidebar-text, #c5c7cb);
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    .nav-link.sub-link:hover {
+        background: rgba(255,255,255,0.08);
+        color: white;
+    }
+    .nav-link.sub-link.active {
+        background: var(--primary-color, #667eea);
+        color: white;
+    }
+    .sub-icon {
+        font-size: 14px;
+    }
+    /* 底部区域布局 */
+    .sidebar-bottom-section {
+        margin-top: auto;
+        padding: 0 0.5rem;
+    }
+    /* 漂亮的分隔线 */
+    .sidebar-elegant-divider {
+        position: relative;
+        height: 20px;
+        margin: 12px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .sidebar-elegant-divider .divider-line {
+        width: 100%;
+        height: 1px;
+        background: linear-gradient(90deg,
+            transparent,
+            rgba(255, 255, 255, 0.3) 20%,
+            rgba(255, 255, 255, 0.5) 50%,
+            rgba(255, 255, 255, 0.3) 80%,
+            transparent
+        );
+    }
+    .sidebar-elegant-divider .divider-glow {
+        position: absolute;
+        width: 60%;
+        height: 1px;
+        background: linear-gradient(90deg,
+            transparent,
+            rgba(255, 200, 150, 0.4) 30%,
+            rgba(255, 200, 150, 0.6) 50%,
+            rgba(255, 200, 150, 0.4) 70%,
+            transparent
+        );
+        filter: blur(2px);
+        animation: dividerPulse 3s ease-in-out infinite;
+    }
+    @keyframes dividerPulse {
+        0%, 100% { opacity: 0.5; }
+        50% { opacity: 1; }
+    }
+    /* 版本管理触发按钮 */
+    .version-trigger {
+        display: flex;
+        align-items: center;
+        padding: 10px 16px;
+        cursor: pointer;
+        color: rgba(255, 255, 255, 0.9);
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        gap: 8px;
+        margin: 0 0.5rem;
+    }
+    .version-trigger:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+    .version-trigger.active {
+        background: rgba(255, 255, 255, 0.08);
+    }
+    .version-trigger-icon { font-size: 16px; }
+    .version-trigger-title { flex: 1; font-weight: 500; font-size: 14px; }
+    .version-trigger-arrow {
+        font-size: 10px;
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .version-trigger.expanded .version-trigger-arrow {
+        transform: rotate(180deg);
+    }
+    /* 分隔线调整 */
+    .sidebar-elegant-divider { margin: 8px 16px 4px 16px; }
+    /* 透明玻璃浮动面板 */
+    .version-floating-panel {
+        position: fixed;
+        left: 228px;
+        bottom: 120px;
+        width: 240px;
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateX(-20px) scale(0.95);
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .version-floating-panel.visible {
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(0) scale(1);
+    }
+    .panel-content {
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(24px) saturate(180%);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-top: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+        border-radius: 16px;
+        padding: 8px;
+    }
+    .panel-pointer {
+        position: absolute;
+        left: -8px;
+        bottom: 30px;
+        width: 16px;
+        height: 16px;
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(24px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-right: none;
+        border-top: none;
+        transform: rotate(45deg);
+        box-shadow: -3px 3px 8px rgba(0, 0, 0, 0.15);
+    }
+    .panel-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 14px;
+        color: rgba(255, 255, 255, 0.85);
+        text-decoration: none;
+        border-radius: 10px;
+        transition: all 0.2s ease;
+        gap: 10px;
+        margin: 2px 0;
+    }
+    .panel-item:hover {
+        background: rgba(255, 255, 255, 0.12);
+        color: white;
+        transform: translateX(4px);
+    }
+    .panel-item.active {
+        background: linear-gradient(135deg, rgba(255, 107, 107, 0.3), rgba(254, 202, 87, 0.3));
+        color: white;
+    }
+    .panel-item-icon { font-size: 16px; width: 24px; text-align: center; }
+    .panel-item-text { flex: 1; font-size: 14px; font-weight: 500; }
+    .panel-item-arrow {
+        font-size: 12px;
+        opacity: 0;
+        transform: translateX(-8px);
+        transition: all 0.2s ease;
+    }
+    .panel-item:hover .panel-item-arrow { opacity: 1; transform: translateX(0); }
+    .version-panel-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 999;
+        display: none;
+    }
+    .version-panel-overlay.visible { display: block; }
+    </style>
+</head>
+<body>
+    <!-- 粒子动画画布（覆盖顶栏+侧边栏的L形区域） -->
+    <canvas id="header-particles" class="particles-canvas-extended"></canvas>
+
+    <!-- GitHub风格顶部导航栏 -->
+    <header class="top-header" id="top-header">
+        <div class="header-left">
+        </div>
+        <div class="header-right">
+            <div class="header-avatar" id="header-avatar" onclick="openAbout()" title="关于 Next">
+                <span class="avatar-text">B</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Living Line Canvas（替代旧的呼吸线） -->
+    <canvas id="living-line"></canvas>
+
+    <div class="container">
+        <!-- 左侧提示条 - 侧边栏收起时显示 -->
+        <div class="sidebar-hint" id="sidebar-hint">
+            <div class="hint-glow"></div>
+        </div>
+
+        <!-- 小宠物 - 始终可见 -->
+        <div class="pet" id="pet">
+            <div class="pet-eye"></div>
+            <div class="pet-eye"></div>
+            <div class="pet-eye"></div>
+        </div>
+
+
+        <!-- Left Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <div class="nav-links">
+                <a href="/todo" class="nav-link active">Todo</a>
+            </div>
+
+            <!-- 底部区域 -->
+            <div class="sidebar-bottom-section">
+                <!-- 时区显示 -->
+                <div class="timezone-panel" id="timezone-panel">
+                    <div class="timezone-item">
+                        <span class="tz-city">北京</span>
+                        <div class="tz-info">
+                            <span class="tz-datetime" id="tz-beijing-date"></span>
+                            <span class="tz-time" id="tz-beijing-time"></span>
+                        </div>
+                    </div>
+                    <div class="timezone-item">
+                        <span class="tz-city">滑铁卢</span>
+                        <div class="tz-info">
+                            <span class="tz-datetime" id="tz-waterloo-date"></span>
+                            <span class="tz-time" id="tz-waterloo-time"></span>
+                        </div>
+                    </div>
+                    <div class="timezone-item">
+                        <span class="tz-city">温哥华</span>
+                        <div class="tz-info">
+                            <span class="tz-datetime" id="tz-vancouver-date"></span>
+                            <span class="tz-time" id="tz-vancouver-time"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Right Main Content -->
+        <main class="main-content" id="main-content">
+            
+    <style>
+    /* ========== 完成度进度条弹窗样式 ========== */
+    .progress-dialog-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.2s ease;
+    }
+    .progress-dialog {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border-radius: 16px;
+        padding: 24px;
+        min-width: 320px;
+        max-width: 90vw;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.3s ease;
+    }
+    [data-theme="dark"] .progress-dialog {
+        background: rgba(30, 30, 40, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .progress-dialog-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-color, #1f2937);
+        margin-bottom: 12px;
+        text-align: center;
+    }
+    .progress-dialog-task {
+        font-size: 14px;
+        color: var(--text-muted, #6b7280);
+        margin-bottom: 20px;
+        text-align: center;
+        padding: 8px 12px;
+        background: var(--bg-secondary, #f3f4f6);
+        border-radius: 8px;
+        max-height: 60px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .progress-slider-container {
+        margin: 24px 0;
+        text-align: center;
+    }
+    .progress-slider {
+        width: 100%;
+        height: 8px;
+        -webkit-appearance: none;
+        appearance: none;
+        background: linear-gradient(to right,
+            #4f46e5 0%,
+            #4f46e5 var(--val, 0%),
+            #e5e7eb var(--val, 0%),
+            #e5e7eb 100%
+        );
+        border-radius: 4px;
+        outline: none;
+        cursor: pointer;
+    }
+    .progress-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 24px;
+        height: 24px;
+        background: white;
+        border: 3px solid #4f46e5;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        transition: transform 0.2s;
+    }
+    .progress-slider::-webkit-slider-thumb:hover {
+        transform: scale(1.1);
+    }
+    .progress-slider::-moz-range-thumb {
+        width: 24px;
+        height: 24px;
+        background: white;
+        border: 3px solid #4f46e5;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+    .progress-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--text-color, #1f2937);
+        margin-top: 16px;
+        transition: all 0.3s;
+    }
+    .progress-value.complete {
+        color: #10b981;
+        transform: scale(1.1);
+    }
+    .progress-dialog-buttons {
+        display: flex;
+        gap: 12px;
+        margin-top: 20px;
+    }
+    .progress-btn {
+        flex: 1;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .progress-btn.cancel {
+        background: var(--bg-secondary, #e5e7eb);
+        color: var(--text-muted, #6b7280);
+    }
+    .progress-btn.cancel:hover {
+        background: #d1d5db;
+    }
+    .progress-btn.confirm {
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        color: white;
+    }
+    .progress-btn.confirm:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+    }
+    .progress-btn.confirm.complete {
+        background: linear-gradient(135deg, #10b981, #059669);
+    }
+
+    /* ========== 编辑弹窗样式 ========== */
+    .edit-dialog {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border-radius: 16px;
+        padding: 24px;
+        min-width: 400px;
+        max-width: 90vw;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.3s ease;
+    }
+    [data-theme="dark"] .edit-dialog {
+        background: rgba(30, 30, 40, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .edit-dialog-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-color, #1f2937);
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    .edit-form {
+        margin-bottom: 20px;
+    }
+    .edit-field {
+        margin-bottom: 16px;
+    }
+    .edit-field label {
+        display: block;
+        font-size: 13px;
+        color: var(--text-muted, #6b7280);
+        margin-bottom: 6px;
+        font-weight: 500;
+    }
+    .edit-field input,
+    .edit-field textarea {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--border-color, #e5e7eb);
+        border-radius: 10px;
+        font-size: 14px;
+        background: var(--bg-color, #fff);
+        color: var(--text-color, #1f2937);
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .edit-field input:focus,
+    .edit-field textarea:focus {
+        outline: none;
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+    .edit-field textarea {
+        resize: vertical;
+        min-height: 80px;
+    }
+    .edit-row {
+        display: flex;
+        gap: 16px;
+    }
+    .edit-row .edit-field {
+        flex: 1;
+    }
+
+    /* ========== 新版添加任务弹窗样式 ========== */
+    .modal-wide {
+        width: 560px !important;
+        max-width: 90vw !important;
+    }
+    .task-input-large {
+        width: 100%;
+        padding: 14px 16px !important;
+        font-size: 16px !important;
+        border-radius: 10px !important;
+    }
+    .form-row {
+        display: flex;
+        gap: 20px;
+        align-items: flex-start;
+    }
+    .form-group-inline {
+        flex: 1;
+    }
+    .form-group-inline label {
+        margin-bottom: 8px;
+    }
+    .tab-selector-horizontal {
+        display: flex;
+        gap: 8px;
+    }
+    .tab-btn {
+        padding: 8px 16px;
+        border: 1px solid var(--border-color, #e5e7eb);
+        background: var(--bg-secondary, #f9fafb);
+        color: var(--text-muted, #6b7280);
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 13px;
+        transition: all 0.2s;
+    }
+    .tab-btn:hover {
+        background: var(--bg-color, #fff);
+        border-color: var(--accent-color, #4f46e5);
+    }
+    .tab-btn.active {
+        background: var(--accent-color, #4f46e5);
+        color: white;
+        border-color: var(--accent-color, #4f46e5);
+    }
+    .quadrant-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    .quadrant-cell {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        border: 2px solid var(--border-color, #e5e7eb);
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: var(--bg-secondary, #f9fafb);
+    }
+    .quadrant-cell:hover {
+        border-color: var(--accent-color, #4f46e5);
+        background: var(--bg-color, #fff);
+    }
+    .quadrant-cell.selected {
+        border-color: var(--accent-color, #4f46e5);
+        background: rgba(79, 70, 229, 0.08);
+    }
+    .quadrant-cell input[type="radio"] {
+        display: none;
+    }
+    .cell-icon {
+        font-size: 20px;
+    }
+    .cell-text {
+        font-size: 14px;
+        color: var(--text-color, #1f2937);
+    }
+
+    /* ========== 任务详情卡片 - Apple 毛玻璃效果 ========== */
+    .task-card-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 999;
+        background: rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(2px);
+        animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    .task-card {
+        position: fixed;
+        z-index: 1000;
+        min-width: 320px;
+        max-width: 400px;
+        animation: cardSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes cardSlideIn {
+        from {
+            opacity: 0;
+            transform: scale(0.9) translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+    .task-card-content {
+        position: relative;
+        background: linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.85) 0%,
+            rgba(255, 255, 255, 0.75) 50%,
+            rgba(255, 255, 255, 0.8) 100%
+        );
+        backdrop-filter: blur(40px) saturate(180%);
+        -webkit-backdrop-filter: blur(40px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        border-radius: 20px;
+        padding: 20px;
+        box-shadow:
+            0 0 0 0.5px rgba(255, 255, 255, 0.6) inset,
+            0 25px 50px rgba(0, 0, 0, 0.15),
+            0 10px 30px rgba(0, 0, 0, 0.1),
+            0 0 1px rgba(0, 0, 0, 0.1);
+    }
+    /* 顶部高光 */
+    .task-card-content::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 15%;
+        right: 15%;
+        height: 1px;
+        background: linear-gradient(90deg,
+            transparent,
+            rgba(255, 255, 255, 0.9) 30%,
+            rgba(255, 255, 255, 1) 50%,
+            rgba(255, 255, 255, 0.9) 70%,
+            transparent
+        );
+        border-radius: 1px;
+    }
+    /* 内部光泽 */
+    .task-card-content::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50%;
+        background: linear-gradient(180deg,
+            rgba(255, 255, 255, 0.3) 0%,
+            transparent 100%
+        );
+        border-radius: 20px 20px 0 0;
+        pointer-events: none;
+    }
+    .task-card-pointer {
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.85) 0%,
+            rgba(255, 255, 255, 0.75) 100%
+        );
+        backdrop-filter: blur(40px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        border-right: none;
+        border-bottom: none;
+        transform: rotate(45deg);
+        top: 20px;
+        left: -8px;
+        box-shadow: -2px -2px 4px rgba(0, 0, 0, 0.05);
+    }
+    .task-card-text {
+        position: relative;
+        z-index: 1;
+        font-size: 16px;
+        line-height: 1.6;
+        color: #1f2937;
+        font-weight: 500;
+        margin-bottom: 16px;
+        word-wrap: break-word;
+    }
+    .task-card-divider {
+        height: 1px;
+        background: linear-gradient(90deg,
+            transparent,
+            rgba(0, 0, 0, 0.1) 20%,
+            rgba(0, 0, 0, 0.15) 50%,
+            rgba(0, 0, 0, 0.1) 80%,
+            transparent
+        );
+        margin: 12px 0;
+    }
+    .task-card-meta {
+        position: relative;
+        z-index: 1;
+    }
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 0;
+        font-size: 13px;
+    }
+    .meta-icon {
+        font-size: 14px;
+    }
+    .meta-label {
+        color: #6b7280;
+    }
+    .meta-value {
+        color: #374151;
+        font-weight: 500;
+    }
+    .task-card-progress-bar {
+        width: 100%;
+        height: 6px;
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: 3px;
+        margin: 8px 0 12px 0;
+        overflow: hidden;
+    }
+    .task-card-progress-bar .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #4f46e5, #7c3aed);
+        border-radius: 3px;
+        transition: width 0.3s ease;
+    }
+    .task-card-actions {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        gap: 10px;
+        margin-top: 16px;
+        justify-content: flex-end;
+    }
+    .card-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 18px;
+        border: none;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .card-btn-edit {
+        background: rgba(79, 70, 229, 0.1);
+        color: #4f46e5;
+    }
+    .card-btn-edit:hover {
+        background: #4f46e5;
+        color: white;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    }
+    .card-btn-complete {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+    }
+    .card-btn-complete:hover {
+        background: #10b981;
+        color: white;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+    /* 深色模式适配 */
+    @media (prefers-color-scheme: dark) {
+        .task-card-content {
+            background: linear-gradient(
+                135deg,
+                rgba(30, 30, 40, 0.9) 0%,
+                rgba(40, 40, 55, 0.85) 50%,
+                rgba(35, 35, 50, 0.88) 100%
+            );
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+        .task-card-pointer {
+            background: linear-gradient(135deg,
+                rgba(30, 30, 40, 0.9) 0%,
+                rgba(40, 40, 55, 0.85) 100%
+            );
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+        .task-card-text {
+            color: #f3f4f6;
+        }
+        .meta-label {
+            color: #9ca3af;
+        }
+        .meta-value {
+            color: #e5e7eb;
+        }
+    }
+
+    /* 任务编辑输入框样式 */
+    .task-edit-input {
+        width: 100%;
+        padding: 4px 8px;
+        border: 2px solid var(--accent-color, #4f46e5);
+        border-radius: 4px;
+        font-size: inherit;
+        font-family: inherit;
+        background: var(--bg-color, #fff);
+        color: var(--text-color, #1f2937);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+    .task-edit-input:focus {
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+    }
+    .task-text.editing {
+        padding: 0;
+    }
+    /* 任务操作按钮组 */
+    .task-actions {
+        display: flex;
+        gap: 4px;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+    .task-item:hover .task-actions {
+        opacity: 1;
+    }
+    .task-edit, .task-delete {
+        width: 24px;
+        height: 24px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        transition: all 0.2s;
+    }
+    .task-edit {
+        background: var(--bg-secondary, #f3f4f6);
+        color: var(--text-muted, #6b7280);
+    }
+    .task-edit:hover {
+        background: var(--accent-color, #4f46e5);
+        color: white;
+    }
+    .task-delete {
+        background: var(--bg-secondary, #f3f4f6);
+        color: var(--text-muted, #6b7280);
+    }
+    .task-delete:hover {
+        background: #ef4444;
+        color: white;
+    }
+
+    /* ========== 统一任务弹窗 ========== */
+    .task-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(4px);
+        z-index: 10000;
+        display: flex;
+        align-items: flex-start;  /* 顶部对齐，展开时向下延展 */
+        justify-content: center;
+        padding-top: 8vh;         /* 距顶部留白 */
+        animation: fadeIn 0.2s ease;
+    }
+    .task-modal {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border-radius: 12px;
+        width: 720px;
+        max-width: 95vw;
+        max-height: 85vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: slideDown 0.3s ease;  /* 改为从上往下 */
+    }
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    [data-theme="dark"] .task-modal {
+        background: rgba(30, 30, 40, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    /* 标题栏：标题输入 + 按钮组 */
+    .task-modal-header {
+        display: flex;
+        align-items: flex-start;
+        padding: 16px 20px 12px;
+        gap: 12px;
+        border-bottom: 1px solid rgba(0,0,0,0.06);
+        flex-shrink: 0;
+    }
+    .task-modal-header .title-input {
+        flex: 1;
+        font-size: 18px;
+        font-weight: 600;
+        border: none;
+        background: transparent;
+        padding: 4px 0;
+        color: var(--text-color, #1f2937);
+        resize: none;
+        line-height: 1.4;
+        max-height: 52px;
+        overflow: hidden;
+    }
+    .task-modal-header .title-input:focus {
+        outline: none;
+        border-bottom: 2px solid #4f46e5;
+    }
+    .task-modal-header .title-input[readonly] {
+        border-bottom: none;
+        background: transparent;
+    }
+    .header-actions {
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
+        padding-top: 4px;
+    }
+    .header-btn {
+        padding: 6px 14px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .header-btn.edit-btn {
+        background: #4f46e5;
+        color: white;
+    }
+    .header-btn.edit-btn:hover {
+        background: #4338ca;
+    }
+    .header-btn.close-btn {
+        background: var(--bg-secondary, #f3f4f6);
+        color: var(--text-muted, #6b7280);
+    }
+    .header-btn.close-btn:hover {
+        background: #e5e7eb;
+        color: #374151;
+    }
+    /* 主体：左属性 + 右内容 */
+    .task-modal-body {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+    }
+    /* 左栏：属性区 */
+    .task-modal-left {
+        width: 200px;
+        flex-shrink: 0;
+        padding: 16px;
+        border-right: 1px solid rgba(0,0,0,0.06);
+        overflow-y: auto;
+        background: rgba(0,0,0,0.02);
+    }
+    .prop-group {
+        margin-bottom: 14px;
+    }
+    .prop-group label {
+        display: block;
+        font-size: 11px;
+        color: var(--text-muted, #6b7280);
+        margin-bottom: 4px;
+        font-weight: 500;
+    }
+    .prop-group input,
+    .prop-group select {
+        width: 100%;
+        padding: 7px 10px;
+        border: 1px solid var(--border-color, #e5e7eb);
+        border-radius: 6px;
+        font-size: 13px;
+        background: var(--bg-color, #fff);
+        color: var(--text-color, #1f2937);
+    }
+    .prop-group input:focus,
+    .prop-group select:focus {
+        outline: none;
+        border-color: #4f46e5;
+    }
+    .prop-group input[readonly],
+    .prop-group select:disabled {
+        background: var(--bg-secondary, #f9fafb);
+        cursor: default;
+    }
+    /* 进度滑块（左栏） */
+    .progress-slider {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .progress-slider input[type="range"] {
+        flex: 1;
+        height: 6px;
+        -webkit-appearance: none;
+        background: linear-gradient(to right,
+            #4f46e5 0%,
+            #4f46e5 var(--val, 0%),
+            #e5e7eb var(--val, 0%),
+            #e5e7eb 100%
+        );
+        border-radius: 3px;
+        border: none;
+        padding: 0;
+    }
+    .progress-slider input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 14px;
+        height: 14px;
+        background: white;
+        border: 2px solid #4f46e5;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .progress-slider .progress-value {
+        min-width: 36px;
+        text-align: right;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-muted);
+    }
+    /* 象限选择（左栏紧凑版） */
+    .quadrant-select-compact {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+    }
+    .quadrant-select-compact .q-option {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        padding: 6px 4px;
+        border: 1px solid var(--border-color, #e5e7eb);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-align: center;
+    }
+    .quadrant-select-compact .q-option:hover {
+        border-color: #4f46e5;
+    }
+    .quadrant-select-compact .q-option.selected {
+        background: rgba(79, 70, 229, 0.1);
+        border-color: #4f46e5;
+    }
+    .quadrant-select-compact .q-option input {
+        display: none;
+    }
+    .quadrant-select-compact .q-icon {
+        font-size: 14px;
+    }
+    .quadrant-select-compact .q-text {
+        font-size: 9px;
+        color: var(--text-muted, #6b7280);
+        line-height: 1.2;
+    }
+    .quadrant-select-compact .q-option.selected .q-text {
+        color: #4f46e5;
+    }
+    .quadrant-select-compact .q-option.disabled {
+        opacity: 0.6;
+        cursor: default;
+        pointer-events: none;
+    }
+    /* 时间段按钮组 */
+    .tab-buttons {
+        display: flex;
+        gap: 4px;
+    }
+    .tab-btn {
+        flex: 1;
+        padding: 6px 8px;
+        border: 1px solid var(--border-color, #e5e7eb);
+        border-radius: 6px;
+        background: var(--bg-color, #fff);
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .tab-btn:hover {
+        border-color: #4f46e5;
+    }
+    .tab-btn.selected {
+        background: #4f46e5;
+        color: white;
+        border-color: #4f46e5;
+    }
+    .tab-btn:disabled {
+        opacity: 0.5;
+        cursor: default;
+    }
+    /* 元信息（左栏） */
+    .meta-section {
+        padding-top: 12px;
+        margin-top: 12px;
+        border-top: 1px solid rgba(0,0,0,0.06);
+    }
+    .meta-item {
+        font-size: 11px;
+        color: var(--text-muted, #9ca3af);
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    /* 右栏：内容区 */
+    .task-modal-right {
+        flex: 1;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+    }
+    .task-modal-right textarea {
+        flex: 1;
+        width: 100%;
+        min-height: 200px;
+        padding: 12px;
+        border: 1px solid var(--border-color, #e5e7eb);
+        border-radius: 8px;
+        font-size: 14px;
+        line-height: 1.6;
+        resize: vertical;
+        background: var(--bg-color, #fff);
+        color: var(--text-color, #1f2937);
+    }
+    .task-modal-right textarea:focus {
+        outline: none;
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+    .task-modal-right textarea[readonly] {
+        background: var(--bg-secondary, #f9fafb);
+        cursor: text;
+        resize: none;
+        transition: background 0.2s ease, border-color 0.2s ease;
+    }
+    .task-modal-right textarea[readonly]:hover {
+        background: rgba(79, 70, 229, 0.05);
+        border-color: rgba(79, 70, 229, 0.3);
+    }
+    /* 滚动条美化 */
+    .task-modal-left::-webkit-scrollbar,
+    .task-modal-right textarea::-webkit-scrollbar {
+        width: 5px;
+    }
+    .task-modal-left::-webkit-scrollbar-thumb,
+    .task-modal-right textarea::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.15);
+        border-radius: 3px;
+    }
+    /* 兼容旧样式 */
+    .task-modal-field { margin-bottom: 14px; }
+    .task-modal-row { display: flex; gap: 12px; }
+    .task-modal-row .task-modal-field { flex: 1; }
+    /* 进度滑块 */
+    .progress-field {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .progress-field input[type="range"] {
+        flex: 1;
+        height: 6px;
+        -webkit-appearance: none;
+        appearance: none;
+        background: linear-gradient(to right, #4f46e5 0%, #4f46e5 var(--val, 0%), #e5e7eb var(--val, 0%), #e5e7eb 100%);
+        border-radius: 3px;
+        border: none;
+        padding: 0;
+    }
+    .progress-field input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 18px;
+        height: 18px;
+        background: white;
+        border: 2px solid #4f46e5;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .progress-field input[type="range"]:disabled {
+        opacity: 0.6;
+    }
+    .progress-field input[type="range"]:disabled::-webkit-slider-thumb {
+        cursor: default;
+    }
+    .progress-value {
+        min-width: 40px;
+        text-align: right;
+        font-weight: 600;
+        color: var(--text-color, #1f2937);
+    }
+    /* 象限选择器 */
+    .quadrant-select {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+    .quadrant-option {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        border: 1px solid var(--border-color, #e5e7eb);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: var(--bg-color, #fff);
+    }
+    .quadrant-option:hover {
+        border-color: #4f46e5;
+    }
+    .quadrant-option.selected {
+        border-color: #4f46e5;
+        background: rgba(79, 70, 229, 0.05);
+    }
+    .quadrant-option.disabled {
+        opacity: 0.6;
+        cursor: default;
+    }
+    .quadrant-option input {
+        display: none;
+    }
+    .quadrant-option .icon {
+        font-size: 16px;
+    }
+    .quadrant-option .text {
+        font-size: 13px;
+        color: var(--text-color, #1f2937);
+    }
+    /* 底部按钮 */
+    .task-modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        padding: 16px 24px;
+        border-top: 1px solid var(--border-color, #e5e7eb);
+        flex-shrink: 0;
+        background: inherit;
+    }
+    @media (max-height: 700px) {
+        .task-modal-footer {
+            padding: 12px 16px;
+        }
+        .task-modal-body {
+            padding: 8px 16px 16px;
+        }
+        .task-modal-header {
+            padding: 10px 12px 0;
+        }
+    }
+    .task-modal-btn {
+        padding: 10px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .task-modal-btn.secondary {
+        background: var(--bg-secondary, #e5e7eb);
+        color: var(--text-muted, #6b7280);
+    }
+    .task-modal-btn.secondary:hover {
+        background: #d1d5db;
+    }
+    .task-modal-btn.primary {
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        color: white;
+    }
+    .task-modal-btn.primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+    }
+
+    /* ========== 时间信息区 ========== */
+    .task-modal-meta {
+        padding: 12px 24px;
+        background: rgba(0, 0, 0, 0.02);
+        border-top: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85rem;
+        color: var(--text-muted, #6b7280);
+        margin-bottom: 4px;
+    }
+    .meta-item:last-child {
+        margin-bottom: 0;
+    }
+    .meta-icon {
+        font-size: 0.9rem;
+    }
+
+    /* ========== 变更记录区（全宽底部） ========== */
+    .changelog-section.changelog-full-width {
+        padding: 12px 24px;
+        border-top: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    .changelog-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background: rgba(0, 0, 0, 0.03);
+        border: none;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        color: var(--text-muted, #6b7280);
+        cursor: pointer;
+        transition: all 0.2s;
+        width: auto;
+    }
+    .changelog-toggle:hover {
+        background: rgba(0, 0, 0, 0.06);
+        color: var(--text-secondary, #374151);
+    }
+    .changelog-arrow {
+        transition: transform 0.2s;
+        margin-left: 4px;
+    }
+    .changelog-toggle.expanded .changelog-arrow {
+        transform: rotate(180deg);
+    }
+    .changelog-list {
+        margin-top: 0;
+        max-height: 0;
+        overflow: hidden;
+        padding: 0 12px;
+        background: rgba(0, 0, 0, 0.02);
+        border-radius: 6px;
+        transition: max-height 0.3s ease, margin-top 0.3s ease, padding 0.3s ease;
+    }
+    .changelog-list.expanded {
+        margin-top: 10px;
+        max-height: 150px;
+        overflow-y: auto;
+        padding: 8px 12px;
+    }
+    @media (max-height: 700px) {
+        .changelog-list.expanded {
+            max-height: 100px;
+        }
+    }
+    .changelog-item {
+        display: flex;
+        gap: 16px;
+        padding: 5px 0;
+        font-size: 0.8rem;
+        border-bottom: 1px dashed rgba(0, 0, 0, 0.06);
+    }
+    .changelog-item:last-child {
+        border-bottom: none;
+    }
+    .changelog-time {
+        color: var(--text-muted, #9ca3af);
+        white-space: nowrap;
+        min-width: 100px;
+        flex-shrink: 0;
+    }
+    .changelog-text {
+        color: var(--text-secondary, #6b7280);
+        flex: 1;
+    }
+    .changelog-empty {
+        color: var(--text-muted, #9ca3af);
+        font-style: italic;
+        font-size: 0.8rem;
+        padding: 8px 0;
+    }
+
+    /* ========== 进度条 ========== */
+    /* 进度圆环 */
+    .progress-ring {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: conic-gradient(
+            #4f46e5 calc(var(--progress, 0) * 3.6deg),
+            #e5e7eb calc(var(--progress, 0) * 3.6deg)
+        );
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        position: relative;
+        flex-shrink: 0;
+        transition: transform 0.15s;
+    }
+    .progress-ring:hover {
+        transform: scale(1.1);
+    }
+    .progress-ring::before {
+        content: '';
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        background: var(--bg-color, #fff);
+        border-radius: 50%;
+    }
+    .progress-ring-text {
+        position: relative;
+        font-size: 8px;
+        font-weight: 600;
+        color: #4f46e5;
+    }
+    /* 旧进度条样式（保留兼容） */
+    .task-progress-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 4px;
+    }
+    .task-progress-track {
+        flex: 1;
+        height: 6px;
+        background: rgba(0, 0, 0, 0.08);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    .task-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        border-radius: 3px;
+        transition: width 0.3s ease;
+    }
+    .task-progress-text {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #667eea;
+        min-width: 36px;
+        text-align: right;
+    }
+
+    /* ========== 每日例行按钮和面板 ========== */
+    .btn-routine {
+        padding: 0.5rem 1rem;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border: none;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+        position: relative;
+        overflow: hidden;
+    }
+    .btn-routine:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+    .tabs-divider {
+        width: 1px;
+        height: 24px;
+        background: rgba(0, 0, 0, 0.1);
+        margin: 0 0.5rem;
+    }
+
+    /* ========== 任务状态旋转边框动效 ========== */
+    @property --btn-angle {
+        syntax: '<angle>';
+        initial-value: 0deg;
+        inherits: false;
+    }
+    @keyframes btn-border-rotate {
+        0% { --btn-angle: 0deg; }
+        100% { --btn-angle: 360deg; }
+    }
+    .btn-routine.has-pending,
+    .matrix-tab[data-tab="today"].has-pending {
+        position: relative;
+        overflow: visible;
+        isolation: isolate;
+        background: transparent !important;
+    }
+    /* 背景层 */
+    .btn-routine.has-pending::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        z-index: -1;
+    }
+    .matrix-tab[data-tab="today"].has-pending::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        z-index: -1;
+    }
+    .btn-routine.has-pending::before,
+    .matrix-tab[data-tab="today"].has-pending::before {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        border-radius: inherit;
+        padding: 2px;
+        background: conic-gradient(
+            from var(--btn-angle, 0deg),
+            transparent 0%,
+            transparent 92%,
+            rgba(255, 204, 188, 0.5) 93%,
+            rgba(255, 171, 145, 0.6) 94%,
+            rgba(255, 138, 128, 0.8) 95%,
+            #ff5252 97%,
+            #ff6b6b 98%,
+            transparent 100%
+        );
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        animation: btn-border-rotate var(--rotate-speed, 4s) linear infinite;
+        z-index: 0;
+        pointer-events: none;
+    }
+    .btn-routine.speed-fast::before,
+    .matrix-tab.speed-fast::before {
+        --rotate-speed: 2s;
+    }
+    .btn-routine.speed-slow::before,
+    .matrix-tab.speed-slow::before {
+        --rotate-speed: 5s;
+    }
+    .routine-panel-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(2px);
+        z-index: 10000;
+        animation: fadeIn 0.2s ease;
+    }
+    .routine-panel {
+        position: absolute;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border-radius: 16px;
+        width: 360px;
+        max-width: calc(100vw - 40px);
+        max-height: 60vh;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        animation: slideDown 0.2s ease;
+        display: flex;
+        flex-direction: column;
+    }
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    [data-theme="dark"] .routine-panel {
+        background: rgba(30, 30, 40, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .routine-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    }
+    .routine-header h3 {
+        margin: 0;
+        font-size: 1.2rem;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    .routine-close {
+        background: rgba(102, 126, 234, 0.15);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(102, 126, 234, 0.2);
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #667eea;
+        cursor: pointer;
+        padding: 0.5rem 1.2rem;
+        transition: all 0.2s;
+    }
+    .routine-close:hover {
+        background: rgba(102, 126, 234, 0.25);
+        transform: translateY(-1px);
+    }
+    .routine-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem;
+        min-height: 200px;
+        max-height: 400px;
+    }
+    .routine-empty {
+        text-align: center;
+        color: #9ca3af;
+        padding: 2rem;
+    }
+    .routine-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        background: var(--bg-secondary, #f9fafb);
+        border-radius: 10px;
+        margin-bottom: 0.5rem;
+        transition: all 0.2s;
+    }
+    .routine-item:hover {
+        background: var(--bg-hover, #f3f4f6);
+    }
+    .routine-item.completed {
+        opacity: 0.6;
+    }
+    .routine-item.completed .routine-text {
+        text-decoration: line-through;
+        color: #9ca3af;
+    }
+    .routine-checkbox {
+        width: 20px;
+        height: 20px;
+        border: 2px solid #d1d5db;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+    .routine-checkbox:hover {
+        border-color: #f5576c;
+    }
+    .routine-checkbox.checked {
+        background: linear-gradient(135deg, #f093fb, #f5576c);
+        border-color: transparent;
+        color: white;
+    }
+    .routine-text {
+        flex: 1;
+        font-size: 0.95rem;
+        color: var(--text-color, #1f2937);
+    }
+    .routine-delete {
+        background: none;
+        border: none;
+        color: #d1d5db;
+        cursor: pointer;
+        font-size: 1.2rem;
+        padding: 0;
+        opacity: 0;
+        transition: all 0.2s;
+    }
+    .routine-item:hover .routine-delete {
+        opacity: 1;
+    }
+    .routine-delete:hover {
+        color: #ef4444;
+    }
+    .routine-footer {
+        display: flex;
+        gap: 0.5rem;
+        padding: 1rem;
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+    }
+    .routine-footer input {
+        flex: 1;
+        padding: 0.75rem 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        font-size: 0.95rem;
+        outline: none;
+    }
+    .routine-footer input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    .btn-add-routine {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 1.5rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .btn-add-routine:hover {
+        transform: scale(1.05);
+    }
+
+    /* ========== 拖拽时的Tab按钮状态 ========== */
+    /* Tab button as drop target during drag */
+    .matrix-tab.drop-target {
+        transform: scale(1.15) !important;
+        outline: 1px dashed #667eea !important;
+        outline-offset: 2px !important;
+        background: rgba(102, 126, 234, 0.2) !important;
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.6),
+                    0 0 30px rgba(118, 75, 162, 0.4) !important;
+        animation: pulse-tab-inline 1s ease-in-out infinite !important;
+        z-index: 100 !important;
+        transition: all 0.2s ease !important;
+    }
+
+    @keyframes pulse-tab-inline {
+        0%, 100% {
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.6),
+                        0 0 30px rgba(118, 75, 162, 0.4);
+        }
+        50% {
+            box-shadow: 0 6px 25px rgba(102, 126, 234, 0.8),
+                        0 0 40px rgba(118, 75, 162, 0.6);
+        }
+    }
+
+    /* Tab button when mouse hovers during drag */
+    .matrix-tab.drop-target.drag-over {
+        transform: scale(1.25) !important;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+        outline: 1px solid rgba(255, 255, 255, 0.8) !important;
+        box-shadow: 0 8px 30px rgba(102, 126, 234, 0.8),
+                    0 0 50px rgba(118, 75, 162, 0.6) !important;
+        animation: none !important;
+    }
+
+    /* Current tab and routine button disabled during drag */
+    .matrix-tab.drag-disabled,
+    .btn-routine.drag-disabled {
+        opacity: 0.4 !important;
+        filter: grayscale(0.6) !important;
+        transform: scale(0.95) !important;
+        pointer-events: none !important;
+        box-shadow: none !important;
+        transition: all 0.2s ease !important;
+    }
+
+    /* ========== About 关于弹窗样式 ========== */
+    .about-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: transparent;
+        z-index: 10001;
+    }
+    .about-dialog {
+        position: absolute;
+        top: 56px;
+        right: 16px;
+        background: rgba(255, 255, 255, 0.98);
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12),
+                    0 0 0 1px rgba(0, 0, 0, 0.05);
+        width: 280px;
+        padding: 20px;
+        text-align: center;
+        animation: aboutSlideDown 0.2s ease;
+    }
+    [data-theme="dark"] .about-dialog {
+        background: rgba(35, 35, 40, 0.98);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+                    0 0 0 1px rgba(255, 255, 255, 0.05);
+    }
+    @keyframes aboutSlideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-8px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    .about-logo {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        margin-bottom: 12px;
+    }
+    .about-title {
+        font-size: 20px;
+        font-weight: 700;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin: 0;
+    }
+    .about-tagline {
+        font-size: 12px;
+        color: #6b7280;
+        margin: 4px 0 0 0;
+    }
+    [data-theme="dark"] .about-tagline {
+        color: #9ca3af;
+    }
+    .about-divider {
+        width: 32px;
+        height: 2px;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        border-radius: 1px;
+        margin: 16px auto;
+    }
+    .about-version {
+        display: inline-block;
+        padding: 4px 12px;
+        background: rgba(102, 126, 234, 0.1);
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 500;
+        color: #667eea;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .about-version:hover {
+        background: rgba(102, 126, 234, 0.15);
+    }
+    .about-copyright {
+        font-size: 11px;
+        color: #9ca3af;
+        margin-top: 16px;
+        line-height: 1.5;
+    }
+    </style>
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- 每日例行面板 -->
+    <div class="routine-panel-overlay" id="routine-panel-overlay" style="display:none;" onclick="toggleRoutinePanel()">
+        <div class="routine-panel" onclick="event.stopPropagation()">
+            <div class="routine-header">
+                <h3>🔥 你真是强的可怕</h3>
+                <button class="routine-close" onclick="toggleRoutinePanel()">确认</button>
+            </div>
+            <div class="routine-list" id="routine-list">
+                <div class="routine-empty">暂无例行任务</div>
+            </div>
+            <div class="routine-footer">
+                <input type="text" id="routine-input" placeholder="添加例行任务..." onkeypress="if(event.key==='Enter')addRoutine()">
+                <button class="btn-add-routine" onclick="addRoutine()">+</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- About 关于弹窗 -->
+    <div class="about-overlay" id="about-overlay" style="display:none;" onclick="closeAbout()">
+        <div class="about-dialog" onclick="event.stopPropagation()">
+            <img class="about-logo" src="/assets/icons/icon.png" alt="Next" onerror="this.style.display='none'">
+            <h1 class="about-title">Next</h1>
+            <p class="about-tagline">Focus on the Right Thing</p>
+            <div class="about-divider"></div>
+            <span class="about-version" onclick="copyVersion()" title="点击复制版本号">
+                Version 1.0.0 · 2026.1.11
+            </span>
+            <div class="about-copyright">© 2026 Baoxing Huai 00827228<br>Huaibaoxing@huawei.com</div>
+        </div>
+    </div>
+
+    <div class="todo-main-layout">
+    <div class="todo-matrix-container">
+        <!-- 名言栏 -->
+        <div class="page-header compact">
+            <div class="header-left">
+                <p class="quote-text" id="quote-text">Loading...</p>
+            </div>
+            <button class="btn-shuffle" onclick="shuffleQuote()">换一个</button>
+        </div>
+        <!-- Tab Navigation -->
+        <div class="matrix-tabs">
+            <button class="btn-routine" onclick="toggleRoutinePanel()">例行</button>
+            <div class="tabs-divider"></div>
+            <button class="matrix-tab active" data-tab="today" onclick="switchTab('today')">
+                Today
+                <span class="tab-count" id="count-today">0</span>
+            </button>
+            <button class="matrix-tab" data-tab="week" onclick="switchTab('week')">
+                This Week
+                <span class="tab-count" id="count-week">0</span>
+            </button>
+            <button class="matrix-tab" data-tab="month" onclick="switchTab('month')">
+                Next 30 Days
+                <span class="tab-count" id="count-month">0</span>
+            </button>
+            <div class="tab-actions">
+                <button class="btn-add-task" onclick="showAddModal()">+ 添加任务</button>
+            </div>
+        </div>
+
+
+        <!-- Eisenhower Matrix -->
+        <div class="eisenhower-matrix">
+            <!-- Matrix Grid -->
+            <div class="matrix-grid">
+                <!-- Quadrant 1: 优先处理 (默认展开) -->
+                <div class="quadrant q1" data-quadrant="important-urgent"
+                     ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="dropItem(event)">
+                    <div class="quadrant-header" onclick="toggleQuadrant(this)" ondragover="allowDrop(event)" ondrop="dropItem(event)">
+                        <span class="quadrant-toggle">▼</span>
+                        <span class="quadrant-icon">🔥</span>
+                        <span class="quadrant-title">优先处理</span>
+                        <span class="quadrant-count" id="qcount-important-urgent"></span>
+                        <button class="btn-quadrant-add" onclick="event.stopPropagation(); showAddModalForQuadrant('important-urgent')">+</button>
+                    </div>
+                    <div class="quadrant-items" id="items-important-urgent"
+                         ondragover="allowDrop(event)" ondrop="dropItem(event)"></div>
+                </div>
+
+                <!-- Quadrant 2: 就等你翻牌子了 (默认折叠) -->
+                <div class="quadrant q2 collapsed" data-quadrant="important-not-urgent"
+                     ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="dropItem(event)">
+                    <div class="quadrant-header" onclick="toggleQuadrant(this)" ondragover="allowDrop(event)" ondrop="dropItem(event)">
+                        <span class="quadrant-toggle">▼</span>
+                        <span class="quadrant-icon">🎯</span>
+                        <span class="quadrant-title">就等你翻牌子了</span>
+                        <span class="quadrant-count" id="qcount-important-not-urgent"></span>
+                        <button class="btn-quadrant-add" onclick="event.stopPropagation(); showAddModalForQuadrant('important-not-urgent')">+</button>
+                    </div>
+                    <div class="quadrant-items" id="items-important-not-urgent"
+                         ondragover="allowDrop(event)" ondrop="dropItem(event)"></div>
+                </div>
+
+                <!-- Quadrant 3: 待分类 (默认折叠) -->
+                <div class="quadrant q3 collapsed" data-quadrant="not-important-urgent"
+                     ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="dropItem(event)">
+                    <div class="quadrant-header" onclick="toggleQuadrant(this)" ondragover="allowDrop(event)" ondrop="dropItem(event)">
+                        <span class="quadrant-toggle">▼</span>
+                        <span class="quadrant-icon">📥</span>
+                        <span class="quadrant-title">待分类</span>
+                        <span class="quadrant-count" id="qcount-not-important-urgent"></span>
+                        <button class="btn-quadrant-add" onclick="event.stopPropagation(); showAddModalForQuadrant('not-important-urgent')">+</button>
+                    </div>
+                    <div class="quadrant-items" id="items-not-important-urgent"
+                         ondragover="allowDrop(event)" ondrop="dropItem(event)"></div>
+                </div>
+
+                <!-- Quadrant 4: 短平快 (默认折叠) -->
+                <div class="quadrant q4 collapsed" data-quadrant="not-important-not-urgent"
+                     ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="dropItem(event)">
+                    <div class="quadrant-header" onclick="toggleQuadrant(this)" ondragover="allowDrop(event)" ondrop="dropItem(event)">
+                        <span class="quadrant-toggle">▼</span>
+                        <span class="quadrant-icon">⚡</span>
+                        <span class="quadrant-title">短平快</span>
+                        <span class="quadrant-count" id="qcount-not-important-not-urgent"></span>
+                        <button class="btn-quadrant-add" onclick="event.stopPropagation(); showAddModalForQuadrant('not-important-not-urgent')">+</button>
+                    </div>
+                    <div class="quadrant-items" id="items-not-important-not-urgent"
+                         ondragover="allowDrop(event)" ondrop="dropItem(event)"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <!-- 右侧边栏 -->
+    <div class="right-sidebar">
+        <!-- 已完成区 -->
+        <div class="sidebar-section" id="completed-section">
+            <div class="section-header" onclick="toggleSidebarSection('completed-section')">
+                <h3><span>✓</span> 已完成</h3>
+                <span class="expand-icon">▶</span>
+            </div>
+            <div class="section-content">
+                <div class="section-list" id="completed-list"></div>
+            </div>
+        </div>
+        <!-- 已删除区 -->
+        <div class="sidebar-section" id="deleted-section">
+            <div class="section-header" onclick="toggleSidebarSection('deleted-section')">
+                <h3><span>🗑</span> 已删除</h3>
+                <span class="expand-icon">▶</span>
+            </div>
+            <div class="section-content">
+                <div class="section-list" id="deleted-list"></div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- 统一任务弹窗（查看/编辑/新建） -->
+    <div class="task-modal-overlay" id="task-modal-overlay" style="display:none;" onclick="closeTaskModal()">
+        <div class="task-modal" onclick="event.stopPropagation()">
+            <!-- 标题栏 -->
+            <div class="task-modal-header">
+                <textarea id="modal-title" class="title-input" placeholder="任务标题（限50字）" maxlength="50" rows="2"></textarea>
+                <div class="header-actions">
+                    <button class="header-btn edit-btn" id="header-edit-btn" onclick="switchToEditMode()">编辑</button>
+                    <button class="header-btn close-btn" onclick="closeTaskModal()">关闭</button>
+                </div>
+            </div>
+            <!-- 主体：左属性 + 右内容 -->
+            <div class="task-modal-body">
+                <!-- 左栏：属性 -->
+                <div class="task-modal-left">
+                    <div class="prop-group">
+                        <label>📅 计划完成</label>
+                        <input type="date" id="modal-due-date">
+                    </div>
+                    <div class="prop-group">
+                        <label>👤 相关人</label>
+                        <input type="text" id="modal-assignee" placeholder="相关人员">
+                    </div>
+                    <div class="prop-group">
+                        <label>🕐 时间段</label>
+                        <div class="tab-buttons" id="modal-tab-buttons">
+                            <button type="button" class="tab-btn selected" data-tab="today">Today</button>
+                            <button type="button" class="tab-btn" data-tab="week">Week</button>
+                            <button type="button" class="tab-btn" data-tab="month">Month</button>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label>📊 象限</label>
+                        <div class="quadrant-select-compact" id="modal-quadrant-select">
+                            <label class="q-option selected" data-q="important-urgent">
+                                <input type="radio" name="modal-quadrant" value="important-urgent" checked>
+                                <span class="q-icon">🔥</span><span class="q-text">优先处理</span>
+                            </label>
+                            <label class="q-option" data-q="important-not-urgent">
+                                <input type="radio" name="modal-quadrant" value="important-not-urgent">
+                                <span class="q-icon">🎯</span><span class="q-text">等你翻牌</span>
+                            </label>
+                            <label class="q-option" data-q="not-important-urgent">
+                                <input type="radio" name="modal-quadrant" value="not-important-urgent">
+                                <span class="q-icon">📥</span><span class="q-text">待分类</span>
+                            </label>
+                            <label class="q-option" data-q="not-important-not-urgent">
+                                <input type="radio" name="modal-quadrant" value="not-important-not-urgent">
+                                <span class="q-icon">⚡</span><span class="q-text">短平快</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label>进度</label>
+                        <div class="progress-slider">
+                            <input type="range" id="modal-progress" min="0" max="100" value="0">
+                            <span class="progress-value" id="modal-progress-value">0%</span>
+                        </div>
+                    </div>
+                    <!-- 元信息 -->
+                    <div class="meta-section" id="modal-meta-section">
+                        <div class="meta-item" id="modal-created-at">
+                            <span>📅</span>
+                            <span class="meta-text">创建于 --</span>
+                        </div>
+                        <div class="meta-item" id="modal-completed-at" style="display:none;">
+                            <span>✅</span>
+                            <span class="meta-text">完成于 --</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- 右栏：内容 -->
+                <div class="task-modal-right">
+                    <textarea id="modal-content" placeholder="详细描述、备注、相关信息..." onclick="onContentClick()"></textarea>
+                </div>
+            </div>
+            <!-- 变更记录（全宽） -->
+            <div class="changelog-section changelog-full-width" id="modal-changelog-section">
+                <button class="changelog-toggle" id="changelog-toggle" onclick="toggleChangelog()">
+                    <span>📋 变更记录</span>
+                    <span class="changelog-arrow" id="changelog-arrow">▼</span>
+                </button>
+                <div class="changelog-list" id="modal-changelog">
+                    <div class="changelog-empty">暂无变更记录</div>
+                </div>
+            </div>
+            <!-- 底部按钮（编辑/新建模式显示） -->
+            <div class="task-modal-footer" id="modal-footer-edit" style="display:none;">
+                <button class="task-modal-btn secondary" onclick="closeTaskModal()">取消</button>
+                <button class="task-modal-btn primary" id="modal-save-btn" onclick="saveTask()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Review Button (F601) -->
+    <button class="daily-review-trigger" onclick="showDailyReview()" title="每日回顾 (R)">📊</button>
+
+    <!-- Daily Review Modal (F601) -->
+    <div class="daily-review-modal" id="daily-review-modal" onclick="hideDailyReview(event)">
+        <div class="daily-review-content" onclick="event.stopPropagation()">
+            <div class="daily-review-header" id="review-header">今日回顾</div>
+            <div class="daily-review-date" id="review-date"></div>
+            <div class="daily-review-stats">
+                <div class="review-stat">
+                    <div class="review-stat-value success" id="review-completed">0</div>
+                    <div class="review-stat-label">已完成</div>
+                </div>
+                <div class="review-stat">
+                    <div class="review-stat-value" id="review-pending">0</div>
+                    <div class="review-stat-label">待完成</div>
+                </div>
+            </div>
+            <div class="daily-review-message" id="review-message"></div>
+            <div class="daily-review-tasks" id="review-tasks"></div>
+            <button class="daily-review-close" onclick="hideDailyReview()">继续加油</button>
+        </div>
+    </div>
+
+        </main>
+    </div>
+
+    <!-- Sync Status Indicator -->
+    <div class="sync-status" id="sync-status">
+        <span class="sync-dot"></span>
+        <span class="sync-text">已保存</span>
+    </div>
+
+    <!-- Focus Mode Indicator -->
+    <div class="focus-mode-indicator" id="focus-indicator">
+        🎯 专注模式 · 按 Esc 退出
+    </div>
+
+    <!-- Keyboard Shortcuts Modal -->
+    <div class="shortcuts-modal" id="shortcuts-modal">
+        <div class="shortcuts-content">
+            <div class="shortcuts-title">⌨️ 键盘快捷键</div>
+            <div class="shortcut-item">
+                <span class="shortcut-key"><kbd>N</kbd></span>
+                <span class="shortcut-desc">新建任务</span>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-key"><kbd>S</kbd></span>
+                <span class="shortcut-desc">搜索任务</span>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-key"><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></span>
+                <span class="shortcut-desc">切换标签页</span>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-key"><kbd>D</kbd></span>
+                <span class="shortcut-desc">切换深色模式</span>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-key"><kbd>F</kbd></span>
+                <span class="shortcut-desc">专注模式</span>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-key"><kbd>?</kbd></span>
+                <span class="shortcut-desc">显示快捷键</span>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-key"><kbd>Esc</kbd></span>
+                <span class="shortcut-desc">关闭弹窗</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gesture Hint -->
+    <div class="gesture-hint" id="gesture-hint"></div>
+
+    <!-- JS Modules -->
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/utils.js"></script>
+    <script src="assets/js/app.js"></script>
+    <script src="assets/js/tasks.js"></script>
+    <script src="assets/js/modal.js"></script>
+    <script src="assets/js/drag.js"></script>
+    <script src="assets/js/touch.js"></script>
+    <script src="assets/js/routines.js"></script>
+    <script src="assets/js/features.js"></script>
+    <script src="assets/js/particles.js"></script>
+    <script src="assets/js/living-line.js"></script>
+
+    <script>
+    // Initialize
+    loadQuadrantState();
+    loadItems();
+    loadRoutines();
+    shuffleQuote();
+    </script>
+</body>
+</html>

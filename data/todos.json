@@ -4,23 +4,48 @@
       "id": "t002",
       "text": "所长上岗大纲梳理",
       "tab": "month",
-      "quadrant": "important-urgent",
+      "quadrant": "important-not-urgent",
       "completed": false,
       "completed_at": null,
       "created_at": "2025-01-01T09:00:00",
-      "updated_at": "2025-12-31T19:45:04.124989",
-      "assignee": "Boris"
+      "updated_at": "2026-01-07T18:09:57.617784",
+      "assignee": "Boris",
+      "changelog": [
+        {
+          "time": "2026-01-07T18:09:57.617784",
+          "field": "quadrant",
+          "from": "important-urgent",
+          "to": "important-not-urgent",
+          "label": "象限: 🔥优先处理 → 🎯就等你翻牌子了"
+        }
+      ]
     },
     {
       "id": "t003",
       "text": "教授谈话问题总结",
-      "tab": "week",
-      "quadrant": "important-urgent",
+      "tab": "today",
+      "quadrant": "not-important-urgent",
       "completed": false,
       "completed_at": null,
       "created_at": "2025-01-01T09:00:00",
-      "updated_at": "2025-12-29T21:15:02.713636",
-      "assignee": "Ruby"
+      "updated_at": "2026-01-11T18:31:17.467552",
+      "assignee": "Ruby",
+      "changelog": [
+        {
+          "time": "2026-01-11T18:31:17.467552",
+          "field": "tab",
+          "from": "week",
+          "to": "today",
+          "label": "时间段: This Week → Today"
+        },
+        {
+          "time": "2026-01-11T18:31:17.467552",
+          "field": "quadrant",
+          "from": "important-urgent",
+          "to": "not-important-urgent",
+          "label": "象限: 🔥优先处理 → 📥待分类"
+        }
+      ]
     },
     {
       "id": "t004",
@@ -113,12 +138,35 @@
     {
       "id": "w005",
       "text": "邱所工作交接，制定初步后续工作计划",
-      "tab": "week",
-      "quadrant": "important-urgent",
+      "tab": "month",
+      "quadrant": "not-important-not-urgent",
       "completed": false,
       "completed_at": null,
       "created_at": "2025-01-01T09:00:00",
-      "updated_at": "2025-01-01T09:00:00"
+      "updated_at": "2026-01-11T18:19:03.345232",
+      "changelog": [
+        {
+          "time": "2026-01-11T18:18:48.314382",
+          "field": "tab",
+          "from": "week",
+          "to": "month",
+          "label": "时间段: This Week → Next 30 Days"
+        },
+        {
+          "time": "2026-01-11T18:18:48.314382",
+          "field": "quadrant",
+          "from": "important-urgent",
+          "to": "not-important-urgent",
+          "label": "象限: 🔥优先处理 → 📥待分类"
+        },
+        {
+          "time": "2026-01-11T18:19:03.345232",
+          "field": "quadrant",
+          "from": "not-important-urgent",
+          "to": "not-important-not-urgent",
+          "label": "象限: 📥待分类 → ⚡短平快"
+        }
+      ]
     },
     {
       "id": "w006",
@@ -174,11 +222,20 @@
       "id": "w011",
       "text": "几个talk准备（健身、颁奖、自我介绍）",
       "tab": "week",
-      "quadrant": "important-urgent",
+      "quadrant": "not-important-urgent",
       "completed": false,
       "completed_at": null,
       "created_at": "2025-01-01T09:00:00",
-      "updated_at": "2025-12-27T09:27:39.712910"
+      "updated_at": "2026-01-11T18:32:27.430304",
+      "changelog": [
+        {
+          "time": "2026-01-11T18:32:27.430304",
+          "field": "quadrant",
+          "from": "important-urgent",
+          "to": "not-important-urgent",
+          "label": "象限: 🔥优先处理 → 📥待分类"
+        }
+      ]
     },
     {
       "id": "m001",
@@ -203,12 +260,42 @@
     {
       "id": "m003",
       "text": "驾照",
-      "tab": "week",
-      "quadrant": "important-urgent",
+      "tab": "today",
+      "quadrant": "not-important-urgent",
       "completed": false,
       "completed_at": null,
       "created_at": "2025-01-01T09:00:00",
-      "updated_at": "2025-12-31T17:44:18.530588"
+      "updated_at": "2026-01-11T18:32:37.390083",
+      "changelog": [
+        {
+          "time": "2026-01-11T18:32:29.569645",
+          "field": "quadrant",
+          "from": "important-urgent",
+          "to": "not-important-not-urgent",
+          "label": "象限: 🔥优先处理 → ⚡短平快"
+        },
+        {
+          "time": "2026-01-11T18:32:34.434394",
+          "field": "tab",
+          "from": "week",
+          "to": "month",
+          "label": "时间段: This Week → Next 30 Days"
+        },
+        {
+          "time": "2026-01-11T18:32:34.434394",
+          "field": "quadrant",
+          "from": "not-important-not-urgent",
+          "to": "not-important-urgent",
+          "label": "象限: ⚡短平快 → 📥待分类"
+        },
+        {
+          "time": "2026-01-11T18:32:37.390083",
+          "field": "tab",
+          "from": "month",
+          "to": "today",
+          "label": "时间段: Next 30 Days → Today"
+        }
+      ]
     },
     {
       "id": "m004",
@@ -253,12 +340,12 @@
     {
       "id": "e92ac481",
       "text": "sdfsdf",
-      "tab": "today",
-      "quadrant": "important-urgent",
+      "tab": "week",
+      "quadrant": "not-important-urgent",
       "completed": false,
       "completed_at": null,
       "created_at": "2025-12-27T09:22:43.219408",
-      "updated_at": "2026-01-05T10:08:05.060567",
+      "updated_at": "2026-01-11T18:20:14.572290",
       "changelog": [
         {
           "time": "2026-01-05T10:08:05.060567",
@@ -266,6 +353,20 @@
           "from": "not-important-urgent",
           "to": "important-urgent",
           "label": "象限: 📞不重要紧急 → 🔥重要紧急"
+        },
+        {
+          "time": "2026-01-11T18:20:14.572290",
+          "field": "tab",
+          "from": "today",
+          "to": "week",
+          "label": "时间段: Today → This Week"
+        },
+        {
+          "time": "2026-01-11T18:20:14.572290",
+          "field": "quadrant",
+          "from": "important-urgent",
+          "to": "not-important-urgent",
+          "label": "象限: 🔥优先处理 → 📥待分类"
         }
       ]
     },
@@ -450,8 +551,8 @@
       "id": "787a5983",
       "text": "test",
       "content": "",
-      "tab": "today",
-      "quadrant": "important-urgent",
+      "tab": "week",
+      "quadrant": "not-important-urgent",
       "tags": [],
       "assignee": "",
       "due_date": null,
@@ -459,14 +560,30 @@
       "completed": false,
       "completed_at": null,
       "created_at": "2026-01-05T08:41:04.570324",
-      "updated_at": "2026-01-05T08:41:04.570324"
+      "updated_at": "2026-01-11T18:31:10.553558",
+      "changelog": [
+        {
+          "time": "2026-01-11T18:27:52.605129",
+          "field": "quadrant",
+          "from": "important-urgent",
+          "to": "not-important-urgent",
+          "label": "象限: 🔥优先处理 → 📥待分类"
+        },
+        {
+          "time": "2026-01-11T18:31:10.553558",
+          "field": "tab",
+          "from": "today",
+          "to": "week",
+          "label": "时间段: Today → This Week"
+        }
+      ]
     },
     {
       "id": "2649ed4d",
       "text": "testtesttesttesttesttesttesttesttesttesttesttestte",
       "content": "",
-      "tab": "today",
-      "quadrant": "important-urgent",
+      "tab": "week",
+      "quadrant": "not-important-urgent",
       "tags": [],
       "assignee": "",
       "due_date": null,
@@ -474,7 +591,23 @@
       "completed": false,
       "completed_at": null,
       "created_at": "2026-01-05T08:41:10.657628",
-      "updated_at": "2026-01-05T08:41:10.657628"
+      "updated_at": "2026-01-11T18:18:36.532782",
+      "changelog": [
+        {
+          "time": "2026-01-11T18:18:36.532782",
+          "field": "tab",
+          "from": "today",
+          "to": "week",
+          "label": "时间段: Today → This Week"
+        },
+        {
+          "time": "2026-01-11T18:18:36.532782",
+          "field": "quadrant",
+          "from": "important-urgent",
+          "to": "not-important-urgent",
+          "label": "象限: 🔥优先处理 → 📥待分类"
+        }
+      ]
     },
     {
       "id": "5a401734",
