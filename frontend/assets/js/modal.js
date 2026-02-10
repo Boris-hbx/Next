@@ -93,6 +93,8 @@ function openTaskModal(mode, item, tab, quadrant) {
 
     setModalMode(mode);
 
+    if (typeof syncDatePicker === 'function') syncDatePicker();
+
     overlay.style.display = 'flex';
 
     if (mode === 'create' || mode === 'edit') {
@@ -111,11 +113,28 @@ function setModalMode(mode) {
     modalMode = mode;
     var isEditable = (mode === 'edit' || mode === 'create');
 
+    var contentView = document.getElementById('modal-content-view');
+    var contentEdit = document.getElementById('modal-content');
+
+    if (mode === 'view') {
+        contentView.innerHTML = AppUtils.escapeHtmlMultiline(contentEdit.value) || '<span class="placeholder">无详细描述</span>';
+        contentView.style.display = 'block';
+        contentEdit.style.display = 'none';
+    } else {
+        contentView.style.display = 'none';
+        contentEdit.style.display = 'block';
+    }
+
     document.getElementById('modal-title').readOnly = !isEditable;
-    document.getElementById('modal-content').readOnly = !isEditable;
     document.getElementById('modal-progress').disabled = !isEditable;
-    document.getElementById('modal-due-date').readOnly = !isEditable;
     document.getElementById('modal-assignee').readOnly = !isEditable;
+
+    // Date picker: enable/disable click
+    var datePicker = document.getElementById('smart-date-picker');
+    if (datePicker) {
+        datePicker.style.pointerEvents = isEditable ? 'auto' : 'none';
+        datePicker.style.opacity = isEditable ? '1' : '0.7';
+    }
 
     document.querySelectorAll('#modal-tab-buttons .tab-btn').forEach(function(btn) {
         btn.disabled = !isEditable;
@@ -132,6 +151,7 @@ function setModalMode(mode) {
     });
 
     document.getElementById('header-edit-btn').style.display = (mode === 'view') ? 'inline-block' : 'none';
+    document.getElementById('header-export-btn').style.display = (mode === 'view') ? 'inline-block' : 'none';
     document.getElementById('modal-footer-edit').style.display = (mode !== 'view') ? 'flex' : 'none';
 
     var saveBtn = document.getElementById('modal-save-btn');
@@ -165,11 +185,21 @@ function switchToEditMode() {
 }
 
 function onContentClick() {
-    if (modalMode === 'view') {
-        setModalMode('edit');
-        document.getElementById('modal-content').focus();
-    }
+    // No longer auto-switches to edit; use double-click or edit button
 }
+
+// Double-click content view to enter edit mode
+document.addEventListener('DOMContentLoaded', function() {
+    var contentView = document.getElementById('modal-content-view');
+    if (contentView) {
+        contentView.addEventListener('dblclick', function() {
+            if (modalMode === 'view') {
+                switchToEditMode();
+                document.getElementById('modal-content').focus();
+            }
+        });
+    }
+});
 
 function closeTaskModal() {
     document.getElementById('task-modal-overlay').style.display = 'none';
@@ -237,6 +267,20 @@ function saveTask() {
     }
 }
 
+// Export current task to .ics
+function exportCurrentTask() {
+    if (!modalTaskId) return;
+    API.exportTaskIcs(modalTaskId).then(function(result) {
+        if (result.success) {
+            showToast('已导出到日历', 'success');
+        } else {
+            showToast(result.message || '导出失败', 'error');
+        }
+    }).catch(function(err) {
+        showToast('导出失败: ' + err, 'error');
+    });
+}
+
 // 兼容旧函数
 function closeTaskCard() {
     closeTaskModal();
@@ -296,3 +340,74 @@ document.querySelectorAll('.quadrant-cell').forEach(function(opt) {
         opt.querySelector('input').checked = true;
     });
 });
+
+// ========== Selection → Create Task ==========
+(function() {
+    var popup = null;
+    var selectedText = '';
+    var parentTask = null;
+
+    document.addEventListener('mouseup', function(e) {
+        if (modalMode !== 'view') return;
+        var contentView = document.getElementById('modal-content-view');
+        if (!contentView || !contentView.contains(e.target)) {
+            removePopup();
+            return;
+        }
+
+        var selection = window.getSelection();
+        var text = selection.toString().trim();
+        if (!text) { removePopup(); return; }
+
+        selectedText = text;
+        parentTask = modalTaskItem;
+        showPopup(e.clientX, e.clientY);
+    });
+
+    function showPopup(x, y) {
+        removePopup();
+        popup = document.createElement('div');
+        popup.className = 'selection-action-popup';
+        popup.innerHTML = '<button class="selection-action-btn">+ 创建任务</button>';
+        popup.style.left = x + 'px';
+        popup.style.top = (y - 40) + 'px';
+        document.body.appendChild(popup);
+
+        popup.querySelector('button').addEventListener('click', function() {
+            createTaskFromSelection();
+        });
+    }
+
+    function createTaskFromSelection() {
+        removePopup();
+        var title, content;
+        if (selectedText.length <= 50) {
+            title = selectedText;
+            content = '';
+        } else {
+            var firstLine = selectedText.split('\n')[0].substring(0, 50);
+            title = firstLine;
+            content = selectedText;
+        }
+        var tab = parentTask ? parentTask.tab : currentTab;
+        var assignee = parentTask ? parentTask.assignee : '';
+
+        closeTaskModal();
+        openTaskModal('create', null, tab, 'not-important-urgent');
+
+        setTimeout(function() {
+            document.getElementById('modal-title').value = title;
+            document.getElementById('modal-content').value = content;
+            if (assignee) document.getElementById('modal-assignee').value = assignee;
+        }, 50);
+    }
+
+    function removePopup() {
+        if (popup && popup.parentNode) popup.parentNode.removeChild(popup);
+        popup = null;
+    }
+
+    document.addEventListener('mousedown', function(e) {
+        if (popup && !popup.contains(e.target)) removePopup();
+    });
+})();

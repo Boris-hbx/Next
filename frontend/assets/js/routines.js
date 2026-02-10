@@ -24,11 +24,7 @@ function copyVersion() {
 
     if (versionClickCount >= 5) {
         versionClickCount = 0;
-        if (typeof openBallSettings === 'function') {
-            openBallSettings();
-        } else {
-            showToast('小球设置不可用');
-        }
+        showToast('You found the secret!');
     } else if (versionClickCount === 1) {
         navigator.clipboard.writeText('Next v1.0.0 (2026.1.11)').then(function() {
             showToast('版本号已复制');

@@ -5,7 +5,9 @@
 pub mod todos;
 pub mod routines;
 pub mod quotes;
+pub mod calendar;
 
 pub use todos::*;
 pub use routines::*;
 pub use quotes::*;
+pub use calendar::*;

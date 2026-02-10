@@ -32,6 +32,15 @@ impl TodoDb {
             });
         }
 
+        // 空文件视为空数据库
+        let metadata = fs::metadata(&file_path).map_err(DbError::Io)?;
+        if metadata.len() == 0 {
+            return Ok(Self {
+                items: HashMap::new(),
+                file_path,
+            });
+        }
+
         let file = File::open(&file_path).map_err(DbError::Io)?;
         let reader = BufReader::new(file);
         let data: TodosFile = serde_json::from_reader(reader).map_err(DbError::Json)?;

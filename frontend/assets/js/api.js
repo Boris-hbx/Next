@@ -7,9 +7,7 @@ var API = (function() {
     async function invoke(cmd, args) {
         if (isTauri) {
             try {
-                console.log('[Tauri] invoke:', cmd, args);
                 var result = await window.__TAURI__.core.invoke(cmd, args || {});
-                console.log('[Tauri] result:', result);
                 return result;
             } catch (err) {
                 console.error('[Tauri] error:', cmd, err);
@@ -73,6 +71,15 @@ var API = (function() {
         // ===== Quote API =====
         getRandomQuote: async function() {
             return await invoke('get_random_quote', {});
+        },
+
+        // ===== Calendar APIs =====
+        exportTaskIcs: async function(id) {
+            return await invoke('export_task_ics', { id: id });
+        },
+
+        exportTabIcs: async function(tab) {
+            return await invoke('export_tab_ics', { tab: tab });
         },
 
         // 环境检测

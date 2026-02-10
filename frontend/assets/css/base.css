@@ -17,11 +17,20 @@
     --bg-card: rgba(255, 255, 255, 0.95);
     --bg-input: #ffffff;
     --border-color: rgba(0, 0, 0, 0.1);
+    --border-light: rgba(0, 0, 0, 0.06);
     --border-radius: 12px;
     --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.05);
     --shadow-medium: 0 4px 20px rgba(0, 0, 0, 0.08);
     --transition-fast: 0.2s ease;
     --transition-normal: 0.3s ease;
+
+    /* Accent & semantic */
+    --accent-color: #4f46e5;
+    --accent-hover: #4338ca;
+    --complete-color: #10b981;
+    --overlay-bg: rgba(0, 0, 0, 0.4);
+    --hover-bg: rgba(0, 0, 0, 0.04);
+    --primary-color-rgb: 102, 126, 234;
 }
 
 /* Dark Theme */
@@ -39,8 +48,16 @@
     --bg-card: rgba(30, 41, 59, 0.95);
     --bg-input: #1e293b;
     --border-color: rgba(255, 255, 255, 0.1);
+    --border-light: rgba(255, 255, 255, 0.06);
     --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.3);
     --shadow-medium: 0 4px 20px rgba(0, 0, 0, 0.4);
+
+    --accent-color: #818cf8;
+    --accent-hover: #6366f1;
+    --complete-color: #34d399;
+    --overlay-bg: rgba(0, 0, 0, 0.6);
+    --hover-bg: rgba(255, 255, 255, 0.06);
+    --primary-color-rgb: 129, 140, 248;
 }
 
 /* Auto dark mode based on system preference */
@@ -59,8 +76,16 @@
         --bg-card: rgba(30, 41, 59, 0.95);
         --bg-input: #1e293b;
         --border-color: rgba(255, 255, 255, 0.1);
+        --border-light: rgba(255, 255, 255, 0.06);
         --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.3);
         --shadow-medium: 0 4px 20px rgba(0, 0, 0, 0.4);
+
+        --accent-color: #818cf8;
+        --accent-hover: #6366f1;
+        --complete-color: #34d399;
+        --overlay-bg: rgba(0, 0, 0, 0.6);
+        --hover-bg: rgba(255, 255, 255, 0.06);
+        --primary-color-rgb: 129, 140, 248;
     }
 }
 
@@ -209,11 +234,11 @@ body {
 }
 
 .confirm-btn:last-child {
-    color: #667eea;
+    color: var(--primary-color);
 }
 
 .confirm-btn:last-child:hover {
-    background: rgba(102, 126, 234, 0.1);
+    background: rgba(var(--primary-color-rgb), 0.1);
 }
 
 .confirm-btn.danger:last-child {
@@ -278,7 +303,7 @@ body {
 }
 
 .btn-secondary {
-    background: rgba(102, 126, 234, 0.1);
+    background: rgba(var(--primary-color-rgb), 0.1);
     color: var(--primary-color);
     border: 1px solid rgba(102, 126, 234, 0.3);
 }
@@ -319,7 +344,7 @@ input, textarea, select {
 .input:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.1);
 }
 
 /* Empty State */
@@ -343,7 +368,7 @@ input, textarea, select {
 .spinner {
     width: 24px;
     height: 24px;
-    border: 3px solid rgba(102, 126, 234, 0.2);
+    border: 3px solid rgba(var(--primary-color-rgb), 0.2);
     border-top-color: var(--primary-color);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
@@ -351,6 +376,22 @@ input, textarea, select {
 
 @keyframes spin {
     to { transform: rotate(360deg); }
+}
+
+/* Shared animations (canonical definitions) */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 /* Status Colors */
@@ -508,7 +549,7 @@ input, textarea, select {
 
 .quick-add-input:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.15);
 }
 
 .quick-add-input::placeholder {
@@ -560,7 +601,7 @@ input, textarea, select {
 
 .search-input:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.15);
 }
 
 .search-icon {
@@ -1002,7 +1043,7 @@ body.focus-mode .focus-mode-indicator {
     align-items: center;
     gap: 2px;
     padding: 2px 8px;
-    background: rgba(102, 126, 234, 0.15);
+    background: rgba(var(--primary-color-rgb), 0.15);
     color: var(--primary-color);
     border-radius: 12px;
     font-size: 0.7rem;
@@ -1093,7 +1134,7 @@ body.focus-mode .focus-mode-indicator {
 }
 
 .tag-suggestion:hover {
-    background: rgba(102, 126, 234, 0.1);
+    background: rgba(var(--primary-color-rgb), 0.1);
 }
 
 .tag-filter-bar {
@@ -1197,7 +1238,7 @@ body.focus-mode .focus-mode-indicator {
 
 .daily-review-message {
     padding: 16px;
-    background: rgba(102, 126, 234, 0.1);
+    background: rgba(var(--primary-color-rgb), 0.1);
     border-radius: 12px;
     color: var(--text-secondary);
     font-size: 0.95rem;

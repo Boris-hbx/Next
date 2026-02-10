@@ -1,4 +1,4 @@
-// ========== 鼠标拖拽处理 ==========
+// ========== 拖拽处理 (鼠标 + 触屏统一) ==========
 
 // HTML5 Drag-and-Drop handlers (used by ondragover/ondrop on quadrants)
 function allowDrop(e) {
@@ -26,169 +26,287 @@ function dropItem(e) {
     }
 }
 
-var isDragging = false;
-var dragClone = null;
-var dragItemId = null;
-var dragStartX = 0;
-var dragStartY = 0;
-var dragThreshold = 5;
+// Unified Drag Manager — handles both mouse and touch drag
+var DragManager = (function() {
+    var MOUSE_THRESHOLD = 5;
+    var TOUCH_THRESHOLD = 10;
+    var LONG_PRESS_MS = 300;
 
-function startCustomDrag(e) {
-    if (e.button !== 0) return;
+    var state = {
+        isDragging: false,
+        clone: null,
+        itemId: null,
+        itemEl: null,
+        startX: 0,
+        startY: 0,
+        originalQuadrant: null,
+        longPressTimer: null,
+        inputType: null  // 'mouse' or 'touch'
+    };
 
-    var taskItem = e.target.closest('.task-item');
-    if (!taskItem || taskItem.classList.contains('completed')) return;
+    // --- Shared core ---
 
-    dragItemId = taskItem.dataset.id;
-    draggedItem = taskItem;
-    dragStartX = e.clientX;
-    dragStartY = e.clientY;
+    function beginDragVisual(x, y) {
+        if (!state.itemEl) return;
 
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
+        var quadrant = state.itemEl.closest('.quadrant');
+        state.originalQuadrant = quadrant ? quadrant.dataset.quadrant : null;
+        draggedItemQuadrant = state.originalQuadrant;
 
-    e.preventDefault();
-}
+        state.clone = document.createElement('div');
+        state.clone.className = 'drag-clone';
+        state.clone.textContent = state.itemEl.querySelector('.task-text').textContent;
+        state.clone.style.left = x + 'px';
+        state.clone.style.top = y + 'px';
+        document.body.appendChild(state.clone);
 
-function onMouseMove(e) {
-    var dx = e.clientX - dragStartX;
-    var dy = e.clientY - dragStartY;
+        state.itemEl.classList.add(state.inputType === 'touch' ? 'touch-dragging' : 'dragging');
 
-    if (!isDragging && (Math.abs(dx) > dragThreshold || Math.abs(dy) > dragThreshold)) {
-        isDragging = true;
-        startDragVisual(e);
+        document.querySelectorAll('.matrix-tab').forEach(function(tab) {
+            if (tab.dataset.tab !== currentTab) {
+                tab.classList.add('drop-target');
+            } else {
+                tab.classList.add('drag-disabled');
+            }
+        });
+        var routineBtn = document.querySelector('.btn-routine');
+        if (routineBtn) routineBtn.classList.add('drag-disabled');
     }
 
-    if (isDragging && dragClone) {
-        dragClone.style.left = e.clientX + 'px';
-        dragClone.style.top = e.clientY + 'px';
-        highlightQuadrantUnderCursor(e.clientX, e.clientY);
+    function updatePosition(x, y) {
+        if (state.clone) {
+            state.clone.style.left = x + 'px';
+            state.clone.style.top = y + 'px';
+        }
+        highlightUnderCursor(x, y);
     }
-}
 
-function startDragVisual(e) {
-    if (!draggedItem) return;
+    function highlightUnderCursor(x, y) {
+        document.querySelectorAll('.quadrant.drag-over').forEach(function(q) {
+            q.classList.remove('drag-over');
+        });
+        document.querySelectorAll('.matrix-tab.drag-over').forEach(function(tab) {
+            tab.classList.remove('drag-over');
+        });
 
-    var originalQuadrant = draggedItem.closest('.quadrant');
-    draggedItemQuadrant = originalQuadrant ? originalQuadrant.dataset.quadrant : null;
-
-    dragClone = document.createElement('div');
-    dragClone.className = 'drag-clone';
-    dragClone.textContent = draggedItem.querySelector('.task-text').textContent;
-    dragClone.style.left = e.clientX + 'px';
-    dragClone.style.top = e.clientY + 'px';
-    document.body.appendChild(dragClone);
-
-    draggedItem.classList.add('dragging');
-
-    document.querySelectorAll('.matrix-tab').forEach(function(tab) {
-        if (tab.dataset.tab !== currentTab) {
-            tab.classList.add('drop-target');
-        } else {
-            tab.classList.add('drag-disabled');
-        }
-    });
-    var routineBtn = document.querySelector('.btn-routine');
-    if (routineBtn) routineBtn.classList.add('drag-disabled');
-}
-
-function highlightQuadrantUnderCursor(x, y) {
-    document.querySelectorAll('.quadrant.drag-over').forEach(function(q) {
-        q.classList.remove('drag-over');
-    });
-    document.querySelectorAll('.matrix-tab.drag-over').forEach(function(tab) {
-        tab.classList.remove('drag-over');
-    });
-
-    var elements = document.elementsFromPoint(x, y);
-    for (var i = 0; i < elements.length; i++) {
-        var tab = elements[i].closest('.matrix-tab');
-        if (tab && tab.dataset.tab !== currentTab) {
-            tab.classList.add('drag-over');
-            break;
-        }
-
-        var quadrant = elements[i].closest('.quadrant');
-        if (quadrant && quadrant.dataset.quadrant !== draggedItemQuadrant) {
-            quadrant.classList.add('drag-over');
-            break;
-        }
-    }
-}
-
-function onMouseUp(e) {
-    document.removeEventListener('mousemove', onMouseMove);
-    document.removeEventListener('mouseup', onMouseUp);
-
-    if (isDragging) {
-        var elements = document.elementsFromPoint(e.clientX, e.clientY);
-        var targetQuadrant = null;
-        var targetTab = null;
-
+        var elements = document.elementsFromPoint(x, y);
         for (var i = 0; i < elements.length; i++) {
             var tab = elements[i].closest('.matrix-tab');
             if (tab && tab.dataset.tab !== currentTab) {
-                targetTab = tab.dataset.tab;
-                break;
+                tab.classList.add('drag-over');
+                return;
             }
 
+            var quadrant = elements[i].closest('.quadrant');
+            if (quadrant && quadrant.dataset.quadrant !== state.originalQuadrant) {
+                quadrant.classList.add('drag-over');
+                return;
+            }
+        }
+    }
+
+    function detectDropTarget(x, y) {
+        var elements = document.elementsFromPoint(x, y);
+        for (var i = 0; i < elements.length; i++) {
+            var tab = elements[i].closest('.matrix-tab');
+            if (tab && tab.dataset.tab !== currentTab) {
+                return { tab: tab.dataset.tab, quadrant: null };
+            }
             var q = elements[i].closest('.quadrant');
             if (q) {
-                targetQuadrant = q.dataset.quadrant;
-                break;
+                return { tab: null, quadrant: q.dataset.quadrant };
+            }
+        }
+        return null;
+    }
+
+    function executeDrop(target) {
+        if (!target || !state.itemId) return;
+        if (target.tab) {
+            moveToTabWithDefaultQuadrant(state.itemId, target.tab);
+        } else if (target.quadrant) {
+            moveToQuadrant(state.itemId, target.quadrant);
+        }
+    }
+
+    function blockNextClick(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        document.removeEventListener('click', blockNextClick, true);
+    }
+
+    function cleanup() {
+        if (state.inputType === 'mouse') {
+            document.addEventListener('click', blockNextClick, true);
+            setTimeout(function() {
+                document.removeEventListener('click', blockNextClick, true);
+            }, 200);
+        }
+
+        if (state.clone) {
+            state.clone.remove();
+            state.clone = null;
+        }
+
+        draggedItemQuadrant = null;
+
+        document.querySelectorAll('.task-item.dragging, .task-item.touch-dragging').forEach(function(item) {
+            item.classList.remove('dragging');
+            item.classList.remove('touch-dragging');
+        });
+
+        document.querySelectorAll('.quadrant.drag-over').forEach(function(q) {
+            q.classList.remove('drag-over');
+        });
+
+        document.querySelectorAll('.matrix-tab.drop-target, .matrix-tab.drag-over, .matrix-tab.drag-disabled').forEach(function(tab) {
+            tab.classList.remove('drop-target');
+            tab.classList.remove('drag-over');
+            tab.classList.remove('drag-disabled');
+        });
+        var routineBtn = document.querySelector('.btn-routine.drag-disabled');
+        if (routineBtn) routineBtn.classList.remove('drag-disabled');
+
+        if (state.longPressTimer) {
+            clearTimeout(state.longPressTimer);
+            state.longPressTimer = null;
+        }
+
+        state.isDragging = false;
+        state.itemId = null;
+        state.itemEl = null;
+        state.originalQuadrant = null;
+        state.inputType = null;
+    }
+
+    // --- Mouse handlers ---
+
+    function onMouseDown(e) {
+        if (e.button !== 0) return;
+
+        var taskItem = e.target.closest('.task-item');
+        if (!taskItem || taskItem.classList.contains('completed')) return;
+
+        state.itemId = taskItem.dataset.id;
+        state.itemEl = taskItem;
+        state.startX = e.clientX;
+        state.startY = e.clientY;
+        state.inputType = 'mouse';
+
+        draggedItem = taskItem;
+
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+
+        e.preventDefault();
+    }
+
+    function onMouseMove(e) {
+        var dx = e.clientX - state.startX;
+        var dy = e.clientY - state.startY;
+
+        if (!state.isDragging && (Math.abs(dx) > MOUSE_THRESHOLD || Math.abs(dy) > MOUSE_THRESHOLD)) {
+            state.isDragging = true;
+            beginDragVisual(e.clientX, e.clientY);
+        }
+
+        if (state.isDragging) {
+            updatePosition(e.clientX, e.clientY);
+        }
+    }
+
+    function onMouseUp(e) {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+
+        if (state.isDragging) {
+            var target = detectDropTarget(e.clientX, e.clientY);
+            executeDrop(target);
+            cleanup();
+        } else {
+            state.isDragging = false;
+            state.itemId = null;
+            state.itemEl = null;
+            state.inputType = null;
+        }
+
+        draggedItem = null;
+    }
+
+    // --- Touch handlers ---
+
+    function onTouchStart(e) {
+        var taskItem = e.target.closest('.task-item');
+        if (!taskItem || taskItem.classList.contains('completed')) return;
+
+        var touch = e.touches[0];
+        state.itemId = taskItem.dataset.id;
+        state.itemEl = taskItem;
+        state.startX = touch.clientX;
+        state.startY = touch.clientY;
+        state.inputType = 'touch';
+        state.isDragging = false;
+
+        state.longPressTimer = setTimeout(function() {
+            if (state.itemEl) {
+                state.isDragging = true;
+                beginDragVisual(touch.clientX, touch.clientY);
+                if (navigator.vibrate) navigator.vibrate(50);
+            }
+        }, LONG_PRESS_MS);
+    }
+
+    function onTouchMove(e) {
+        if (!state.itemEl || state.inputType !== 'touch') return;
+
+        var touch = e.touches[0];
+        var dx = touch.clientX - state.startX;
+        var dy = touch.clientY - state.startY;
+
+        if (!state.isDragging && (Math.abs(dx) > TOUCH_THRESHOLD || Math.abs(dy) > TOUCH_THRESHOLD)) {
+            if (state.longPressTimer) {
+                clearTimeout(state.longPressTimer);
+                state.longPressTimer = null;
             }
         }
 
-        if (targetTab) {
-            moveToTabWithDefaultQuadrant(dragItemId, targetTab);
-        } else if (targetQuadrant) {
-            moveToQuadrant(dragItemId, targetQuadrant);
+        if (state.isDragging) {
+            e.preventDefault();
+            updatePosition(touch.clientX, touch.clientY);
+        }
+    }
+
+    function onTouchEnd(e) {
+        if (state.longPressTimer) {
+            clearTimeout(state.longPressTimer);
+            state.longPressTimer = null;
         }
 
-        endDrag();
+        if (state.inputType !== 'touch') return;
+
+        if (state.isDragging && state.itemEl) {
+            var touch = e.changedTouches[0];
+            var target = detectDropTarget(touch.clientX, touch.clientY);
+            executeDrop(target);
+        }
+
+        cleanup();
     }
 
-    isDragging = false;
-    dragItemId = null;
-    draggedItem = null;
-}
+    // Document-level touch listeners (always active)
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('touchend', onTouchEnd);
 
-function blockNextClick(e) {
-    e.stopPropagation();
-    e.preventDefault();
-    document.removeEventListener('click', blockNextClick, true);
-}
+    return {
+        initMouseDrag: onMouseDown,
+        attachTouchHandlers: function() {
+            document.querySelectorAll('.task-item:not(.completed)').forEach(function(item) {
+                item.addEventListener('touchstart', onTouchStart, { passive: false });
+            });
+        }
+    };
+})();
 
-function endDrag() {
-    document.addEventListener('click', blockNextClick, true);
-    setTimeout(function() {
-        document.removeEventListener('click', blockNextClick, true);
-    }, 200);
-
-    if (dragClone) {
-        dragClone.remove();
-        dragClone = null;
-    }
-
-    draggedItemQuadrant = null;
-
-    document.querySelectorAll('.task-item.dragging').forEach(function(item) {
-        item.classList.remove('dragging');
-    });
-
-    document.querySelectorAll('.quadrant.drag-over').forEach(function(q) {
-        q.classList.remove('drag-over');
-    });
-
-    document.querySelectorAll('.matrix-tab.drop-target').forEach(function(tab) {
-        tab.classList.remove('drop-target');
-    });
-    document.querySelectorAll('.matrix-tab.drag-over').forEach(function(tab) {
-        tab.classList.remove('drag-over');
-    });
-    document.querySelectorAll('.matrix-tab.drag-disabled').forEach(function(tab) {
-        tab.classList.remove('drag-disabled');
-    });
-    var routineBtn = document.querySelector('.btn-routine.drag-disabled');
-    if (routineBtn) routineBtn.classList.remove('drag-disabled');
-}
+// Backward-compatible global functions
+function startCustomDrag(e) { DragManager.initMouseDrag(e); }
+function attachTouchHandlers() { DragManager.attachTouchHandlers(); }

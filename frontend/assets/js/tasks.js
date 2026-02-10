@@ -3,7 +3,6 @@
 function loadItems() {
     API.getTodos()
         .then(data => {
-            console.log('[loadItems] data:', data);
             allItems = data.items || [];
             updateCounts();
             renderItems();
@@ -26,7 +25,9 @@ function updateCounts() {
         if (!item.completed && !item.deleted) {
             counts[item.tab] = (counts[item.tab] || 0) + 1;
             if (item.tab === currentTab) {
-                qcounts[item.quadrant] = (qcounts[item.quadrant] || 0) + 1;
+                if (!currentAssigneeFilter || item.assignee === currentAssigneeFilter) {
+                    qcounts[item.quadrant] = (qcounts[item.quadrant] || 0) + 1;
+                }
             }
         }
     });
@@ -53,6 +54,7 @@ function renderItems() {
         if (item.deleted) return;
         if (item.tab !== currentTab) return;
         if (item.completed) return;
+        if (currentAssigneeFilter && item.assignee !== currentAssigneeFilter) return;
 
         var container = document.getElementById('items-' + item.quadrant);
         if (container) {
@@ -80,6 +82,7 @@ function renderItems() {
     attachTooltipHandlers();
     updateQuadrantScroll();
     updateButtonAnimations();
+    renderAssigneeFilter();
 }
 
 function updateQuadrantScroll() {
@@ -97,6 +100,49 @@ function updateQuadrantScroll() {
     });
 }
 
+function renderAssigneeFilter() {
+    var assignees = {};
+    allItems.forEach(function(item) {
+        if (item.deleted || item.completed || item.tab !== currentTab) return;
+        if (item.assignee) {
+            assignees[item.assignee] = (assignees[item.assignee] || 0) + 1;
+        }
+    });
+
+    var names = Object.keys(assignees);
+    var filterEl = document.getElementById('assignee-filter');
+    var chipsEl = document.getElementById('assignee-chips');
+    if (!filterEl || !chipsEl) return;
+
+    if (names.length < 2) {
+        filterEl.style.display = 'none';
+        currentAssigneeFilter = null;
+        return;
+    }
+
+    if (currentAssigneeFilter && !assignees[currentAssigneeFilter]) {
+        currentAssigneeFilter = null;
+    }
+
+    filterEl.style.display = 'flex';
+
+    var html = '<button class="assignee-chip' + (!currentAssigneeFilter ? ' active' : '') +
+               '" onclick="filterByAssignee(null)">全部</button>';
+    names.sort().forEach(function(name) {
+        var isActive = currentAssigneeFilter === name;
+        html += '<button class="assignee-chip' + (isActive ? ' active' : '') +
+                '" onclick="filterByAssignee(\'' + escapeHtml(name) + '\')">' +
+                escapeHtml(name) + ' <span class="chip-count">' + assignees[name] + '</span></button>';
+    });
+    chipsEl.innerHTML = html;
+}
+
+function filterByAssignee(name) {
+    currentAssigneeFilter = name;
+    updateCounts();
+    renderItems();
+}
+
 function createItemHtml(item) {
     var progress = item.progress || 0;
     var progressRing = '<div class="progress-ring" style="--progress:' + progress + '" onclick="event.stopPropagation(); showProgressPopup(\'' + item.id + '\', this)" onmousedown="event.stopPropagation()" title="点击更新进度">' +
@@ -107,6 +153,10 @@ function createItemHtml(item) {
         ? '<span class="task-assignee" title="' + escapeHtml(item.assignee) + '">' + escapeHtml(item.assignee) + '</span>'
         : '';
 
+    var dueDateHtml = (item.due_date && typeof formatRelativeDate === 'function')
+        ? '<span class="task-due ' + getDueDateClass(item.due_date) + '">' + formatRelativeDate(item.due_date) + '</span>'
+        : '';
+
     return '<div class="task-item" data-id="' + item.id + '" onmousedown="startCustomDrag(event)">' +
         '<div class="drag-handle">⋮⋮</div>' +
         '<div class="task-checkbox" onclick="event.stopPropagation(); toggleComplete(\'' + item.id + '\')" onmousedown="event.stopPropagation()"></div>' +
@@ -114,6 +164,7 @@ function createItemHtml(item) {
         '<div class="task-content" onclick="showTaskCard(\'' + item.id + '\', this.closest(\'.task-item\'))">' +
             '<div class="task-text">' + escapeHtml(item.text) + '</div>' +
         '</div>' +
+        dueDateHtml +
         assigneeHtml +
         '<button class="task-delete" onmousedown="event.stopPropagation()" onclick="event.stopPropagation(); deleteTask(\'' + item.id + '\')" title="删除">&times;</button>' +
     '</div>';
@@ -151,100 +202,48 @@ function createDeletedItemHtml(item) {
     '</div>';
 }
 
-// 象限间移动
+// 核心移动函数 — 统一处理象限/Tab 移动
+function moveTask(itemId, updates, message) {
+    API.updateTodo(itemId, updates).then(function(data) {
+        if (data.success) {
+            allItems = allItems.map(function(i) {
+                return i.id === itemId ? (data.item || Object.assign(i, updates)) : i;
+            });
+            updateCounts();
+            renderItems();
+            showToast(message, 'success');
+        }
+    });
+}
+
 function moveToQuadrant(itemId, newQuadrant) {
     var item = allItems.find(function(i) { return i.id === itemId; });
     if (!item || item.quadrant === newQuadrant) return;
-
-    API.updateTodo(itemId, { quadrant: newQuadrant })
-        .then(data => {
-            if (data.success) {
-                allItems = allItems.map(function(i) {
-                    if (i.id === itemId) return data.item || Object.assign(i, {quadrant: newQuadrant});
-                    return i;
-                });
-                updateCounts();
-                renderItems();
-                showToast('已移动到' + getQuadrantName(newQuadrant), 'success');
-            }
-        });
+    moveTask(itemId, { quadrant: newQuadrant }, '已移动到' + getQuadrantName(newQuadrant));
 }
 
 function moveToTab(itemId, newTab) {
     if (newTab === currentTab) return;
-
-    API.updateTodo(itemId, { tab: newTab })
-        .then(data => {
-            if (data.success) {
-                allItems = allItems.map(function(i) {
-                    if (i.id === itemId) return data.item || Object.assign(i, {tab: newTab});
-                    return i;
-                });
-                updateCounts();
-                renderItems();
-                showToast('已移动到 ' + getTabName(newTab), 'success');
-            }
-        });
+    moveTask(itemId, { tab: newTab }, '已移动到 ' + getTabName(newTab));
 }
 
 function moveToTabWithDefaultQuadrant(itemId, newTab) {
     if (newTab === currentTab) return;
-
-    var defaultQuadrant = 'not-important-urgent';
-    API.updateTodo(itemId, { tab: newTab, quadrant: defaultQuadrant })
-        .then(data => {
-            if (data.success) {
-                allItems = allItems.map(function(i) {
-                    if (i.id === itemId) return data.item || Object.assign(i, {tab: newTab, quadrant: defaultQuadrant});
-                    return i;
-                });
-                updateCounts();
-                renderItems();
-                showToast('已移动到 ' + getTabName(newTab) + ' - 待分类', 'success');
-            }
-        });
+    moveTask(itemId, { tab: newTab, quadrant: 'not-important-urgent' }, '已移动到 ' + getTabName(newTab) + ' - 待分类');
 }
 
 function moveToTabAndQuadrant(itemId, newTab, newQuadrant) {
     var item = allItems.find(function(i) { return i.id === itemId; });
     if (!item) return;
-
     if (item.tab === newTab && item.quadrant === newQuadrant) return;
-
-    API.updateTodo(itemId, { tab: newTab, quadrant: newQuadrant })
-        .then(data => {
-            if (data.success) {
-                allItems = allItems.map(function(i) {
-                    if (i.id === itemId) return data.item || Object.assign(i, {tab: newTab, quadrant: newQuadrant});
-                    return i;
-                });
-                updateCounts();
-                renderItems();
-                showToast('已移动到 ' + getTabName(newTab) + ' - ' + getQuadrantName(newQuadrant), 'success');
-            }
-        });
+    moveTask(itemId, { tab: newTab, quadrant: newQuadrant }, '已移动到 ' + getTabName(newTab) + ' - ' + getQuadrantName(newQuadrant));
 }
 
 function dropToTab(e, targetTab) {
     e.preventDefault();
     var itemId = e.dataTransfer.getData('text/plain');
-
     if (!itemId || targetTab === currentTab) return;
-
-    API.updateTodo(itemId, { tab: targetTab })
-        .then(data => {
-            if (data.success) {
-                allItems = allItems.map(function(item) {
-                    if (item.id === itemId) {
-                        item.tab = targetTab;
-                    }
-                    return item;
-                });
-                updateCounts();
-                renderItems();
-                showToast('已移动到 ' + getTabName(targetTab), 'success');
-            }
-        });
+    moveTask(itemId, { tab: targetTab }, '已移动到 ' + getTabName(targetTab));
 }
 
 // 任务完成/进度

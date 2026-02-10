@@ -9,17 +9,6 @@ function escapeHtml(str) {
               .replace(/"/g, '&quot;');
 }
 
-// 日期格式化: MM-DD HH:mm
-function formatDate(isoString) {
-    if (!isoString) return '-';
-    var date = new Date(isoString);
-    var m = (date.getMonth() + 1).toString().padStart(2, '0');
-    var d = date.getDate().toString().padStart(2, '0');
-    var h = date.getHours().toString().padStart(2, '0');
-    var min = date.getMinutes().toString().padStart(2, '0');
-    return m + '-' + d + ' ' + h + ':' + min;
-}
-
 // 完整日期时间格式化: [YYYY-]MM-DD HH:mm (同年省略年份)
 function formatDateTime(isoString) {
     if (!isoString) return '--';
@@ -86,16 +75,7 @@ document.addEventListener('click', function(e) {
 
 // AppUtils - 共享工具集
 window.AppUtils = {
-    formatDate: function(isoString) {
-        var date = new Date(isoString);
-        var y = date.getFullYear();
-        var m = (date.getMonth() + 1).toString().padStart(2, '0');
-        var d = date.getDate().toString().padStart(2, '0');
-        var h = date.getHours().toString().padStart(2, '0');
-        var min = date.getMinutes().toString().padStart(2, '0');
-        return y + '-' + m + '-' + d + ' ' + h + ':' + min;
-    },
-    escapeHtml: function(str) {
+    escapeHtmlMultiline: function(str) {
         if (!str) return '';
         return str.replace(/&/g, '&amp;')
                   .replace(/</g, '&lt;')

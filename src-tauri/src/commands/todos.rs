@@ -1,6 +1,7 @@
 //! Todo 相关 Commands
 
-use crate::db::{get_todos_path, TodoDb};
+use std::sync::Mutex;
+use crate::AppState;
 use crate::models::{Quadrant, Tab, Todo, TodoUpdate};
 use serde::{Deserialize, Serialize};
 
@@ -78,8 +79,12 @@ fn parse_quadrant(s: &str) -> Quadrant {
 
 /// 获取所有任务
 #[tauri::command]
-pub fn get_todos(tab: Option<String>) -> Result<TodosResponse, String> {
-    let db = TodoDb::load(get_todos_path()).map_err(|e| e.to_string())?;
+pub fn get_todos(
+    state: tauri::State<'_, Mutex<AppState>>,
+    tab: Option<String>,
+) -> Result<TodosResponse, String> {
+    let state = state.lock().map_err(|e| e.to_string())?;
+    let db = &state.todo_db;
 
     let items: Vec<Todo> = match tab {
         Some(t) => {
@@ -98,8 +103,12 @@ pub fn get_todos(tab: Option<String>) -> Result<TodosResponse, String> {
 
 /// 获取单个任务
 #[tauri::command]
-pub fn get_todo(id: String) -> Result<TodoResponse, String> {
-    let db = TodoDb::load(get_todos_path()).map_err(|e| e.to_string())?;
+pub fn get_todo(
+    state: tauri::State<'_, Mutex<AppState>>,
+    id: String,
+) -> Result<TodoResponse, String> {
+    let state = state.lock().map_err(|e| e.to_string())?;
+    let db = &state.todo_db;
 
     match db.get(&id) {
         Some(todo) => Ok(TodoResponse {
@@ -117,14 +126,11 @@ pub fn get_todo(id: String) -> Result<TodoResponse, String> {
 
 /// 创建任务
 #[tauri::command]
-pub fn create_todo(request: CreateTodoRequest) -> Result<TodoResponse, String> {
-    println!("[create_todo] request: {:?}", request);
-    let path = get_todos_path();
-    println!("[create_todo] loading from: {:?}", path);
-    let mut db = TodoDb::load(path).map_err(|e| {
-        println!("[create_todo] load error: {}", e);
-        e.to_string()
-    })?;
+pub fn create_todo(
+    state: tauri::State<'_, Mutex<AppState>>,
+    request: CreateTodoRequest,
+) -> Result<TodoResponse, String> {
+    let mut state = state.lock().map_err(|e| e.to_string())?;
 
     let tab = parse_tab(&request.tab);
     let quadrant = parse_quadrant(&request.quadrant);
@@ -144,13 +150,8 @@ pub fn create_todo(request: CreateTodoRequest) -> Result<TodoResponse, String> {
         todo.assignee = assignee;
     }
 
-    db.insert(todo.clone());
-    println!("[create_todo] saving...");
-    db.save().map_err(|e| {
-        println!("[create_todo] save error: {}", e);
-        e.to_string()
-    })?;
-    println!("[create_todo] saved successfully");
+    state.todo_db.insert(todo.clone());
+    state.todo_db.save().map_err(|e| e.to_string())?;
 
     Ok(TodoResponse {
         success: true,
@@ -184,12 +185,15 @@ pub struct UpdateTodoRequest {
 
 /// 更新任务
 #[tauri::command]
-pub fn update_todo(id: String, request: UpdateTodoRequest) -> Result<TodoResponse, String> {
-    let mut db = TodoDb::load(get_todos_path()).map_err(|e| e.to_string())?;
+pub fn update_todo(
+    state: tauri::State<'_, Mutex<AppState>>,
+    id: String,
+    request: UpdateTodoRequest,
+) -> Result<TodoResponse, String> {
+    let mut state = state.lock().map_err(|e| e.to_string())?;
 
-    let todo = db.get_mut(&id).ok_or_else(|| format!("任务不存在: {}", id))?;
+    let todo = state.todo_db.get_mut(&id).ok_or_else(|| format!("任务不存在: {}", id))?;
 
-    // 构建 TodoUpdate
     let update = TodoUpdate {
         text: request.text,
         content: request.content,
@@ -205,7 +209,7 @@ pub fn update_todo(id: String, request: UpdateTodoRequest) -> Result<TodoRespons
     todo.apply_update(update);
 
     let updated_todo = todo.clone();
-    db.save().map_err(|e| e.to_string())?;
+    state.todo_db.save().map_err(|e| e.to_string())?;
 
     Ok(TodoResponse {
         success: true,
@@ -216,13 +220,16 @@ pub fn update_todo(id: String, request: UpdateTodoRequest) -> Result<TodoRespons
 
 /// 删除任务 (软删除)
 #[tauri::command]
-pub fn delete_todo(id: String) -> Result<SimpleResponse, String> {
-    let mut db = TodoDb::load(get_todos_path()).map_err(|e| e.to_string())?;
+pub fn delete_todo(
+    state: tauri::State<'_, Mutex<AppState>>,
+    id: String,
+) -> Result<SimpleResponse, String> {
+    let mut state = state.lock().map_err(|e| e.to_string())?;
 
-    let todo = db.get_mut(&id).ok_or_else(|| format!("任务不存在: {}", id))?;
+    let todo = state.todo_db.get_mut(&id).ok_or_else(|| format!("任务不存在: {}", id))?;
     todo.soft_delete();
 
-    db.save().map_err(|e| e.to_string())?;
+    state.todo_db.save().map_err(|e| e.to_string())?;
 
     Ok(SimpleResponse {
         success: true,
@@ -232,14 +239,17 @@ pub fn delete_todo(id: String) -> Result<SimpleResponse, String> {
 
 /// 恢复已删除的任务
 #[tauri::command]
-pub fn restore_todo(id: String) -> Result<TodoResponse, String> {
-    let mut db = TodoDb::load(get_todos_path()).map_err(|e| e.to_string())?;
+pub fn restore_todo(
+    state: tauri::State<'_, Mutex<AppState>>,
+    id: String,
+) -> Result<TodoResponse, String> {
+    let mut state = state.lock().map_err(|e| e.to_string())?;
 
-    let todo = db.get_mut(&id).ok_or_else(|| format!("任务不存在: {}", id))?;
+    let todo = state.todo_db.get_mut(&id).ok_or_else(|| format!("任务不存在: {}", id))?;
     todo.restore();
 
     let restored_todo = todo.clone();
-    db.save().map_err(|e| e.to_string())?;
+    state.todo_db.save().map_err(|e| e.to_string())?;
 
     Ok(TodoResponse {
         success: true,
@@ -250,11 +260,14 @@ pub fn restore_todo(id: String) -> Result<TodoResponse, String> {
 
 /// 永久删除任务
 #[tauri::command]
-pub fn permanent_delete_todo(id: String) -> Result<SimpleResponse, String> {
-    let mut db = TodoDb::load(get_todos_path()).map_err(|e| e.to_string())?;
+pub fn permanent_delete_todo(
+    state: tauri::State<'_, Mutex<AppState>>,
+    id: String,
+) -> Result<SimpleResponse, String> {
+    let mut state = state.lock().map_err(|e| e.to_string())?;
 
-    db.remove(&id).ok_or_else(|| format!("任务不存在: {}", id))?;
-    db.save().map_err(|e| e.to_string())?;
+    state.todo_db.remove(&id).ok_or_else(|| format!("任务不存在: {}", id))?;
+    state.todo_db.save().map_err(|e| e.to_string())?;
 
     Ok(SimpleResponse {
         success: true,
@@ -278,13 +291,16 @@ pub struct BatchUpdateItem {
 
 /// 批量更新任务 (用于拖拽操作)
 #[tauri::command]
-pub fn batch_update_todos(updates: Vec<BatchUpdateItem>) -> Result<SimpleResponse, String> {
-    let mut db = TodoDb::load(get_todos_path()).map_err(|e| e.to_string())?;
+pub fn batch_update_todos(
+    state: tauri::State<'_, Mutex<AppState>>,
+    updates: Vec<BatchUpdateItem>,
+) -> Result<SimpleResponse, String> {
+    let mut state = state.lock().map_err(|e| e.to_string())?;
 
     let mut updated_count = 0;
 
     for item in updates {
-        if let Some(todo) = db.get_mut(&item.id) {
+        if let Some(todo) = state.todo_db.get_mut(&item.id) {
             let update = TodoUpdate {
                 text: None,
                 content: None,
@@ -301,7 +317,7 @@ pub fn batch_update_todos(updates: Vec<BatchUpdateItem>) -> Result<SimpleRespons
         }
     }
 
-    db.save().map_err(|e| e.to_string())?;
+    state.todo_db.save().map_err(|e| e.to_string())?;
 
     Ok(SimpleResponse {
         success: true,
@@ -311,10 +327,13 @@ pub fn batch_update_todos(updates: Vec<BatchUpdateItem>) -> Result<SimpleRespons
 
 /// 获取各象限任务统计
 #[tauri::command]
-pub fn get_todo_counts(tab: String) -> Result<serde_json::Value, String> {
-    let db = TodoDb::load(get_todos_path()).map_err(|e| e.to_string())?;
+pub fn get_todo_counts(
+    state: tauri::State<'_, Mutex<AppState>>,
+    tab: String,
+) -> Result<serde_json::Value, String> {
+    let state = state.lock().map_err(|e| e.to_string())?;
     let tab = parse_tab(&tab);
-    let counts = db.count_by_quadrant(&tab);
+    let counts = state.todo_db.count_by_quadrant(&tab);
 
     Ok(serde_json::json!({
         "success": true,

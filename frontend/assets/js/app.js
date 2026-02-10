@@ -6,10 +6,18 @@ var showCompleted = true;  // 默认显示已完成任务
 var draggedItem = null;
 var draggedItemQuadrant = null;  // 拖拽任务原本所在的象限
 var routines = [];  // 每日例行任务
+var currentAssigneeFilter = null;  // null = 全部, 'name' = 指定人
 
 // Tab 切换
 function switchTab(tab) {
     currentTab = tab;
+    // Reset assignee filter if the selected person doesn't exist in new tab
+    if (currentAssigneeFilter) {
+        var hasAssignee = allItems.some(function(item) {
+            return !item.deleted && !item.completed && item.tab === tab && item.assignee === currentAssigneeFilter;
+        });
+        if (!hasAssignee) currentAssigneeFilter = null;
+    }
     document.querySelectorAll('.matrix-tab').forEach(function(t) {
         t.classList.remove('active');
         if (t.dataset.tab === tab) {

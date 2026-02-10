@@ -1,6 +1,7 @@
 //! Routine 相关 Commands
 
-use crate::db::{get_routines_path, RoutineDb};
+use std::sync::Mutex;
+use crate::AppState;
 use crate::models::Routine;
 use serde::{Deserialize, Serialize};
 
@@ -39,8 +40,11 @@ pub struct CreateRoutineRequest {
 
 /// 获取所有 Routines
 #[tauri::command]
-pub fn get_routines() -> Result<RoutinesResponse, String> {
-    let db = RoutineDb::load(get_routines_path()).map_err(|e| e.to_string())?;
+pub fn get_routines(
+    state: tauri::State<'_, Mutex<AppState>>,
+) -> Result<RoutinesResponse, String> {
+    let state = state.lock().map_err(|e| e.to_string())?;
+    let db = &state.routine_db;
 
     let items: Vec<Routine> = db.all().into_iter().cloned().collect();
 
@@ -53,12 +57,15 @@ pub fn get_routines() -> Result<RoutinesResponse, String> {
 
 /// 创建 Routine
 #[tauri::command]
-pub fn create_routine(request: CreateRoutineRequest) -> Result<RoutineResponse, String> {
-    let mut db = RoutineDb::load(get_routines_path()).map_err(|e| e.to_string())?;
+pub fn create_routine(
+    state: tauri::State<'_, Mutex<AppState>>,
+    request: CreateRoutineRequest,
+) -> Result<RoutineResponse, String> {
+    let mut state = state.lock().map_err(|e| e.to_string())?;
 
     let routine = Routine::new(request.text);
-    db.insert(routine.clone());
-    db.save().map_err(|e| e.to_string())?;
+    state.routine_db.insert(routine.clone());
+    state.routine_db.save().map_err(|e| e.to_string())?;
 
     Ok(RoutineResponse {
         success: true,
@@ -69,17 +76,20 @@ pub fn create_routine(request: CreateRoutineRequest) -> Result<RoutineResponse, 
 
 /// 切换 Routine 完成状态
 #[tauri::command]
-pub fn toggle_routine(id: String) -> Result<RoutineResponse, String> {
-    let mut db = RoutineDb::load(get_routines_path()).map_err(|e| e.to_string())?;
+pub fn toggle_routine(
+    state: tauri::State<'_, Mutex<AppState>>,
+    id: String,
+) -> Result<RoutineResponse, String> {
+    let mut state = state.lock().map_err(|e| e.to_string())?;
 
-    let routine = db
+    let routine = state.routine_db
         .get_mut(&id)
         .ok_or_else(|| format!("日常任务不存在: {}", id))?;
 
     routine.toggle();
 
     let toggled_routine = routine.clone();
-    db.save().map_err(|e| e.to_string())?;
+    state.routine_db.save().map_err(|e| e.to_string())?;
 
     let message = if toggled_routine.completed_today {
         "已完成".to_string()
@@ -96,13 +106,16 @@ pub fn toggle_routine(id: String) -> Result<RoutineResponse, String> {
 
 /// 删除 Routine
 #[tauri::command]
-pub fn delete_routine(id: String) -> Result<RoutineSimpleResponse, String> {
-    let mut db = RoutineDb::load(get_routines_path()).map_err(|e| e.to_string())?;
+pub fn delete_routine(
+    state: tauri::State<'_, Mutex<AppState>>,
+    id: String,
+) -> Result<RoutineSimpleResponse, String> {
+    let mut state = state.lock().map_err(|e| e.to_string())?;
 
-    db.remove(&id)
+    state.routine_db.remove(&id)
         .ok_or_else(|| format!("日常任务不存在: {}", id))?;
 
-    db.save().map_err(|e| e.to_string())?;
+    state.routine_db.save().map_err(|e| e.to_string())?;
 
     Ok(RoutineSimpleResponse {
         success: true,

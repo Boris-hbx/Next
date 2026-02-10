@@ -217,13 +217,7 @@ window.toggleFocusMode = function() {
                 e.preventDefault();
                 if (typeof showAddModal === 'function') showAddModal();
                 break;
-            case 's':
-                if (!e.ctrlKey && !e.metaKey) {
-                    e.preventDefault();
-                    var searchInput = document.getElementById('search-input');
-                    if (searchInput) searchInput.focus();
-                }
-                break;
+            /* 's' shortcut removed — #search-input does not exist */
             case '1':
                 e.preventDefault();
                 if (typeof switchTab === 'function') switchTab('today');
