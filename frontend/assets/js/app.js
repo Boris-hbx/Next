@@ -7,6 +7,7 @@ var draggedItem = null;
 var draggedItemQuadrant = null;  // 拖拽任务原本所在的象限
 var routines = [];  // 每日例行任务
 var currentAssigneeFilter = null;  // null = 全部, 'name' = 指定人
+var currentPage = 'todo';  // 'todo' | 'review'
 
 // Tab 切换
 function switchTab(tab) {
@@ -57,6 +58,23 @@ function loadQuadrantState() {
             q.classList.toggle('collapsed', states[key]);
         }
     });
+}
+
+// 页面切换 (Todo ↔ 例行审视)
+function switchPage(page) {
+    if (currentPage === page) return;
+    currentPage = page;
+
+    document.querySelectorAll('.nav-link').forEach(function(el) {
+        el.classList.toggle('active', el.dataset.page === page);
+    });
+
+    document.getElementById('todo-view').style.display = page === 'todo' ? '' : 'none';
+    document.getElementById('review-view').style.display = page === 'review' ? '' : 'none';
+
+    if (page === 'review' && typeof loadReviews === 'function') {
+        loadReviews();
+    }
 }
 
 function toggleSidebarSection(sectionId) {

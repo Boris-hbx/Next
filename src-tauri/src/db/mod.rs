@@ -1,8 +1,9 @@
 //! 数据存储层
 //!
-//! 管理 Todo 和 Routine 的持久化存储
+//! 管理 Todo、Routine 和 Review 的持久化存储
 
 use crate::models::{Quadrant, Routine, Tab, Todo};
+use crate::models::review::ReviewItem;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::{self, File};
@@ -255,6 +256,91 @@ impl RoutineDb {
     }
 }
 
+/// Review 数据库
+pub struct ReviewDb {
+    items: HashMap<String, ReviewItem>,
+    file_path: PathBuf,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct ReviewsFile {
+    items: Vec<ReviewItem>,
+}
+
+impl ReviewDb {
+    /// 从文件加载
+    pub fn load(file_path: PathBuf) -> Result<Self, DbError> {
+        if !file_path.exists() {
+            return Ok(Self {
+                items: HashMap::new(),
+                file_path,
+            });
+        }
+
+        let metadata = fs::metadata(&file_path).map_err(DbError::Io)?;
+        if metadata.len() == 0 {
+            return Ok(Self {
+                items: HashMap::new(),
+                file_path,
+            });
+        }
+
+        let file = File::open(&file_path).map_err(DbError::Io)?;
+        let reader = BufReader::new(file);
+        let data: ReviewsFile = serde_json::from_reader(reader).map_err(DbError::Json)?;
+
+        let mut items = HashMap::with_capacity(data.items.len());
+        for item in data.items {
+            items.insert(item.id.clone(), item);
+        }
+
+        Ok(Self { items, file_path })
+    }
+
+    /// 保存到文件
+    pub fn save(&self) -> Result<(), DbError> {
+        if let Some(parent) = self.file_path.parent() {
+            fs::create_dir_all(parent).map_err(DbError::Io)?;
+        }
+
+        let temp_path = self.file_path.with_extension("tmp");
+        let file = File::create(&temp_path).map_err(DbError::Io)?;
+        let writer = BufWriter::new(file);
+
+        let mut items: Vec<&ReviewItem> = self.items.values().collect();
+        items.sort_by(|a, b| a.created_at.cmp(&b.created_at));
+
+        let data = ReviewsFile {
+            items: items.into_iter().cloned().collect(),
+        };
+
+        serde_json::to_writer_pretty(writer, &data).map_err(DbError::Json)?;
+        fs::rename(&temp_path, &self.file_path).map_err(DbError::Io)?;
+
+        Ok(())
+    }
+
+    pub fn all(&self) -> Vec<&ReviewItem> {
+        self.items.values().collect()
+    }
+
+    pub fn get(&self, id: &str) -> Option<&ReviewItem> {
+        self.items.get(id)
+    }
+
+    pub fn get_mut(&mut self, id: &str) -> Option<&mut ReviewItem> {
+        self.items.get_mut(id)
+    }
+
+    pub fn insert(&mut self, item: ReviewItem) {
+        self.items.insert(item.id.clone(), item);
+    }
+
+    pub fn remove(&mut self, id: &str) -> Option<ReviewItem> {
+        self.items.remove(id)
+    }
+}
+
 /// 获取数据目录路径
 pub fn get_data_dir() -> PathBuf {
     // 统一使用 %LOCALAPPDATA%/Next/data/
@@ -273,6 +359,11 @@ pub fn get_todos_path() -> PathBuf {
 /// 获取 routines.json 路径
 pub fn get_routines_path() -> PathBuf {
     get_data_dir().join("routines.json")
+}
+
+/// 获取 reviews.json 路径
+pub fn get_reviews_path() -> PathBuf {
+    get_data_dir().join("reviews.json")
 }
 
 /// 数据库错误类型

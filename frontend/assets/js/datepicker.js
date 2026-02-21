@@ -276,7 +276,9 @@
 
     // --- Public API (global functions) ---
     window.toggleDatePicker = function() {
-        if (modalMode === 'view') return;
+        if (modalMode === 'view') {
+            if (typeof switchToEditMode === 'function') switchToEditMode();
+        }
         var popover = document.getElementById('date-popover');
         if (isOpen) {
             popover.style.display = 'none';
@@ -291,6 +293,23 @@
             isOpen = true;
             document.getElementById('date-nl-input').value = '';
             document.getElementById('date-nl-preview').textContent = '';
+            // Position fixed popover relative to the trigger button
+            var btn = document.getElementById('date-display');
+            if (btn) {
+                var rect = btn.getBoundingClientRect();
+                popover.style.left = rect.left + 'px';
+                popover.style.top = (rect.bottom + 4) + 'px';
+                // Keep within viewport
+                requestAnimationFrame(function() {
+                    var pr = popover.getBoundingClientRect();
+                    if (pr.right > window.innerWidth - 8) {
+                        popover.style.left = Math.max(8, window.innerWidth - pr.width - 8) + 'px';
+                    }
+                    if (pr.bottom > window.innerHeight - 8) {
+                        popover.style.top = Math.max(8, rect.top - pr.height - 4) + 'px';
+                    }
+                });
+            }
         }
     };
 

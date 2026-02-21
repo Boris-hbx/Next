@@ -125,33 +125,27 @@ function setModalMode(mode) {
         contentEdit.style.display = 'block';
     }
 
-    document.getElementById('modal-title').readOnly = !isEditable;
-    document.getElementById('modal-progress').disabled = !isEditable;
-    document.getElementById('modal-assignee').readOnly = !isEditable;
+    document.getElementById('modal-title').readOnly = (mode === 'view');
+    document.getElementById('modal-progress').disabled = false;
+    document.getElementById('modal-assignee').readOnly = (mode === 'view');
 
-    // Date picker: enable/disable click
+    // Date picker: always clickable, view mode triggers auto-edit
     var datePicker = document.getElementById('smart-date-picker');
     if (datePicker) {
-        datePicker.style.pointerEvents = isEditable ? 'auto' : 'none';
-        datePicker.style.opacity = isEditable ? '1' : '0.7';
+        datePicker.style.pointerEvents = 'auto';
+        datePicker.style.opacity = isEditable ? '1' : '0.85';
     }
 
     document.querySelectorAll('#modal-tab-buttons .tab-btn').forEach(function(btn) {
-        btn.disabled = !isEditable;
+        btn.disabled = false;
     });
 
     document.querySelectorAll('.q-option').forEach(function(opt) {
-        if (isEditable) {
-            opt.classList.remove('disabled');
-            opt.style.pointerEvents = 'auto';
-        } else {
-            opt.classList.add('disabled');
-            opt.style.pointerEvents = 'none';
-        }
+        opt.classList.toggle('disabled', mode === 'view');
+        opt.style.pointerEvents = 'auto';
     });
 
     document.getElementById('header-edit-btn').style.display = (mode === 'view') ? 'inline-block' : 'none';
-    document.getElementById('header-export-btn').style.display = (mode === 'view') ? 'inline-block' : 'none';
     document.getElementById('modal-footer-edit').style.display = (mode !== 'view') ? 'flex' : 'none';
 
     var saveBtn = document.getElementById('modal-save-btn');
@@ -184,20 +178,87 @@ function switchToEditMode() {
     document.getElementById('modal-title').focus();
 }
 
-function onContentClick() {
-    // No longer auto-switches to edit; use double-click or edit button
+// ========== Content View: click-to-edit vs select-to-pending ==========
+var _pendingPopup = null;
+
+function _removePendingPopup() {
+    if (_pendingPopup && _pendingPopup.parentNode) {
+        _pendingPopup.parentNode.removeChild(_pendingPopup);
+    }
+    _pendingPopup = null;
 }
 
-// Double-click content view to enter edit mode
+function _addSelectionToPending(text) {
+    _removePendingPopup();
+    var trimmed = text.length <= 80 ? text : text.substring(0, 80) + '...';
+    if (typeof addPendingItemDirect === 'function') {
+        addPendingItemDirect(trimmed);
+    }
+    window.getSelection().removeAllRanges();
+}
+
+function _showPendingPopup(text, x, y) {
+    _removePendingPopup();
+    _pendingPopup = document.createElement('div');
+    _pendingPopup.className = 'selection-pending-popup';
+    _pendingPopup.innerHTML = '<button class="selection-pending-btn">📋 收入待处理</button>';
+    _pendingPopup.style.left = x + 'px';
+    _pendingPopup.style.top = (y - 40) + 'px';
+    document.body.appendChild(_pendingPopup);
+
+    _pendingPopup.querySelector('button').addEventListener('click', function(ev) {
+        ev.stopPropagation();
+        _addSelectionToPending(text);
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     var contentView = document.getElementById('modal-content-view');
+    var contentEdit = document.getElementById('modal-content');
+
+    // View mode: click-to-edit or select-to-pending
     if (contentView) {
-        contentView.addEventListener('dblclick', function() {
-            if (modalMode === 'view') {
+        contentView.addEventListener('mouseup', function(e) {
+            if (modalMode !== 'view') return;
+
+            var text = window.getSelection().toString().trim();
+            if (text) {
+                _showPendingPopup(text, e.clientX, e.clientY);
+            } else {
                 switchToEditMode();
-                document.getElementById('modal-content').focus();
+                contentEdit.focus();
             }
         });
+
+        contentView.addEventListener('dblclick', function() {
+            if (modalMode === 'view') {
+                _removePendingPopup();
+                window.getSelection().removeAllRanges();
+                switchToEditMode();
+                contentEdit.focus();
+            }
+        });
+    }
+
+    // Edit mode: select-to-pending in textarea
+    if (contentEdit) {
+        contentEdit.addEventListener('mouseup', function(e) {
+            if (modalMode !== 'edit' && modalMode !== 'create') return;
+            var start = contentEdit.selectionStart;
+            var end = contentEdit.selectionEnd;
+            if (start === end) { _removePendingPopup(); return; }
+            var text = contentEdit.value.substring(start, end).trim();
+            if (text) {
+                _showPendingPopup(text, e.clientX, e.clientY);
+            }
+        });
+    }
+});
+
+// Close popup on outside click
+document.addEventListener('mousedown', function(e) {
+    if (_pendingPopup && !_pendingPopup.contains(e.target)) {
+        _removePendingPopup();
     }
 });
 
@@ -267,20 +328,6 @@ function saveTask() {
     }
 }
 
-// Export current task to .ics
-function exportCurrentTask() {
-    if (!modalTaskId) return;
-    API.exportTaskIcs(modalTaskId).then(function(result) {
-        if (result.success) {
-            showToast('已导出到日历', 'success');
-        } else {
-            showToast(result.message || '导出失败', 'error');
-        }
-    }).catch(function(err) {
-        showToast('导出失败: ' + err, 'error');
-    });
-}
-
 // 兼容旧函数
 function closeTaskCard() {
     closeTaskModal();
@@ -303,6 +350,27 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
+// Click-to-edit: title, assignee, progress
+document.getElementById('modal-title').addEventListener('click', function() {
+    if (modalMode === 'view') {
+        switchToEditMode();
+        this.focus();
+    }
+});
+
+document.getElementById('modal-assignee').addEventListener('click', function() {
+    if (modalMode === 'view') {
+        switchToEditMode();
+        this.focus();
+    }
+});
+
+document.getElementById('modal-progress').addEventListener('click', function() {
+    if (modalMode === 'view') {
+        switchToEditMode();
+    }
+});
+
 document.getElementById('modal-progress').addEventListener('input', function(e) {
     var val = e.target.value;
     document.getElementById('modal-progress-value').textContent = val + '%';
@@ -311,7 +379,7 @@ document.getElementById('modal-progress').addEventListener('input', function(e) 
 
 document.querySelectorAll('.q-option').forEach(function(opt) {
     opt.addEventListener('click', function() {
-        if (modalMode === 'view') return;
+        if (modalMode === 'view') switchToEditMode();
         document.querySelectorAll('.q-option').forEach(function(o) {
             o.classList.remove('selected');
         });
@@ -322,7 +390,7 @@ document.querySelectorAll('.q-option').forEach(function(opt) {
 
 document.querySelectorAll('#modal-tab-buttons .tab-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
-        if (modalMode === 'view') return;
+        if (modalMode === 'view') switchToEditMode();
         document.querySelectorAll('#modal-tab-buttons .tab-btn').forEach(function(b) {
             b.classList.remove('selected');
         });
@@ -341,73 +409,3 @@ document.querySelectorAll('.quadrant-cell').forEach(function(opt) {
     });
 });
 
-// ========== Selection → Create Task ==========
-(function() {
-    var popup = null;
-    var selectedText = '';
-    var parentTask = null;
-
-    document.addEventListener('mouseup', function(e) {
-        if (modalMode !== 'view') return;
-        var contentView = document.getElementById('modal-content-view');
-        if (!contentView || !contentView.contains(e.target)) {
-            removePopup();
-            return;
-        }
-
-        var selection = window.getSelection();
-        var text = selection.toString().trim();
-        if (!text) { removePopup(); return; }
-
-        selectedText = text;
-        parentTask = modalTaskItem;
-        showPopup(e.clientX, e.clientY);
-    });
-
-    function showPopup(x, y) {
-        removePopup();
-        popup = document.createElement('div');
-        popup.className = 'selection-action-popup';
-        popup.innerHTML = '<button class="selection-action-btn">+ 创建任务</button>';
-        popup.style.left = x + 'px';
-        popup.style.top = (y - 40) + 'px';
-        document.body.appendChild(popup);
-
-        popup.querySelector('button').addEventListener('click', function() {
-            createTaskFromSelection();
-        });
-    }
-
-    function createTaskFromSelection() {
-        removePopup();
-        var title, content;
-        if (selectedText.length <= 50) {
-            title = selectedText;
-            content = '';
-        } else {
-            var firstLine = selectedText.split('\n')[0].substring(0, 50);
-            title = firstLine;
-            content = selectedText;
-        }
-        var tab = parentTask ? parentTask.tab : currentTab;
-        var assignee = parentTask ? parentTask.assignee : '';
-
-        closeTaskModal();
-        openTaskModal('create', null, tab, 'not-important-urgent');
-
-        setTimeout(function() {
-            document.getElementById('modal-title').value = title;
-            document.getElementById('modal-content').value = content;
-            if (assignee) document.getElementById('modal-assignee').value = assignee;
-        }, 50);
-    }
-
-    function removePopup() {
-        if (popup && popup.parentNode) popup.parentNode.removeChild(popup);
-        popup = null;
-    }
-
-    document.addEventListener('mousedown', function(e) {
-        if (popup && !popup.contains(e.target)) removePopup();
-    });
-})();

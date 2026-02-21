@@ -9,20 +9,26 @@ mod db;
 mod commands;
 
 use std::sync::Mutex;
-use db::{get_todos_path, get_routines_path, TodoDb, RoutineDb};
+use db::{get_todos_path, get_routines_path, get_reviews_path, TodoDb, RoutineDb, ReviewDb};
 
 /// 应用全局状态，通过 Mutex 保护并发访问
 pub struct AppState {
     pub todo_db: TodoDb,
     pub routine_db: RoutineDb,
+    pub review_db: ReviewDb,
 }
 
 fn main() {
+    // Disable WebView2 cache in dev mode to ensure fresh frontend files
+    #[cfg(debug_assertions)]
+    std::env::set_var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "--disable-gpu-shader-disk-cache --disable-features=BackForwardCache --disk-cache-size=1 --aggressive-cache-discard");
+
     let todo_db = TodoDb::load(get_todos_path()).expect("Failed to load todos");
     let routine_db = RoutineDb::load(get_routines_path()).expect("Failed to load routines");
+    let review_db = ReviewDb::load(get_reviews_path()).expect("Failed to load reviews");
 
     tauri::Builder::default()
-        .manage(Mutex::new(AppState { todo_db, routine_db }))
+        .manage(Mutex::new(AppState { todo_db, routine_db, review_db }))
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
             // Todo commands
@@ -40,6 +46,13 @@ fn main() {
             commands::create_routine,
             commands::toggle_routine,
             commands::delete_routine,
+            // Review commands
+            commands::get_reviews,
+            commands::create_review,
+            commands::update_review,
+            commands::complete_review,
+            commands::uncomplete_review,
+            commands::delete_review,
             // Quote commands
             commands::get_random_quote,
             // Calendar commands

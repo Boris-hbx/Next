@@ -620,6 +620,8 @@ body {
     white-space: nowrap;
     position: relative;
     overflow: hidden;
+    background: rgba(255, 255, 255, 0.08);
+    cursor: pointer;
 }
 
 /* 所有nav-link的光晕效果 */
@@ -1366,9 +1368,9 @@ body {
     justify-content: center;
 }
 
-/* ============ Todo Matrix (Eisenhower) ============ */
+/* ============ Todo Matrix (Priority Lanes) ============ */
 
-/* 主布局：四象限 + 右侧边栏 */
+/* 主布局：优先级泳道 + 右侧边栏 */
 .todo-main-layout {
     display: flex;
     gap: 16px;
@@ -1478,11 +1480,16 @@ body {
     justify-content: flex-start;
     gap: 0.5rem;
     margin: 0 0 1rem 0;
-    padding: 1rem 2rem;
+    padding: 1rem 1.5rem;
     box-sizing: border-box;
     background: rgba(255, 255, 255, 0.9);
     border-radius: 16px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+/* When assignee filter row is visible below, connect the two sections */
+.matrix-tabs.has-assignee-row {
+    border-radius: 16px 16px 0 0;
+    margin-bottom: 0;
 }
 
 .matrix-tab {
@@ -1537,29 +1544,6 @@ body {
     background: rgba(255, 255, 255, 0.3);
 }
 
-.tab-actions {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.btn-add-task {
-    padding: 0.5rem 1rem;
-    border: none;
-    background: var(--primary-gradient);
-    color: white;
-    font-size: 0.85rem;
-    font-weight: 600;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.btn-add-task:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 15px rgba(var(--primary-color-rgb), 0.4);
-}
 
 .show-completed-toggle {
     display: flex;
@@ -1816,7 +1800,7 @@ body {
     opacity: 0.7;
 }
 
-/* Eisenhower Matrix */
+/* Priority Lanes Matrix */
 .eisenhower-matrix {
     width: 100%;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);

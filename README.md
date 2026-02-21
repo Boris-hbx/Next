@@ -2,47 +2,44 @@
 
 **Focus on the Right Thing.**
 
-A personal task management desktop application built with Tauri + Flask. Organize tasks with the Eisenhower Matrix across different time horizons.
+A focused task management desktop app for Windows. Next helps you cut through the noise and zero in on what truly matters — the next right thing to do.
 
 ## Features
 
-- **Eisenhower Matrix**: Organize tasks by importance and urgency
-- **Time Horizons**: Today, This Week, Next 30 Days views
-- **Dark Mode**: System preference detection + manual toggle
-- **Keyboard Shortcuts**: Quick actions without mouse
+- **Priority Lanes**: Organize tasks by urgency and importance to surface what needs attention now
+- **Time Horizons**: Today, This Week, Next 30 Days — plan at the right granularity
+- **Drag & Drop**: Move tasks across priorities and time horizons with mouse or touch
+- **Progress Tracking**: 0-100% progress bars, auto-complete at 100%
+- **Routines**: Daily recurring tasks to build habits
+- **Dark/Light Mode**: System preference detection + manual toggle
+- **Keyboard Shortcuts**: Full keyboard navigation
 - **Search**: Real-time task search with highlighting
-- **Pomodoro Timer**: 25/5 work-break cycles
-- **Focus Mode**: Distraction-free interface
+- **Changelog**: Automatic change history for every task
 
 ## Quick Start
 
-### Development Mode
-
 ```bash
-# Start Flask backend
-cd backend
-python app.py
+# Development mode
+cargo tauri dev
 
-# Open http://localhost:2026
+# Production build
+cargo tauri build
+
+# Build + copy installer to release/
+scripts\release.bat
 ```
 
-### Build Desktop App
-
-```bash
-# Run build script (requires Python + Rust)
-build.bat
-
-# Output:
-#   - MSI installer: src-tauri/target/release/bundle/msi/
-#   - NSIS installer: src-tauri/target/release/bundle/nsis/
-```
+Build output: `src-tauri/target/release/bundle/nsis/Next_x.x.x_x64-setup.exe`
 
 ## Tech Stack
 
-- **Backend**: Flask (Python)
-- **Frontend**: HTML/CSS/JS + Jinja2 templates
-- **Desktop**: Tauri (Rust)
-- **Data**: JSON files (local storage)
+| Layer | Technology |
+|-------|-----------|
+| Desktop | Tauri 2.0 (Rust) |
+| Backend | Rust (Tauri Commands) |
+| Frontend | Vanilla HTML/CSS/JS |
+| Data | JSON files (`%LOCALAPPDATA%\Next\data\`) |
+| Installer | NSIS (.exe) |
 
 ## Keyboard Shortcuts
 
@@ -51,35 +48,14 @@ build.bat
 | `N` | New task |
 | `S` | Search |
 | `R` | Daily review |
-| `1` `2` `3` | Switch tabs |
+| `1` `2` `3` | Switch Today / Week / Month |
 | `D` | Toggle dark mode |
-| `F` | Focus mode |
-| `P` | Pomodoro timer |
 | `?` | Show help |
-
-## Project Structure
-
-```
-Next/
-├── backend/           # Flask backend
-│   └── app.py
-├── frontend/          # Jinja2 templates
-│   └── templates/
-├── assets/            # CSS, JS, icons
-├── src-tauri/         # Tauri desktop wrapper
-│   ├── src/main.rs
-│   └── tauri.conf.json
-├── data/              # JSON data files
-├── build.bat          # Build script
-└── flask-backend.spec # PyInstaller config
-```
 
 ## Build Requirements
 
-- Python 3.10+
 - Rust (rustup.rs)
 - Tauri CLI (`cargo install tauri-cli`)
-- PyInstaller (`pip install pyinstaller`)
 
 ## License
 

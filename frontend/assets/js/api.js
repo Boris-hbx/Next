@@ -68,6 +68,31 @@ var API = (function() {
             return await invoke('delete_routine', { id: id });
         },
 
+        // ===== Review APIs =====
+        getReviews: async function() {
+            return await invoke('get_reviews', {});
+        },
+
+        createReview: async function(data) {
+            return await invoke('create_review', { request: data });
+        },
+
+        updateReview: async function(id, data) {
+            return await invoke('update_review', { id: id, request: data });
+        },
+
+        completeReview: async function(id) {
+            return await invoke('complete_review', { id: id });
+        },
+
+        uncompleteReview: async function(id) {
+            return await invoke('uncomplete_review', { id: id });
+        },
+
+        deleteReview: async function(id) {
+            return await invoke('delete_review', { id: id });
+        },
+
         // ===== Quote API =====
         getRandomQuote: async function() {
             return await invoke('get_random_quote', {});

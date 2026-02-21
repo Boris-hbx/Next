@@ -83,6 +83,7 @@ function renderItems() {
     updateQuadrantScroll();
     updateButtonAnimations();
     renderAssigneeFilter();
+    renderPendingItems();
 }
 
 function updateQuadrantScroll() {
@@ -100,6 +101,28 @@ function updateQuadrantScroll() {
     });
 }
 
+// Stored assignee counts for collapse callback
+var _assigneeCounts = {};
+var _chipResizeTimer = null;
+var _chipResizeObserver = null;
+
+// Use ResizeObserver to re-collapse chips whenever their container resizes.
+// This handles: window resize, sidebar toggle, right panel expand/collapse, screen change.
+function setupChipResizeObserver() {
+    if (_chipResizeObserver) return;
+    var filterEl = document.getElementById('assignee-filter');
+    if (!filterEl || typeof ResizeObserver === 'undefined') return;
+    _chipResizeObserver = new ResizeObserver(function() {
+        clearTimeout(_chipResizeTimer);
+        _chipResizeTimer = setTimeout(function() {
+            if (Object.keys(_assigneeCounts).length >= 2) {
+                renderAssigneeFilter();
+            }
+        }, 100);
+    });
+    _chipResizeObserver.observe(filterEl);
+}
+
 function renderAssigneeFilter() {
     var assignees = {};
     allItems.forEach(function(item) {
@@ -108,14 +131,17 @@ function renderAssigneeFilter() {
             assignees[item.assignee] = (assignees[item.assignee] || 0) + 1;
         }
     });
+    _assigneeCounts = assignees;
 
     var names = Object.keys(assignees);
     var filterEl = document.getElementById('assignee-filter');
     var chipsEl = document.getElementById('assignee-chips');
     if (!filterEl || !chipsEl) return;
 
+    var tabsEl = document.querySelector('.matrix-tabs');
     if (names.length < 2) {
         filterEl.style.display = 'none';
+        if (tabsEl) tabsEl.classList.remove('has-assignee-row');
         currentAssigneeFilter = null;
         return;
     }
@@ -125,20 +151,151 @@ function renderAssigneeFilter() {
     }
 
     filterEl.style.display = 'flex';
+    if (tabsEl) tabsEl.classList.add('has-assignee-row');
+    names.sort();
 
+    // Build all chip HTML (all visible initially)
     var html = '<button class="assignee-chip' + (!currentAssigneeFilter ? ' active' : '') +
                '" onclick="filterByAssignee(null)">全部</button>';
-    names.sort().forEach(function(name) {
+    names.forEach(function(name) {
         var isActive = currentAssigneeFilter === name;
-        html += '<button class="assignee-chip' + (isActive ? ' active' : '') +
+        html += '<button class="assignee-chip assignee-chip-auto' + (isActive ? ' active' : '') +
+                '" data-name="' + escapeHtml(name) +
                 '" onclick="filterByAssignee(\'' + escapeHtml(name) + '\')">' +
                 escapeHtml(name) + ' <span class="chip-count">' + assignees[name] + '</span></button>';
     });
     chipsEl.innerHTML = html;
+
+    // Collapse chips to fit available width
+    collapseAssigneeChips();
+    // Observe container resizes (sidebar toggle, window resize, screen change, etc.)
+    setupChipResizeObserver();
+}
+
+function collapseAssigneeChips() {
+    var chipsEl = document.getElementById('assignee-chips');
+    if (!chipsEl) return;
+
+    var allChips = Array.prototype.slice.call(chipsEl.querySelectorAll('.assignee-chip-auto'));
+    if (allChips.length === 0) return;
+
+    // Guard: if element not laid out yet, retry next frame
+    if (chipsEl.offsetWidth === 0 || chipsEl.offsetParent === null) {
+        requestAnimationFrame(function() { collapseAssigneeChips(); });
+        return;
+    }
+
+    // === Direct width measurement approach ===
+    // All chips are currently rendered visible. Measure each chip's width,
+    // then determine how many fit in the container alongside a "+N more" button.
+
+    var containerWidth = chipsEl.clientWidth;
+    var gap = 5; // matches CSS gap
+
+    // Measure the "全部" button width
+    var allBtn = chipsEl.querySelector('.assignee-chip:not(.assignee-chip-auto)');
+    var usedWidth = allBtn ? (allBtn.offsetWidth + gap) : 0;
+
+    // Measure each person chip's width
+    var chipWidths = [];
+    var totalChipsWidth = usedWidth;
+    for (var i = 0; i < allChips.length; i++) {
+        var w = allChips[i].offsetWidth;
+        chipWidths.push(w);
+        totalChipsWidth += w + gap;
+    }
+
+    // If all chips fit, no collapse needed
+    if (totalChipsWidth <= containerWidth + 2) return;
+
+    // Need collapse. Estimate "+N more" button width (measure with temp element)
+    var tempBtn = document.createElement('button');
+    tempBtn.className = 'assignee-more-btn';
+    tempBtn.style.visibility = 'hidden';
+    tempBtn.style.position = 'absolute';
+    tempBtn.textContent = '+' + allChips.length + ' 更多 ▾';
+    chipsEl.appendChild(tempBtn);
+    var moreBtnWidth = tempBtn.offsetWidth;
+    chipsEl.removeChild(tempBtn);
+
+    // Available width for person chips = container - 全部btn - moreBtn - gaps
+    var available = containerWidth - usedWidth - moreBtnWidth - gap;
+
+    // Count how many chips fit
+    var visibleCount = 0;
+    var runningWidth = 0;
+    for (var i = 0; i < allChips.length; i++) {
+        var needed = chipWidths[i] + (visibleCount > 0 ? gap : 0);
+        if (runningWidth + needed <= available + 2) {
+            visibleCount++;
+            runningWidth += needed;
+        } else {
+            break;
+        }
+    }
+
+    visibleCount = Math.max(1, visibleCount);
+
+    // If all fit after measurement, no collapse
+    if (visibleCount >= allChips.length) return;
+
+    // Hide overflow chips
+    var hiddenNames = [];
+    for (var i = allChips.length - 1; i >= visibleCount; i--) {
+        hiddenNames.unshift(allChips[i].getAttribute('data-name'));
+        allChips[i].style.display = 'none';
+    }
+
+    if (hiddenNames.length === 0) return;
+
+    // Add "+N more" dropdown button
+    var assignees = _assigneeCounts;
+    var hiddenActive = hiddenNames.indexOf(currentAssigneeFilter) !== -1;
+    var moreBtn = document.createElement('button');
+    moreBtn.className = 'assignee-more-btn' + (hiddenActive ? ' active' : '');
+    moreBtn.onclick = function(e) { toggleAssigneeDropdown(e); };
+    moreBtn.textContent = '+' + hiddenNames.length + ' 更多 ▾';
+    chipsEl.appendChild(moreBtn);
+
+    // Add dropdown panel (append to assignee-filter, not chips, to avoid overflow:hidden clipping)
+    var filterEl = document.getElementById('assignee-filter');
+    var dropdown = document.createElement('div');
+    dropdown.className = 'assignee-dropdown';
+    dropdown.id = 'assignee-dropdown';
+    dropdown.style.display = 'none';
+    hiddenNames.forEach(function(name) {
+        var isActive = currentAssigneeFilter === name;
+        var item = document.createElement('button');
+        item.className = 'assignee-dropdown-item' + (isActive ? ' active' : '');
+        item.textContent = name + ' ' + (assignees[name] || '');
+        item.onclick = function() { filterByAssignee(name); closeAssigneeDropdown(); };
+        dropdown.appendChild(item);
+    });
+    (filterEl || chipsEl).appendChild(dropdown);
+}
+
+function toggleAssigneeDropdown(e) {
+    e.stopPropagation();
+    var dropdown = document.getElementById('assignee-dropdown');
+    if (!dropdown) return;
+    var isVisible = dropdown.style.display !== 'none';
+    dropdown.style.display = isVisible ? 'none' : 'block';
+    if (!isVisible) {
+        // Close on outside click
+        setTimeout(function() {
+            document.addEventListener('click', closeAssigneeDropdown, { once: true });
+        }, 0);
+    }
+}
+
+function closeAssigneeDropdown() {
+    var dropdown = document.getElementById('assignee-dropdown');
+    if (dropdown) dropdown.style.display = 'none';
 }
 
 function filterByAssignee(name) {
     currentAssigneeFilter = name;
+    closeAssigneeDropdown();
     updateCounts();
     renderItems();
 }
@@ -442,6 +599,83 @@ function permanentDeleteTask(itemId) {
                 }
             });
     }, { confirmText: '永久删除', danger: true });
+}
+
+// ========== 待处理事项收集箱 ==========
+function loadPendingItems() {
+    try {
+        return JSON.parse(localStorage.getItem('pendingItems') || '[]');
+    } catch(e) { return []; }
+}
+
+function savePendingItems(items) {
+    localStorage.setItem('pendingItems', JSON.stringify(items));
+}
+
+function addPendingItem() {
+    var input = document.getElementById('pending-input');
+    var text = input.value.trim();
+    if (!text) return;
+    addPendingItemDirect(text);
+    input.value = '';
+}
+
+// Direct add (called from selection popup and input)
+function addPendingItemDirect(text) {
+    if (!text) return;
+    var items = loadPendingItems();
+    items.push({ id: Date.now().toString(), text: text, time: new Date().toISOString() });
+    savePendingItems(items);
+    renderPendingItems();
+    showToast('已收入待处理', 'success');
+}
+
+function removePendingItem(id) {
+    var items = loadPendingItems().filter(function(i) { return i.id !== id; });
+    savePendingItems(items);
+    renderPendingItems();
+}
+
+function promotePendingItem(id) {
+    var items = loadPendingItems();
+    var item = items.find(function(i) { return i.id === id; });
+    if (!item) return;
+    items = items.filter(function(i) { return i.id !== id; });
+    savePendingItems(items);
+    renderPendingItems();
+    openTaskModal('create', null, currentTab, 'not-important-urgent');
+    setTimeout(function() {
+        document.getElementById('modal-title').value = item.text;
+    }, 50);
+}
+
+function renderPendingItems() {
+    var list = document.getElementById('pending-list');
+    if (!list) return;
+    var items = loadPendingItems();
+    var section = document.getElementById('pending-section');
+    if (section) {
+        if (items.length === 0 && !section.classList.contains('user-toggled')) {
+            section.classList.remove('expanded');
+        } else if (items.length > 0 && !section.classList.contains('user-toggled')) {
+            section.classList.add('expanded');
+        }
+    }
+    if (items.length === 0) {
+        list.innerHTML = '<div class="empty-hint">记录灵感，稍后处理</div>';
+        return;
+    }
+    var html = '';
+    items.forEach(function(item) {
+        html += '<div class="pending-item">' +
+            '<span class="pending-text">' + escapeHtml(item.text) + '</span>' +
+            '<div class="pending-actions">' +
+                '<button class="pending-btn promote" onclick="promotePendingItem(\'' + item.id + '\')" title="创建为任务">→</button>' +
+                '<button class="pending-btn remove" onclick="removePendingItem(\'' + item.id + '\')" title="删除">×</button>' +
+            '</div>' +
+        '</div>';
+    });
+    list.innerHTML = html;
 }
 
 // 行内编辑任务标题
