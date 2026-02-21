@@ -1,0 +1,585 @@
+use rusqlite::Connection;
+use serde_json::{json, Value};
+
+/// Execute a tool call and return the result as JSON
+pub fn execute_tool(db: &Connection, user_id: &str, tool_name: &str, input: &Value) -> Value {
+    match tool_name {
+        "create_todo" => tool_create_todo(db, user_id, input),
+        "update_todo" => tool_update_todo(db, user_id, input),
+        "delete_todo" => tool_delete_todo(db, user_id, input),
+        "restore_todo" => tool_restore_todo(db, user_id, input),
+        "query_todos" => tool_query_todos(db, user_id, input),
+        "batch_update_todos" => tool_batch_update_todos(db, user_id, input),
+        "create_routine" => tool_create_routine(db, user_id, input),
+        "create_review" => tool_create_review(db, user_id, input),
+        "get_statistics" => tool_get_statistics(db, user_id, input),
+        "get_current_datetime" => tool_get_current_datetime(),
+        "create_english_scenario" => tool_create_english_scenario(db, user_id, input),
+        "query_english_scenarios" => tool_query_english_scenarios(db, user_id, input),
+        _ => json!({"error": format!("Unknown tool: {}", tool_name)}),
+    }
+}
+
+/// Return tool definitions for Claude API
+pub fn tool_definitions() -> Vec<Value> {
+    vec![
+        json!({
+            "name": "create_todo",
+            "description": "创建一个新任务",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "text": {"type": "string", "description": "任务标题"},
+                    "tab": {"type": "string", "enum": ["today", "week", "month"], "description": "时间维度，默认 today"},
+                    "quadrant": {"type": "string", "enum": ["important-urgent", "important-not-urgent", "not-important-urgent", "not-important-not-urgent"], "description": "优先级象限"},
+                    "due_date": {"type": "string", "description": "截止日期 YYYY-MM-DD"},
+                    "assignee": {"type": "string", "description": "负责人"},
+                    "tags": {"type": "array", "items": {"type": "string"}, "description": "标签"}
+                },
+                "required": ["text"]
+            }
+        }),
+        json!({
+            "name": "update_todo",
+            "description": "更新一个任务的属性",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string", "description": "任务ID"},
+                    "text": {"type": "string", "description": "新标题"},
+                    "tab": {"type": "string", "enum": ["today", "week", "month"]},
+                    "quadrant": {"type": "string", "enum": ["important-urgent", "important-not-urgent", "not-important-urgent", "not-important-not-urgent"]},
+                    "progress": {"type": "integer", "minimum": 0, "maximum": 100},
+                    "due_date": {"type": "string"},
+                    "completed": {"type": "boolean"}
+                },
+                "required": ["id"]
+            }
+        }),
+        json!({
+            "name": "delete_todo",
+            "description": "软删除一个任务（可恢复）",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string", "description": "任务ID"}
+                },
+                "required": ["id"]
+            }
+        }),
+        json!({
+            "name": "restore_todo",
+            "description": "恢复一个已删除的任务",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string", "description": "任务ID"}
+                },
+                "required": ["id"]
+            }
+        }),
+        json!({
+            "name": "query_todos",
+            "description": "查询任务列表，支持多种过滤条件",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "tab": {"type": "string", "enum": ["today", "week", "month"], "description": "按时间维度过滤"},
+                    "quadrant": {"type": "string", "description": "按象限过滤"},
+                    "completed": {"type": "boolean", "description": "按完成状态过滤"},
+                    "keyword": {"type": "string", "description": "按关键词搜索标题"},
+                    "assignee": {"type": "string", "description": "按负责人过滤"},
+                    "tag": {"type": "string", "description": "按标签过滤"}
+                }
+            }
+        }),
+        json!({
+            "name": "batch_update_todos",
+            "description": "批量更新多个任务",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "updates": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {"type": "string"},
+                                "tab": {"type": "string"},
+                                "quadrant": {"type": "string"},
+                                "progress": {"type": "integer"},
+                                "completed": {"type": "boolean"}
+                            },
+                            "required": ["id"]
+                        },
+                        "description": "批量更新列表"
+                    }
+                },
+                "required": ["updates"]
+            }
+        }),
+        json!({
+            "name": "create_routine",
+            "description": "创建一个例行任务（每天重复）",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "text": {"type": "string", "description": "例行任务内容"}
+                },
+                "required": ["text"]
+            }
+        }),
+        json!({
+            "name": "create_review",
+            "description": "创建一个审视项（定期检查的事项）",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "text": {"type": "string", "description": "审视项内容"},
+                    "frequency": {"type": "string", "enum": ["daily", "weekly", "monthly", "yearly"], "description": "频率"},
+                    "frequency_config": {"type": "object", "description": "频率配置，如 {day_of_week: 1} 表示每周一"}
+                },
+                "required": ["text", "frequency"]
+            }
+        }),
+        json!({
+            "name": "get_statistics",
+            "description": "获取用户的任务统计数据",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "period": {"type": "string", "enum": ["today", "week", "month", "all"], "description": "统计周期"}
+                },
+                "required": ["period"]
+            }
+        }),
+        json!({
+            "name": "get_current_datetime",
+            "description": "获取当前日期和时间",
+            "input_schema": {
+                "type": "object",
+                "properties": {}
+            }
+        }),
+        json!({
+            "name": "create_english_scenario",
+            "description": "创建一个英语场景（如银行、餐厅、加油站等日常场景），创建后会自动生成双语教学内容",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string", "description": "场景标题，如：银行开户、加油站加油"},
+                    "description": {"type": "string", "description": "补充说明，帮助生成更精准的内容"}
+                },
+                "required": ["title"]
+            }
+        }),
+        json!({
+            "name": "query_english_scenarios",
+            "description": "查询用户的英语场景列表",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "keyword": {"type": "string", "description": "按关键词搜索场景标题"}
+                }
+            }
+        }),
+    ]
+}
+
+// ─── Tool implementations ───
+
+fn tool_create_todo(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let text = input["text"].as_str().unwrap_or("").to_string();
+    if text.is_empty() {
+        return json!({"error": "text is required"});
+    }
+    let id = uuid::Uuid::new_v4().to_string()[..8].to_string();
+    let tab = input["tab"].as_str().unwrap_or("today");
+    let quadrant = input["quadrant"]
+        .as_str()
+        .unwrap_or("not-important-not-urgent");
+    let due_date = input["due_date"].as_str();
+    let assignee = input["assignee"].as_str().unwrap_or("");
+    let tags: Vec<String> = input["tags"]
+        .as_array()
+        .map(|a| a.iter().filter_map(|v| v.as_str().map(String::from)).collect())
+        .unwrap_or_default();
+    let now = chrono::Utc::now().to_rfc3339();
+
+    let result = db.execute(
+        "INSERT INTO todos (id, user_id, text, content, tab, quadrant, progress, completed, due_date, assignee, tags, sort_order, created_at, updated_at) VALUES (?1, ?2, ?3, '', ?4, ?5, 0, 0, ?6, ?7, ?8, 0.0, ?9, ?10)",
+        rusqlite::params![id, user_id, text, tab, quadrant, due_date, assignee, serde_json::to_string(&tags).unwrap_or_else(|_| "[]".into()), now, now],
+    );
+
+    match result {
+        Ok(_) => json!({"success": true, "id": id, "text": text, "tab": tab, "quadrant": quadrant}),
+        Err(e) => json!({"error": format!("Failed to create todo: {}", e)}),
+    }
+}
+
+fn tool_update_todo(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let id = match input["id"].as_str() {
+        Some(id) => id,
+        None => return json!({"error": "id is required"}),
+    };
+
+    // Verify ownership
+    let exists: bool = db
+        .query_row(
+            "SELECT COUNT(*) > 0 FROM todos WHERE id=?1 AND user_id=?2",
+            rusqlite::params![id, user_id],
+            |r| r.get(0),
+        )
+        .unwrap_or(false);
+    if !exists {
+        return json!({"error": "Task not found"});
+    }
+
+    let mut sets = Vec::new();
+    let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
+    let mut idx = 1;
+
+    macro_rules! maybe_set {
+        ($field:expr, $key:expr) => {
+            if let Some(v) = input[$key].as_str() {
+                sets.push(format!("{}=?{}", $field, idx));
+                params.push(Box::new(v.to_string()));
+                idx += 1;
+            }
+        };
+    }
+
+    maybe_set!("text", "text");
+    maybe_set!("tab", "tab");
+    maybe_set!("quadrant", "quadrant");
+    maybe_set!("due_date", "due_date");
+
+    if let Some(v) = input["progress"].as_i64() {
+        sets.push(format!("progress=?{}", idx));
+        params.push(Box::new(v));
+        idx += 1;
+        // Auto-complete at 100%
+        if v >= 100 {
+            sets.push(format!("completed=1, completed_at=?{}", idx));
+            params.push(Box::new(chrono::Utc::now().to_rfc3339()));
+            idx += 1;
+        }
+    }
+
+    if let Some(v) = input["completed"].as_bool() {
+        sets.push(format!("completed=?{}", idx));
+        params.push(Box::new(v as i32));
+        idx += 1;
+        if v {
+            sets.push(format!("completed_at=?{}", idx));
+            params.push(Box::new(chrono::Utc::now().to_rfc3339()));
+            idx += 1;
+        }
+    }
+
+    if sets.is_empty() {
+        return json!({"success": true, "message": "Nothing to update"});
+    }
+
+    let now = chrono::Utc::now().to_rfc3339();
+    sets.push(format!("updated_at=?{}", idx));
+    params.push(Box::new(now));
+    idx += 1;
+
+    let sql = format!(
+        "UPDATE todos SET {} WHERE id=?{} AND user_id=?{}",
+        sets.join(", "),
+        idx,
+        idx + 1
+    );
+    params.push(Box::new(id.to_string()));
+    params.push(Box::new(user_id.to_string()));
+
+    let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+    match db.execute(&sql, param_refs.as_slice()) {
+        Ok(_) => json!({"success": true, "id": id}),
+        Err(e) => json!({"error": format!("Update failed: {}", e)}),
+    }
+}
+
+fn tool_delete_todo(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let id = match input["id"].as_str() {
+        Some(id) => id,
+        None => return json!({"error": "id is required"}),
+    };
+    let now = chrono::Utc::now().to_rfc3339();
+    match db.execute(
+        "UPDATE todos SET deleted=1, deleted_at=?1, updated_at=?2 WHERE id=?3 AND user_id=?4",
+        rusqlite::params![now, now, id, user_id],
+    ) {
+        Ok(0) => json!({"error": "Task not found"}),
+        Ok(_) => json!({"success": true, "id": id}),
+        Err(e) => json!({"error": format!("Delete failed: {}", e)}),
+    }
+}
+
+fn tool_restore_todo(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let id = match input["id"].as_str() {
+        Some(id) => id,
+        None => return json!({"error": "id is required"}),
+    };
+    let now = chrono::Utc::now().to_rfc3339();
+    match db.execute(
+        "UPDATE todos SET deleted=0, deleted_at=NULL, updated_at=?1 WHERE id=?2 AND user_id=?3",
+        rusqlite::params![now, id, user_id],
+    ) {
+        Ok(0) => json!({"error": "Task not found"}),
+        Ok(_) => json!({"success": true, "id": id}),
+        Err(e) => json!({"error": format!("Restore failed: {}", e)}),
+    }
+}
+
+fn tool_query_todos(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let mut conditions = vec!["user_id=?1".to_string(), "deleted=0".to_string()];
+    let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = vec![Box::new(user_id.to_string())];
+    let mut idx = 2;
+
+    if let Some(tab) = input["tab"].as_str() {
+        conditions.push(format!("tab=?{}", idx));
+        params.push(Box::new(tab.to_string()));
+        idx += 1;
+    }
+    if let Some(quadrant) = input["quadrant"].as_str() {
+        conditions.push(format!("quadrant=?{}", idx));
+        params.push(Box::new(quadrant.to_string()));
+        idx += 1;
+    }
+    if let Some(completed) = input["completed"].as_bool() {
+        conditions.push(format!("completed=?{}", idx));
+        params.push(Box::new(completed as i32));
+        idx += 1;
+    }
+    if let Some(keyword) = input["keyword"].as_str() {
+        conditions.push(format!("text LIKE ?{}", idx));
+        params.push(Box::new(format!("%{}%", keyword)));
+        idx += 1;
+    }
+    if let Some(assignee) = input["assignee"].as_str() {
+        conditions.push(format!("assignee=?{}", idx));
+        params.push(Box::new(assignee.to_string()));
+        idx += 1;
+    }
+    if let Some(tag) = input["tag"].as_str() {
+        conditions.push(format!("tags LIKE ?{}", idx));
+        params.push(Box::new(format!("%\"{}\"", tag)));
+        let _ = idx; // suppress warning
+    }
+
+    let sql = format!(
+        "SELECT id, text, tab, quadrant, progress, completed, due_date, assignee, tags FROM todos WHERE {} ORDER BY sort_order ASC LIMIT 30",
+        conditions.join(" AND ")
+    );
+
+    let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+    let mut stmt = match db.prepare(&sql) {
+        Ok(s) => s,
+        Err(e) => return json!({"error": format!("Query failed: {}", e)}),
+    };
+
+    let rows = match stmt.query_map(param_refs.as_slice(), |row| {
+        Ok(json!({
+            "id": row.get::<_, String>(0)?,
+            "text": row.get::<_, String>(1)?,
+            "tab": row.get::<_, String>(2)?,
+            "quadrant": row.get::<_, String>(3)?,
+            "progress": row.get::<_, i64>(4)?,
+            "completed": row.get::<_, bool>(5)?,
+            "due_date": row.get::<_, Option<String>>(6)?,
+            "assignee": row.get::<_, String>(7)?,
+            "tags": row.get::<_, String>(8)?
+        }))
+    }) {
+        Ok(r) => r,
+        Err(e) => return json!({"error": format!("Query failed: {}", e)}),
+    };
+
+    let items: Vec<Value> = rows.flatten().collect();
+    json!({"success": true, "count": items.len(), "items": items})
+}
+
+fn tool_batch_update_todos(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let updates = match input["updates"].as_array() {
+        Some(u) => u,
+        None => return json!({"error": "updates array is required"}),
+    };
+
+    let mut success_count = 0;
+    for update in updates {
+        let result = tool_update_todo(db, user_id, update);
+        if result["success"].as_bool().unwrap_or(false) {
+            success_count += 1;
+        }
+    }
+
+    json!({"success": true, "updated": success_count, "total": updates.len()})
+}
+
+fn tool_create_routine(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let text = match input["text"].as_str() {
+        Some(t) if !t.is_empty() => t,
+        _ => return json!({"error": "text is required"}),
+    };
+    let id = uuid::Uuid::new_v4().to_string()[..8].to_string();
+    let now = chrono::Utc::now().to_rfc3339();
+
+    match db.execute(
+        "INSERT INTO routines (id, user_id, text, completed_today, created_at) VALUES (?1, ?2, ?3, 0, ?4)",
+        rusqlite::params![id, user_id, text, now],
+    ) {
+        Ok(_) => json!({"success": true, "id": id, "text": text}),
+        Err(e) => json!({"error": format!("Failed to create routine: {}", e)}),
+    }
+}
+
+fn tool_create_review(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let text = match input["text"].as_str() {
+        Some(t) if !t.is_empty() => t,
+        _ => return json!({"error": "text is required"}),
+    };
+    let frequency = input["frequency"].as_str().unwrap_or("weekly");
+    let freq_config = input
+        .get("frequency_config")
+        .map(|v| serde_json::to_string(v).unwrap_or_else(|_| "{}".into()))
+        .unwrap_or_else(|| "{}".into());
+
+    let id = uuid::Uuid::new_v4().to_string()[..8].to_string();
+    let now = chrono::Utc::now().to_rfc3339();
+
+    match db.execute(
+        "INSERT INTO reviews (id, user_id, text, frequency, frequency_config, notes, category, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, '', '', ?6, ?7)",
+        rusqlite::params![id, user_id, text, frequency, freq_config, now, now],
+    ) {
+        Ok(_) => json!({"success": true, "id": id, "text": text, "frequency": frequency}),
+        Err(e) => json!({"error": format!("Failed to create review: {}", e)}),
+    }
+}
+
+fn tool_get_statistics(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let period = input["period"].as_str().unwrap_or("today");
+
+    let tab_filter = match period {
+        "today" => Some("tab='today'"),
+        "week" => Some("tab='week'"),
+        "month" => Some("tab='month'"),
+        _ => None,
+    };
+
+    let where_clause = match tab_filter {
+        Some(f) => format!("user_id=?1 AND deleted=0 AND {}", f),
+        None => "user_id=?1 AND deleted=0".to_string(),
+    };
+
+    let total: i64 = db
+        .query_row(
+            &format!("SELECT COUNT(*) FROM todos WHERE {}", where_clause),
+            [user_id],
+            |r| r.get(0),
+        )
+        .unwrap_or(0);
+    let completed: i64 = db
+        .query_row(
+            &format!(
+                "SELECT COUNT(*) FROM todos WHERE {} AND completed=1",
+                where_clause
+            ),
+            [user_id],
+            |r| r.get(0),
+        )
+        .unwrap_or(0);
+    let overdue: i64 = db
+        .query_row(
+            &format!(
+                "SELECT COUNT(*) FROM todos WHERE {} AND completed=0 AND due_date IS NOT NULL AND due_date < date('now')",
+                where_clause
+            ),
+            [user_id],
+            |r| r.get(0),
+        )
+        .unwrap_or(0);
+
+    let completion_rate = if total > 0 {
+        (completed as f64 / total as f64 * 100.0).round() as i64
+    } else {
+        0
+    };
+
+    json!({
+        "period": period,
+        "total": total,
+        "completed": completed,
+        "pending": total - completed,
+        "overdue": overdue,
+        "completion_rate": format!("{}%", completion_rate)
+    })
+}
+
+fn tool_get_current_datetime() -> Value {
+    let now = chrono::Local::now();
+    json!({
+        "date": now.format("%Y-%m-%d").to_string(),
+        "time": now.format("%H:%M:%S").to_string(),
+        "weekday": now.format("%A").to_string(),
+        "iso": now.to_rfc3339()
+    })
+}
+
+fn tool_create_english_scenario(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let title = match input["title"].as_str() {
+        Some(t) if !t.is_empty() => t,
+        _ => return json!({"error": "title is required"}),
+    };
+    let description = input["description"].as_str().unwrap_or("");
+    let id = uuid::Uuid::new_v4().to_string()[..8].to_string();
+    let now = chrono::Utc::now().to_rfc3339();
+
+    match db.execute(
+        "INSERT INTO english_scenarios (id, user_id, title, title_en, description, icon, content, status, archived, created_at, updated_at) VALUES (?1, ?2, ?3, '', ?4, '📖', '', 'draft', 0, ?5, ?6)",
+        rusqlite::params![id, user_id, title, description, now, now],
+    ) {
+        Ok(_) => json!({"success": true, "id": id, "title": title, "message": "场景已创建，请到英语页面查看并生成内容"}),
+        Err(e) => json!({"error": format!("Failed to create scenario: {}", e)}),
+    }
+}
+
+fn tool_query_english_scenarios(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let keyword = input["keyword"].as_str();
+
+    let (sql, params): (String, Vec<Box<dyn rusqlite::types::ToSql>>) = if let Some(kw) = keyword {
+        (
+            "SELECT id, title, title_en, status, icon FROM english_scenarios WHERE user_id=?1 AND archived=0 AND title LIKE ?2 ORDER BY updated_at DESC LIMIT 20".into(),
+            vec![Box::new(user_id.to_string()), Box::new(format!("%{}%", kw))],
+        )
+    } else {
+        (
+            "SELECT id, title, title_en, status, icon FROM english_scenarios WHERE user_id=?1 AND archived=0 ORDER BY updated_at DESC LIMIT 20".into(),
+            vec![Box::new(user_id.to_string())],
+        )
+    };
+
+    let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+    let mut stmt = match db.prepare(&sql) {
+        Ok(s) => s,
+        Err(e) => return json!({"error": format!("Query failed: {}", e)}),
+    };
+
+    let rows = match stmt.query_map(param_refs.as_slice(), |row| {
+        Ok(json!({
+            "id": row.get::<_, String>(0)?,
+            "title": row.get::<_, String>(1)?,
+            "title_en": row.get::<_, String>(2).unwrap_or_default(),
+            "status": row.get::<_, String>(3)?,
+            "icon": row.get::<_, String>(4).unwrap_or_else(|_| "📖".into())
+        }))
+    }) {
+        Ok(r) => r,
+        Err(e) => return json!({"error": format!("Query failed: {}", e)}),
+    };
+
+    let items: Vec<Value> = rows.flatten().collect();
+    json!({"success": true, "count": items.len(), "items": items})
+}

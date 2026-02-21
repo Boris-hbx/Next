@@ -41,6 +41,14 @@ function updateCounts() {
 }
 
 function renderItems() {
+    if (window.innerWidth <= 768) {
+        renderFlatList();
+    } else {
+        renderMatrix();
+    }
+}
+
+function renderMatrix() {
     var quadrants = ['important-urgent', 'important-not-urgent', 'not-important-urgent', 'not-important-not-urgent'];
 
     quadrants.forEach(function(q) {
@@ -78,12 +86,108 @@ function renderItems() {
     document.getElementById('completed-list').innerHTML = completedHtml || '<div class="empty-hint">暂无已完成任务</div>';
     document.getElementById('deleted-list').innerHTML = deletedHtml || '<div class="empty-hint">暂无已删除任务</div>';
 
+    // 桌面端显示象限，隐藏扁平列表
+    var flatView = document.getElementById('flat-list-view');
+    if (flatView) flatView.style.display = 'none';
+
     attachTouchHandlers();
     attachTooltipHandlers();
     updateQuadrantScroll();
     updateButtonAnimations();
     renderAssigneeFilter();
     renderPendingItems();
+}
+
+var _flatListShowCompleted = false;
+
+function renderFlatList() {
+    var flatView = document.getElementById('flat-list-view');
+    if (!flatView) return;
+    flatView.style.display = 'block';
+
+    var QUADRANT_BADGES = {
+        'important-urgent': { icon: '🔥', cls: 'flat-badge-q1' },
+        'important-not-urgent': { icon: '🎯', cls: 'flat-badge-q2' },
+        'not-important-urgent': { icon: '📥', cls: 'flat-badge-q3' },
+        'not-important-not-urgent': { icon: '⚡', cls: 'flat-badge-q4' }
+    };
+
+    var pending = [];
+    var done = [];
+
+    allItems.forEach(function(item) {
+        if (item.deleted) return;
+        if (item.tab !== currentTab) return;
+        if (currentAssigneeFilter && item.assignee !== currentAssigneeFilter) return;
+        if (item.completed) {
+            done.push(item);
+        } else {
+            pending.push(item);
+        }
+    });
+
+    var html = '';
+
+    if (pending.length === 0 && done.length === 0) {
+        html = '<div class="flat-empty">暂无任务</div>';
+    } else {
+        pending.forEach(function(item) {
+            var badge = QUADRANT_BADGES[item.quadrant] || { icon: '○', cls: 'flat-badge-q4' };
+            var progress = item.progress || 0;
+            var dueDateHtml = (item.due_date && typeof formatRelativeDate === 'function')
+                ? '<span class="task-due ' + getDueDateClass(item.due_date) + '">' + formatRelativeDate(item.due_date) + '</span>'
+                : '';
+            html += '<div class="flat-task-item" data-id="' + item.id + '">' +
+                '<div class="task-checkbox" onclick="event.stopPropagation(); toggleComplete(\'' + item.id + '\')"></div>' +
+                '<div class="flat-task-content" onclick="showTaskCard(\'' + item.id + '\')">' +
+                    '<div class="task-text">' + escapeHtml(item.text) + '</div>' +
+                    (dueDateHtml ? '<div class="flat-task-meta">' + dueDateHtml + '</div>' : '') +
+                '</div>' +
+                '<span class="flat-task-badge ' + badge.cls + '">' + badge.icon + '</span>' +
+            '</div>';
+        });
+
+        if (done.length > 0) {
+            html += '<div class="flat-task-done-section">' +
+                '<div class="flat-task-done-toggle" onclick="toggleFlatCompleted()">' +
+                    '已完成 (' + done.length + ') ' + (_flatListShowCompleted ? '▲' : '▼') +
+                '</div>';
+            if (_flatListShowCompleted) {
+                done.forEach(function(item) {
+                    html += '<div class="flat-task-item completed" data-id="' + item.id + '" onclick="showTaskCard(\'' + item.id + '\')">' +
+                        '<div class="task-checkbox checked" onclick="event.stopPropagation(); toggleComplete(\'' + item.id + '\')">✓</div>' +
+                        '<div class="flat-task-content">' +
+                            '<div class="task-text">' + escapeHtml(item.text) + '</div>' +
+                        '</div>' +
+                    '</div>';
+                });
+            }
+            html += '</div>';
+        }
+    }
+
+    flatView.innerHTML = html;
+
+    // 同步右侧边栏数据
+    var completedHtml = '';
+    var deletedHtml = '';
+    allItems.forEach(function(item) {
+        if (item.deleted) return;
+        if (item.completed) completedHtml += createCompletedItemHtml(item);
+    });
+    allItems.forEach(function(item) {
+        if (item.deleted) deletedHtml += createDeletedItemHtml(item);
+    });
+    document.getElementById('completed-list').innerHTML = completedHtml || '<div class="empty-hint">暂无已完成任务</div>';
+    document.getElementById('deleted-list').innerHTML = deletedHtml || '<div class="empty-hint">暂无已删除任务</div>';
+
+    renderAssigneeFilter();
+    renderPendingItems();
+}
+
+function toggleFlatCompleted() {
+    _flatListShowCompleted = !_flatListShowCompleted;
+    renderFlatList();
 }
 
 function updateQuadrantScroll() {

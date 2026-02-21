@@ -2,60 +2,56 @@
 
 **Focus on the Right Thing.**
 
-A focused task management desktop app for Windows. Next helps you cut through the noise and zero in on what truly matters — the next right thing to do.
+A personal task management app with AI assistant. Cut through the noise and focus on what truly matters — the next right thing to do.
 
 ## Features
 
-- **Priority Lanes**: Organize tasks by urgency and importance to surface what needs attention now
-- **Time Horizons**: Today, This Week, Next 30 Days — plan at the right granularity
-- **Drag & Drop**: Move tasks across priorities and time horizons with mouse or touch
-- **Progress Tracking**: 0-100% progress bars, auto-complete at 100%
-- **Routines**: Daily recurring tasks to build habits
-- **Dark/Light Mode**: System preference detection + manual toggle
-- **Keyboard Shortcuts**: Full keyboard navigation
-- **Search**: Real-time task search with highlighting
-- **Changelog**: Automatic change history for every task
-
-## Quick Start
-
-```bash
-# Development mode
-cargo tauri dev
-
-# Production build
-cargo tauri build
-
-# Build + copy installer to release/
-scripts\release.bat
-```
-
-Build output: `src-tauri/target/release/bundle/nsis/Next_x.x.x_x64-setup.exe`
+- **Priority Lanes** — Organize tasks by urgency & importance (Eisenhower matrix)
+- **Time Horizons** — Today / This Week / Next 30 Days
+- **AI Assistant (阿宝)** — Natural language task management powered by Claude
+- **Routines & Reviews** — Daily habits + periodic check-ins
+- **Drag & Drop** — Reorder tasks across lanes and time tabs
+- **PWA** — Install on mobile, works offline
+- **Dark / Light Mode** — System detection + manual toggle
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Desktop | Tauri 2.0 (Rust) |
-| Backend | Rust (Tauri Commands) |
+| Backend | Rust (Axum 0.8) |
+| Database | SQLite (WAL mode) |
 | Frontend | Vanilla HTML/CSS/JS |
-| Data | JSON files (`%LOCALAPPDATA%\Next\data\`) |
-| Installer | NSIS (.exe) |
+| AI | Claude API (Anthropic) |
+| Deployment | Docker + Fly.io |
 
-## Keyboard Shortcuts
+## Quick Start
 
-| Key | Action |
-|-----|--------|
-| `N` | New task |
-| `S` | Search |
-| `R` | Daily review |
-| `1` `2` `3` | Switch Today / Week / Month |
-| `D` | Toggle dark mode |
-| `?` | Show help |
+```bash
+cd server
+PORT=3001 ANTHROPIC_API_KEY=your_key cargo run
+```
 
-## Build Requirements
+Open `http://localhost:3001`.
 
-- Rust (rustup.rs)
-- Tauri CLI (`cargo install tauri-cli`)
+## Deploy
+
+```bash
+fly secrets set ANTHROPIC_API_KEY=xxx
+fly deploy
+```
+
+## Documentation
+
+Detailed docs live in `docs/ref/`:
+
+| Topic | File |
+|-------|------|
+| Architecture & design | [ARCHITECTURE.md](docs/ref/ARCHITECTURE.md) |
+| REST API & data models | [API.md](docs/ref/API.md) |
+| Rust backend guide | [BACKEND.md](docs/ref/BACKEND.md) |
+| Frontend JS/CSS/PWA | [FRONTEND.md](docs/ref/FRONTEND.md) |
+| Deployment & Docker | [DEPLOYMENT.md](docs/ref/DEPLOYMENT.md) |
+| Database schema | [DATA.md](docs/ref/DATA.md) |
 
 ## License
 

@@ -4,8 +4,8 @@
   "description": "Focus on the right thing - Personal productivity tool",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f8f9fa",
-  "theme_color": "#ff6b6b",
+  "background_color": "#0d1117",
+  "theme_color": "#667eea",
   "orientation": "portrait-primary",
   "icons": [
     {

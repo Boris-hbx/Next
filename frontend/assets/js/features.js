@@ -1,4 +1,4 @@
-// ========== 工具提示、每日回顾、手势、键盘快捷键等 ==========
+// ========== 工具提示、手势、键盘快捷键等 ==========
 
 // 毛玻璃 Tooltip
 var glassTooltip = null;
@@ -91,59 +91,6 @@ function showGestureHint(text) {
         gestureHint.classList.remove('visible');
     }, 1000);
 }
-
-// 每日回顾 (F601)
-function showDailyReview() {
-    var today = new Date();
-    var dateStr = today.getFullYear() + '年' + (today.getMonth() + 1) + '月' + today.getDate() + '日';
-    document.getElementById('review-date').textContent = dateStr;
-
-    var todayItems = allItems.filter(function(item) { return item.tab === 'today'; });
-    var completed = todayItems.filter(function(item) { return item.completed; });
-    var pending = todayItems.filter(function(item) { return !item.completed; });
-
-    document.getElementById('review-completed').textContent = completed.length;
-    document.getElementById('review-pending').textContent = pending.length;
-
-    var messages = [];
-    var rate = todayItems.length > 0 ? (completed.length / todayItems.length * 100).toFixed(0) : 0;
-
-    if (rate >= 100) {
-        messages = ['太棒了！今日任务全部完成！', '完美的一天！所有任务都搞定了！', '你是效率之王！'];
-    } else if (rate >= 80) {
-        messages = ['非常出色！完成了大部分任务！', '很接近目标了，继续保持！'];
-    } else if (rate >= 50) {
-        messages = ['完成了一半任务，继续努力！', '稳步前进，你可以的！'];
-    } else if (rate > 0) {
-        messages = ['迈出了第一步，明天更进一步！', '每一点进步都值得肯定！'];
-    } else if (todayItems.length === 0) {
-        messages = ['今天还没有任务，添加一个开始吧！'];
-    } else {
-        messages = ['休息也是为了更好的出发！', '明天是新的开始！'];
-    }
-    document.getElementById('review-message').textContent = messages[Math.floor(Math.random() * messages.length)];
-
-    var tasksHtml = '';
-    completed.forEach(function(item) {
-        tasksHtml += '<div class="review-task-item"><span class="review-task-check">✓</span><span>' + escapeHtml(item.text) + '</span></div>';
-    });
-    document.getElementById('review-tasks').innerHTML = tasksHtml || '<div style="text-align:center;color:var(--text-muted);">暂无完成的任务</div>';
-
-    document.getElementById('daily-review-modal').classList.add('visible');
-}
-
-function hideDailyReview(e) {
-    if (e && e.target !== document.getElementById('daily-review-modal')) return;
-    document.getElementById('daily-review-modal').classList.remove('visible');
-}
-
-// R 键每日回顾
-document.addEventListener('keydown', function(e) {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-    if (e.key === 'r' || e.key === 'R') {
-        showDailyReview();
-    }
-});
 
 // 版本管理浮动面板
 function toggleVersionPanel() {

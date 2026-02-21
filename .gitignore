@@ -28,6 +28,9 @@ private-data/*
 # Tauri
 src-tauri/target/
 
+# Rust server
+server/target/
+
 # Release output
 release/
 
@@ -46,3 +49,4 @@ docs/backup/
 
 # Screenshots
 PrtSc/
+server/data/

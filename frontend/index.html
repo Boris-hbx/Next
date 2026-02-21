@@ -2,15 +2,18 @@
 <html lang="zh-CN" data-theme="">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#667eea">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Next">
     <title>Next - Focus on the Right Thing</title>
-    <link rel="stylesheet" href="assets/css/base.css?v=20260213">
-    <link rel="stylesheet" href="assets/css/style.css?v=20260213">
-    <link rel="stylesheet" href="assets/css/components.css?v=20260213">
+    <link rel="stylesheet" href="assets/css/base.css?v=20260221j">
+    <link rel="stylesheet" href="assets/css/style.css?v=20260221j">
+    <link rel="stylesheet" href="assets/css/components.css?v=20260221j">
+    <link rel="stylesheet" href="assets/css/mobile.css?v=20260221j">
+    <link rel="stylesheet" href="assets/css/abao.css?v=20260221j">
+    <link rel="stylesheet" href="assets/css/english.css?v=20260221j">
     <link rel="manifest" href="assets/manifest.json">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
     <script>
@@ -38,8 +41,23 @@
         <div class="header-left">
         </div>
         <div class="header-right">
-            <div class="header-avatar" id="header-avatar" onclick="openAbout()" title="关于 Next">
-                <span class="avatar-text">B</span>
+            <div class="header-avatar-wrapper">
+                <div class="header-avatar" id="header-avatar" onclick="toggleAvatarMenu(event)">
+                    <span class="avatar-text" id="avatar-text">B</span>
+                    <img class="avatar-img" id="avatar-img" src="" style="display:none">
+                </div>
+                <div class="avatar-menu" id="avatar-menu">
+                    <a class="avatar-menu-item" onclick="Abao.toggle(); closeAvatarMenu()">
+                        <span>🐾</span> 问阿宝
+                    </a>
+                    <a class="avatar-menu-item" onclick="switchPage('settings'); closeAvatarMenu()">
+                        <span>⚙</span> 设置
+                    </a>
+                    <div class="avatar-menu-divider"></div>
+                    <a class="avatar-menu-item" onclick="doLogout()">
+                        <span>🚪</span> 退出登录
+                    </a>
+                </div>
             </div>
         </div>
     </header>
@@ -65,7 +83,7 @@
         <nav class="sidebar" id="sidebar">
             <div class="nav-links">
                 <a class="nav-link active" data-page="todo" onclick="switchPage('todo')">Todo</a>
-                <a class="nav-link" data-page="review" onclick="switchPage('review')">例行审视</a>
+                <a class="nav-link" data-page="review" onclick="switchPage('review')">例行</a>
             </div>
 
             <!-- 底部区域 -->
@@ -225,6 +243,8 @@
         </div>
 
     </div>
+    <!-- 手机端扁平列表（JS 控制显示/隐藏） -->
+    <div class="flat-list-view" id="flat-list-view" style="display:none;"></div>
     <!-- 右侧边栏 -->
     <div class="right-sidebar">
         <!-- 待处理事项收集箱 -->
@@ -262,6 +282,12 @@
                 <div class="section-list" id="deleted-list"></div>
             </div>
         </div>
+        <!-- 好友分享区 -->
+        <div class="sidebar-section" id="shared-section">
+            <div class="section-content">
+                <div id="shared-inbox-section"></div>
+            </div>
+        </div>
     </div>
     </div>
 
@@ -273,8 +299,8 @@
                 <h2 class="review-title">例行审视</h2>
                 <div class="review-actions">
                     <div class="review-filter-buttons" id="review-filter-buttons">
-                        <button class="review-filter-btn active" data-filter="all" onclick="setReviewFilter('all')">全部</button>
-                        <button class="review-filter-btn" data-filter="daily" onclick="setReviewFilter('daily')">每日</button>
+                        <button class="review-filter-btn" data-filter="all" onclick="setReviewFilter('all')">全部</button>
+                        <button class="review-filter-btn active" data-filter="daily" onclick="setReviewFilter('daily')">每日</button>
                         <button class="review-filter-btn" data-filter="weekly" onclick="setReviewFilter('weekly')">每周</button>
                         <button class="review-filter-btn" data-filter="monthly" onclick="setReviewFilter('monthly')">每月</button>
                         <button class="review-filter-btn" data-filter="yearly" onclick="setReviewFilter('yearly')">每年</button>
@@ -305,6 +331,178 @@
             <div class="review-group" id="review-group-yearly">
                 <div class="review-group-header">每年例行</div>
                 <div class="review-group-list" id="review-list-yearly"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置页面 -->
+    <div class="settings-main-layout" id="settings-view" style="display:none;">
+        <div class="settings-container">
+            <div class="settings-page-header">
+                <button class="settings-back-btn" onclick="switchPage('todo')">&#8592;</button>
+                <h2 class="settings-page-title">设置</h2>
+            </div>
+            <!-- 头像选择 -->
+            <div class="settings-section">
+                <h4>头像</h4>
+                <div class="avatar-picker">
+                    <div class="avatar-preview" id="settings-avatar-preview">
+                        <span class="avatar-text" id="settings-avatar-text">B</span>
+                        <img class="avatar-img" id="settings-avatar-img" src="" style="display:none">
+                    </div>
+                    <div class="avatar-preset-grid" id="avatar-preset-grid">
+                        <div class="avatar-preset" data-avatar="preset:cat" onclick="selectPresetAvatar(this)">
+                            <img src="assets/images/preset-cat.png" alt="Cat">
+                        </div>
+                        <div class="avatar-preset" data-avatar="preset:panda" onclick="selectPresetAvatar(this)">
+                            <img src="assets/images/preset-panda.png" alt="Panda">
+                        </div>
+                        <div class="avatar-preset" data-avatar="color:blue" onclick="selectPresetAvatar(this)">
+                            <span class="avatar-color-preview" style="background:linear-gradient(135deg,#667eea,#764ba2)"></span>
+                        </div>
+                        <div class="avatar-preset" data-avatar="color:green" onclick="selectPresetAvatar(this)">
+                            <span class="avatar-color-preview" style="background:linear-gradient(135deg,#43e97b,#38f9d7)"></span>
+                        </div>
+                        <div class="avatar-preset" data-avatar="color:orange" onclick="selectPresetAvatar(this)">
+                            <span class="avatar-color-preview" style="background:linear-gradient(135deg,#f7971e,#ffd200)"></span>
+                        </div>
+                        <div class="avatar-preset" data-avatar="color:pink" onclick="selectPresetAvatar(this)">
+                            <span class="avatar-color-preview" style="background:linear-gradient(135deg,#f093fb,#f5576c)"></span>
+                        </div>
+                    </div>
+                    <label class="avatar-upload-btn">
+                        📷 上传自定义头像
+                        <input type="file" accept="image/*" onchange="handleAvatarUpload(event)" style="display:none">
+                    </label>
+                </div>
+            </div>
+            <!-- 账户信息 -->
+            <div class="settings-section">
+                <h4>账户信息</h4>
+                <div class="setting-group">
+                    <label>用户名</label>
+                    <div class="settings-value" id="settings-username">--</div>
+                </div>
+                <div class="setting-group">
+                    <label>显示名称</label>
+                    <div class="settings-value" id="settings-display-name">--</div>
+                </div>
+            </div>
+            <!-- 修改密码 -->
+            <div class="settings-section">
+                <h4>修改密码</h4>
+                <div class="setting-group">
+                    <label>当前密码</label>
+                    <input type="password" id="settings-old-password" placeholder="输入当前密码">
+                </div>
+                <div class="setting-group">
+                    <label>新密码</label>
+                    <input type="password" id="settings-new-password" placeholder="至少 8 个字符">
+                </div>
+                <div class="setting-group">
+                    <label>确认新密码</label>
+                    <input type="password" id="settings-confirm-password" placeholder="再次输入新密码">
+                </div>
+                <button class="btn btn-primary settings-change-pwd-btn"
+                        onclick="changePassword()">修改密码</button>
+            </div>
+            <!-- 好友 -->
+            <div class="settings-section">
+                <h4>好友</h4>
+                <div id="friend-requests"></div>
+                <div id="friends-list">
+                    <div class="friends-empty">还没有好友</div>
+                </div>
+                <button class="btn btn-primary settings-add-friend-btn" id="add-friend-btn">+ 添加好友</button>
+            </div>
+            <!-- 退出登录 -->
+            <div class="settings-section">
+                <button class="btn btn-danger settings-logout-btn"
+                        onclick="doLogout()">退出登录</button>
+            </div>
+            <!-- 应用信息 -->
+            <div class="settings-section settings-about">
+                <div class="settings-app-name">Next</div>
+                <div class="settings-app-tagline">Focus on the Right Thing</div>
+                <div class="settings-app-version">Version 1.2.0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 英语场景页面 -->
+    <div class="english-main-layout" id="english-view" style="display:none;">
+        <!-- 场景列表页 -->
+        <div class="english-list-view">
+            <div class="english-header">
+                <h2>场景英语</h2>
+                <button class="btn" id="english-create-btn">+ 新场景</button>
+            </div>
+            <!-- 空状态 -->
+            <div class="english-empty-state" id="english-empty-state">
+                <div class="empty-icon">📖</div>
+                <h3>还没有英语场景</h3>
+                <p>按日常场景学英语，阿宝帮你生成双语对话</p>
+                <button class="btn" id="english-empty-create-btn">创建第一个场景</button>
+            </div>
+            <!-- 场景卡片网格 -->
+            <div class="english-scenarios" id="english-scenarios"></div>
+        </div>
+
+        <!-- 场景详情页 -->
+        <div class="english-detail-view">
+            <div class="english-detail-header">
+                <div class="english-detail-header-left">
+                    <button class="english-back-btn" id="english-back-btn">&larr;</button>
+                    <span class="english-detail-title" id="english-detail-title"></span>
+                </div>
+                <div class="english-detail-actions">
+                    <button class="btn-icon" id="english-regen-btn" title="重新生成">🔄</button>
+                    <button class="btn-icon" id="english-share-btn" title="分享">📤</button>
+                    <button class="btn-icon" id="english-delete-btn" title="删除">🗑️</button>
+                </div>
+            </div>
+            <div class="english-content" id="english-content"></div>
+        </div>
+    </div>
+
+    <!-- 英语场景创建弹窗 -->
+    <div class="english-modal-overlay" id="english-modal-overlay">
+        <div class="english-modal" onclick="event.stopPropagation()">
+            <h3>新建英语场景</h3>
+            <div class="english-modal-field">
+                <label>场景标题</label>
+                <input type="text" id="english-modal-title" placeholder="例如：银行开户、加油站">
+            </div>
+            <div class="english-modal-field">
+                <label>补充说明（可选）</label>
+                <textarea id="english-modal-desc" rows="2" placeholder="你想重点学什么？有什么特定需求？"></textarea>
+            </div>
+            <div class="english-modal-actions">
+                <button class="btn btn-secondary" id="english-modal-cancel">取消</button>
+                <button class="btn btn-primary" id="english-modal-submit">创建并生成</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 好友搜索弹窗 -->
+    <div class="friend-search-overlay" id="friend-search-overlay" style="display:none;">
+        <div class="friend-search-modal" onclick="event.stopPropagation()">
+            <h3>添加好友</h3>
+            <input type="text" id="friend-search-input" placeholder="搜索用户名..." class="friend-search-input">
+            <div id="friend-search-results" class="friend-search-results"></div>
+            <div class="friend-search-close">
+                <button class="btn btn-secondary" onclick="Friends.closeShareModal(); document.getElementById('friend-search-overlay').style.display='none'">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 分享弹窗 -->
+    <div class="share-modal-overlay" id="share-modal-overlay" style="display:none;">
+        <div class="share-modal" onclick="event.stopPropagation()">
+            <h3>分享给好友</h3>
+            <div id="share-friends-list" class="share-friends-list"></div>
+            <div class="share-modal-close">
+                <button class="btn btn-secondary" onclick="Friends.closeShareModal()">取消</button>
             </div>
         </div>
     </div>
@@ -458,30 +656,6 @@
         </div>
     </div>
 
-    <!-- Daily Review Button (F601) -->
-    <button class="daily-review-trigger" onclick="showDailyReview()" title="每日回顾 (R)">📊</button>
-
-    <!-- Daily Review Modal (F601) -->
-    <div class="daily-review-modal" id="daily-review-modal" onclick="hideDailyReview(event)">
-        <div class="daily-review-content" onclick="event.stopPropagation()">
-            <div class="daily-review-header" id="review-header">今日回顾</div>
-            <div class="daily-review-date" id="review-date"></div>
-            <div class="daily-review-stats">
-                <div class="review-stat">
-                    <div class="review-stat-value success" id="review-completed">0</div>
-                    <div class="review-stat-label">已完成</div>
-                </div>
-                <div class="review-stat">
-                    <div class="review-stat-value" id="review-pending">0</div>
-                    <div class="review-stat-label">待完成</div>
-                </div>
-            </div>
-            <div class="daily-review-message" id="review-message"></div>
-            <div class="daily-review-tasks" id="review-tasks"></div>
-            <button class="daily-review-close" onclick="hideDailyReview()">继续加油</button>
-        </div>
-    </div>
-
         </main>
     </div>
 
@@ -530,19 +704,77 @@
     <!-- Gesture Hint -->
     <div class="gesture-hint" id="gesture-hint"></div>
 
+    <!-- Mobile Bottom Navigation (hidden on desktop via CSS) -->
+    <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+        <a class="mobile-nav-item active" data-page="todo" onclick="switchPage('todo'); activateMobileNav(this)">
+            <span class="mobile-nav-icon">&#10003;</span>
+            <span class="mobile-nav-label">Todo</span>
+        </a>
+        <a class="mobile-nav-item" data-page="review" onclick="switchPage('review'); activateMobileNav(this)">
+            <span class="mobile-nav-icon">🔄</span>
+            <span class="mobile-nav-label">例行</span>
+        </a>
+        <a class="mobile-nav-item mobile-nav-abao" onclick="Abao.toggle()">
+            <span class="mobile-nav-icon">🐾</span>
+            <span class="mobile-nav-label">阿宝</span>
+        </a>
+        <a class="mobile-nav-item" data-page="english" onclick="switchPage('english'); activateMobileNav(this)">
+            <span class="mobile-nav-icon">📖</span>
+            <span class="mobile-nav-label">英语</span>
+        </a>
+        <a class="mobile-nav-item" data-page="inbox" onclick="switchPage('inbox'); activateMobileNav(this)">
+            <span class="mobile-nav-icon">📦<span class="inbox-badge" id="inbox-badge" style="display:none;"></span></span>
+            <span class="mobile-nav-label">潘多拉</span>
+        </a>
+    </nav>
+
+    <!-- 阿宝对话面板 -->
+    <div class="abao-overlay" id="abao-overlay"></div>
+    <div class="abao-panel" id="abao-panel">
+        <div class="abao-header">
+            <div class="abao-drag-bar"><span></span></div>
+            <div class="abao-header-left">
+                <div class="abao-avatar">🐾</div>
+                <span class="abao-header-title">阿宝</span>
+                <span class="abao-header-status">· 在线</span>
+            </div>
+            <div style="display:flex;gap:4px;">
+                <button class="abao-close-btn" id="abao-new-chat" title="新对话">+</button>
+                <button class="abao-close-btn" id="abao-close" title="关闭 (Esc)">&times;</button>
+            </div>
+        </div>
+        <div class="abao-messages" id="abao-messages"></div>
+        <button class="abao-scroll-bottom" id="abao-scroll-bottom">↓ 回到底部</button>
+        <div class="abao-shortcuts">
+            <button class="abao-shortcut-btn" data-text="今天有什么任务？">今日概览</button>
+            <button class="abao-shortcut-btn" data-text="帮我整理待分类任务">整理分类</button>
+            <button class="abao-shortcut-btn" data-text="这周完成了多少？">本周统计</button>
+        </div>
+        <div class="abao-input-area">
+            <textarea class="abao-input" id="abao-input" placeholder="跟阿宝说点什么..." rows="1"></textarea>
+            <button class="abao-send-btn" id="abao-send" title="发送">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 8L2 14V9L8 8L2 7V2L14 8Z" fill="currentColor"/></svg>
+            </button>
+        </div>
+    </div>
+
     <!-- JS Modules -->
-    <script src="assets/js/api.js?v=20260213"></script>
-    <script src="assets/js/utils.js?v=20260213"></script>
-    <script src="assets/js/app.js?v=20260213"></script>
-    <script src="assets/js/tasks.js?v=20260213"></script>
-    <script src="assets/js/modal.js?v=20260213"></script>
-    <script src="assets/js/datepicker.js?v=20260213"></script>
-    <script src="assets/js/drag.js?v=20260213"></script>
-    <script src="assets/js/review.js?v=20260213"></script>
-    <script src="assets/js/routines.js?v=20260213"></script>
-    <script src="assets/js/features.js?v=20260213"></script>
-    <script src="assets/js/particles.js?v=20260213"></script>
-    <script src="assets/js/living-line.js?v=20260213"></script>
+    <script src="assets/js/api.js?v=20260221j"></script>
+    <script src="assets/js/utils.js?v=20260221j"></script>
+    <script src="assets/js/app.js?v=20260221j"></script>
+    <script src="assets/js/tasks.js?v=20260221j"></script>
+    <script src="assets/js/modal.js?v=20260221j"></script>
+    <script src="assets/js/datepicker.js?v=20260221j"></script>
+    <script src="assets/js/drag.js?v=20260221j"></script>
+    <script src="assets/js/review.js?v=20260221j"></script>
+    <script src="assets/js/routines.js?v=20260221j"></script>
+    <script src="assets/js/features.js?v=20260221j"></script>
+    <script src="assets/js/particles.js?v=20260221j"></script>
+    <script src="assets/js/living-line.js?v=20260221j"></script>
+    <script src="assets/js/abao.js?v=20260221j"></script>
+    <script src="assets/js/english.js?v=20260221j"></script>
+    <script src="assets/js/friends.js?v=20260221j"></script>
+    <script src="assets/js/settings.js?v=20260221j"></script>
 
     <script>
     // Initialize
@@ -551,6 +783,14 @@
     loadRoutines();
     shuffleQuote();
     renderPendingItems();
+
+    // Register Service Worker (版本号强制更新)
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+            regs.forEach(function(r) { r.update(); });
+        });
+        navigator.serviceWorker.register('/sw.js?v=6').catch(function() {});
+    }
     </script>
 </body>
 </html>

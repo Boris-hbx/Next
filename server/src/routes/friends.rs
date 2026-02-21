@@ -1,0 +1,662 @@
+use axum::{
+    extract::{Path, Query, State},
+    http::StatusCode,
+    Json,
+};
+use serde::Serialize;
+use serde_json::json;
+
+use crate::auth::UserId;
+use crate::models::friend::*;
+use crate::state::AppState;
+
+#[derive(Debug, Serialize)]
+pub struct FriendsResponse {
+    pub success: bool,
+    pub items: Vec<FriendInfo>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct FriendRequestsResponse {
+    pub success: bool,
+    pub items: Vec<FriendRequest>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SharedItemsResponse {
+    pub success: bool,
+    pub items: Vec<SharedItem>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SimpleResponse {
+    pub success: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CountResponse {
+    pub success: bool,
+    pub count: i64,
+}
+
+// ─── Friends ───
+
+pub async fn list_friends(
+    State(state): State<AppState>,
+    user_id: UserId,
+) -> (StatusCode, Json<FriendsResponse>) {
+    let db = state.db.lock().unwrap();
+
+    let mut stmt = db
+        .prepare(
+            "SELECT f.id, u.id, u.username, u.display_name
+             FROM friendships f
+             JOIN users u ON (
+                 CASE WHEN f.requester_id = ?1 THEN f.addressee_id ELSE f.requester_id END = u.id
+             )
+             WHERE (f.requester_id = ?1 OR f.addressee_id = ?1) AND f.status = 'accepted'",
+        )
+        .unwrap();
+
+    let items: Vec<FriendInfo> = stmt
+        .query_map([&user_id.0], |row| {
+            Ok(FriendInfo {
+                friendship_id: row.get(0)?,
+                id: row.get(1)?,
+                username: row.get(2)?,
+                display_name: row.get(3)?,
+            })
+        })
+        .unwrap()
+        .filter_map(|r| r.ok())
+        .collect();
+
+    (
+        StatusCode::OK,
+        Json(FriendsResponse {
+            success: true,
+            items,
+            message: None,
+        }),
+    )
+}
+
+pub async fn list_friend_requests(
+    State(state): State<AppState>,
+    user_id: UserId,
+) -> (StatusCode, Json<FriendRequestsResponse>) {
+    let db = state.db.lock().unwrap();
+
+    let mut stmt = db
+        .prepare(
+            "SELECT f.id, u.id, u.username, u.display_name, f.status, f.created_at
+             FROM friendships f
+             JOIN users u ON f.requester_id = u.id
+             WHERE f.addressee_id = ?1 AND f.status = 'pending'
+             ORDER BY f.created_at DESC",
+        )
+        .unwrap();
+
+    let items: Vec<FriendRequest> = stmt
+        .query_map([&user_id.0], |row| {
+            Ok(FriendRequest {
+                id: row.get(0)?,
+                from_user: FriendInfo {
+                    friendship_id: row.get(0)?,
+                    id: row.get(1)?,
+                    username: row.get(2)?,
+                    display_name: row.get(3)?,
+                },
+                status: row.get(4)?,
+                created_at: row.get(5)?,
+            })
+        })
+        .unwrap()
+        .filter_map(|r| r.ok())
+        .collect();
+
+    (
+        StatusCode::OK,
+        Json(FriendRequestsResponse {
+            success: true,
+            items,
+            message: None,
+        }),
+    )
+}
+
+pub async fn send_friend_request(
+    State(state): State<AppState>,
+    user_id: UserId,
+    Json(req): Json<FriendRequestPayload>,
+) -> (StatusCode, Json<SimpleResponse>) {
+    let db = state.db.lock().unwrap();
+
+    // Find target user
+    let target = db.query_row(
+        "SELECT id FROM users WHERE username = ?1",
+        [&req.username],
+        |row| row.get::<_, String>(0),
+    );
+
+    let target_id = match target {
+        Ok(id) => id,
+        Err(_) => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(SimpleResponse {
+                    success: false,
+                    message: Some("用户不存在".into()),
+                }),
+            )
+        }
+    };
+
+    if target_id == user_id.0 {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(SimpleResponse {
+                success: false,
+                message: Some("不能添加自己为好友".into()),
+            }),
+        );
+    }
+
+    // Check existing friendship
+    let existing: bool = db
+        .query_row(
+            "SELECT COUNT(*) > 0 FROM friendships WHERE (requester_id = ?1 AND addressee_id = ?2) OR (requester_id = ?2 AND addressee_id = ?1)",
+            rusqlite::params![user_id.0, target_id],
+            |r| r.get(0),
+        )
+        .unwrap_or(false);
+
+    if existing {
+        return (
+            StatusCode::CONFLICT,
+            Json(SimpleResponse {
+                success: false,
+                message: Some("已存在好友关系或待处理请求".into()),
+            }),
+        );
+    }
+
+    let id = uuid::Uuid::new_v4().to_string()[..8].to_string();
+    let now = chrono::Utc::now().to_rfc3339();
+
+    db.execute(
+        "INSERT INTO friendships (id, requester_id, addressee_id, status, created_at, updated_at) VALUES (?1, ?2, ?3, 'pending', ?4, ?5)",
+        rusqlite::params![id, user_id.0, target_id, now, now],
+    )
+    .unwrap();
+
+    (
+        StatusCode::OK,
+        Json(SimpleResponse {
+            success: true,
+            message: Some("好友请求已发送".into()),
+        }),
+    )
+}
+
+pub async fn accept_friend(
+    State(state): State<AppState>,
+    user_id: UserId,
+    Path(id): Path<String>,
+) -> (StatusCode, Json<SimpleResponse>) {
+    let db = state.db.lock().unwrap();
+    let now = chrono::Utc::now().to_rfc3339();
+
+    let rows = db
+        .execute(
+            "UPDATE friendships SET status = 'accepted', updated_at = ?1 WHERE id = ?2 AND addressee_id = ?3 AND status = 'pending'",
+            rusqlite::params![now, id, user_id.0],
+        )
+        .unwrap_or(0);
+
+    if rows == 0 {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(SimpleResponse {
+                success: false,
+                message: Some("好友请求不存在".into()),
+            }),
+        );
+    }
+
+    (
+        StatusCode::OK,
+        Json(SimpleResponse {
+            success: true,
+            message: Some("已接受".into()),
+        }),
+    )
+}
+
+pub async fn decline_friend(
+    State(state): State<AppState>,
+    user_id: UserId,
+    Path(id): Path<String>,
+) -> (StatusCode, Json<SimpleResponse>) {
+    let db = state.db.lock().unwrap();
+    let now = chrono::Utc::now().to_rfc3339();
+
+    let rows = db
+        .execute(
+            "UPDATE friendships SET status = 'declined', updated_at = ?1 WHERE id = ?2 AND addressee_id = ?3 AND status = 'pending'",
+            rusqlite::params![now, id, user_id.0],
+        )
+        .unwrap_or(0);
+
+    if rows == 0 {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(SimpleResponse {
+                success: false,
+                message: Some("好友请求不存在".into()),
+            }),
+        );
+    }
+
+    (
+        StatusCode::OK,
+        Json(SimpleResponse {
+            success: true,
+            message: Some("已拒绝".into()),
+        }),
+    )
+}
+
+pub async fn delete_friend(
+    State(state): State<AppState>,
+    user_id: UserId,
+    Path(id): Path<String>,
+) -> (StatusCode, Json<SimpleResponse>) {
+    let db = state.db.lock().unwrap();
+
+    let rows = db
+        .execute(
+            "DELETE FROM friendships WHERE id = ?1 AND (requester_id = ?2 OR addressee_id = ?2)",
+            rusqlite::params![id, user_id.0],
+        )
+        .unwrap_or(0);
+
+    if rows == 0 {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(SimpleResponse {
+                success: false,
+                message: Some("好友关系不存在".into()),
+            }),
+        );
+    }
+
+    (
+        StatusCode::OK,
+        Json(SimpleResponse {
+            success: true,
+            message: Some("已删除好友".into()),
+        }),
+    )
+}
+
+pub async fn search_users(
+    State(state): State<AppState>,
+    user_id: UserId,
+    Query(query): Query<SearchQuery>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    let db = state.db.lock().unwrap();
+    let keyword = format!("%{}%", query.q);
+
+    let mut stmt = db
+        .prepare("SELECT id, username, display_name FROM users WHERE username LIKE ?1 AND id != ?2 LIMIT 10")
+        .unwrap();
+
+    let users: Vec<serde_json::Value> = stmt
+        .query_map(rusqlite::params![keyword, user_id.0], |row| {
+            Ok(json!({
+                "id": row.get::<_, String>(0)?,
+                "username": row.get::<_, String>(1)?,
+                "display_name": row.get::<_, Option<String>>(2)?
+            }))
+        })
+        .unwrap()
+        .filter_map(|r| r.ok())
+        .collect();
+
+    (
+        StatusCode::OK,
+        Json(json!({
+            "success": true,
+            "items": users
+        })),
+    )
+}
+
+// ─── Sharing ───
+
+pub async fn share_item(
+    State(state): State<AppState>,
+    user_id: UserId,
+    Json(req): Json<SharePayload>,
+) -> (StatusCode, Json<SimpleResponse>) {
+    let db = state.db.lock().unwrap();
+
+    // Verify friendship
+    let is_friend: bool = db
+        .query_row(
+            "SELECT COUNT(*) > 0 FROM friendships WHERE status = 'accepted' AND ((requester_id = ?1 AND addressee_id = ?2) OR (requester_id = ?2 AND addressee_id = ?1))",
+            rusqlite::params![user_id.0, req.friend_id],
+            |r| r.get(0),
+        )
+        .unwrap_or(false);
+
+    if !is_friend {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(SimpleResponse {
+                success: false,
+                message: Some("对方不是你的好友".into()),
+            }),
+        );
+    }
+
+    // Build snapshot based on item_type
+    let snapshot = match req.item_type.as_str() {
+        "todo" => {
+            db.query_row(
+                "SELECT id, text, content, tab, quadrant, progress, due_date, assignee, tags FROM todos WHERE id = ?1 AND user_id = ?2 AND deleted = 0",
+                rusqlite::params![req.item_id, user_id.0],
+                |row| {
+                    Ok(json!({
+                        "id": row.get::<_, String>(0)?,
+                        "text": row.get::<_, String>(1)?,
+                        "content": row.get::<_, String>(2).unwrap_or_default(),
+                        "tab": row.get::<_, String>(3)?,
+                        "quadrant": row.get::<_, String>(4)?,
+                        "progress": row.get::<_, i64>(5)?,
+                        "due_date": row.get::<_, Option<String>>(6)?,
+                        "assignee": row.get::<_, String>(7).unwrap_or_default(),
+                        "tags": row.get::<_, String>(8).unwrap_or_else(|_| "[]".into())
+                    }))
+                },
+            )
+            .ok()
+        }
+        "review" => {
+            db.query_row(
+                "SELECT id, text, frequency, frequency_config, notes, category FROM reviews WHERE id = ?1 AND user_id = ?2",
+                rusqlite::params![req.item_id, user_id.0],
+                |row| {
+                    Ok(json!({
+                        "id": row.get::<_, String>(0)?,
+                        "text": row.get::<_, String>(1)?,
+                        "frequency": row.get::<_, String>(2)?,
+                        "frequency_config": row.get::<_, String>(3).unwrap_or_else(|_| "{}".into()),
+                        "notes": row.get::<_, String>(4).unwrap_or_default(),
+                        "category": row.get::<_, String>(5).unwrap_or_default()
+                    }))
+                },
+            )
+            .ok()
+        }
+        "scenario" => {
+            db.query_row(
+                "SELECT id, title, title_en, description, icon, content FROM english_scenarios WHERE id = ?1 AND user_id = ?2",
+                rusqlite::params![req.item_id, user_id.0],
+                |row| {
+                    Ok(json!({
+                        "id": row.get::<_, String>(0)?,
+                        "title": row.get::<_, String>(1)?,
+                        "title_en": row.get::<_, String>(2).unwrap_or_default(),
+                        "description": row.get::<_, String>(3).unwrap_or_default(),
+                        "icon": row.get::<_, String>(4).unwrap_or_default(),
+                        "content": row.get::<_, String>(5).unwrap_or_default()
+                    }))
+                },
+            )
+            .ok()
+        }
+        _ => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(SimpleResponse {
+                    success: false,
+                    message: Some("不支持的分享类型".into()),
+                }),
+            )
+        }
+    };
+
+    let snapshot = match snapshot {
+        Some(s) => s,
+        None => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(SimpleResponse {
+                    success: false,
+                    message: Some("要分享的内容不存在".into()),
+                }),
+            )
+        }
+    };
+
+    let id = uuid::Uuid::new_v4().to_string()[..8].to_string();
+    let now = chrono::Utc::now().to_rfc3339();
+    let snapshot_str = serde_json::to_string(&snapshot).unwrap();
+    let message = req.message.unwrap_or_default();
+
+    db.execute(
+        "INSERT INTO shared_items (id, sender_id, recipient_id, item_type, item_id, item_snapshot, message, status, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 'unread', ?8)",
+        rusqlite::params![id, user_id.0, req.friend_id, req.item_type, req.item_id, snapshot_str, message, now],
+    )
+    .unwrap();
+
+    (
+        StatusCode::OK,
+        Json(SimpleResponse {
+            success: true,
+            message: Some("分享成功".into()),
+        }),
+    )
+}
+
+pub async fn shared_inbox(
+    State(state): State<AppState>,
+    user_id: UserId,
+) -> (StatusCode, Json<SharedItemsResponse>) {
+    let db = state.db.lock().unwrap();
+
+    let mut stmt = db
+        .prepare(
+            "SELECT s.id, s.sender_id, u.display_name, u.username, s.recipient_id, s.item_type, s.item_id, s.item_snapshot, s.message, s.status, s.created_at
+             FROM shared_items s
+             JOIN users u ON s.sender_id = u.id
+             WHERE s.recipient_id = ?1 AND s.status IN ('unread', 'read')
+             ORDER BY s.created_at DESC",
+        )
+        .unwrap();
+
+    let items: Vec<SharedItem> = stmt
+        .query_map([&user_id.0], |row| {
+            let display_name: Option<String> = row.get(2)?;
+            let username: String = row.get(3)?;
+            let snapshot_str: String = row.get(7)?;
+            let snapshot: serde_json::Value =
+                serde_json::from_str(&snapshot_str).unwrap_or(json!({}));
+
+            Ok(SharedItem {
+                id: row.get(0)?,
+                sender_id: row.get(1)?,
+                sender_name: Some(display_name.unwrap_or(username)),
+                recipient_id: row.get(4)?,
+                item_type: row.get(5)?,
+                item_id: row.get(6)?,
+                item_snapshot: snapshot,
+                message: row.get::<_, String>(8).unwrap_or_default(),
+                status: row.get(9)?,
+                created_at: row.get(10)?,
+            })
+        })
+        .unwrap()
+        .filter_map(|r| r.ok())
+        .collect();
+
+    (
+        StatusCode::OK,
+        Json(SharedItemsResponse {
+            success: true,
+            items,
+            message: None,
+        }),
+    )
+}
+
+pub async fn shared_inbox_count(
+    State(state): State<AppState>,
+    user_id: UserId,
+) -> (StatusCode, Json<CountResponse>) {
+    let db = state.db.lock().unwrap();
+
+    let count: i64 = db
+        .query_row(
+            "SELECT COUNT(*) FROM shared_items WHERE recipient_id = ?1 AND status = 'unread'",
+            [&user_id.0],
+            |r| r.get(0),
+        )
+        .unwrap_or(0);
+
+    (StatusCode::OK, Json(CountResponse { success: true, count }))
+}
+
+pub async fn accept_shared(
+    State(state): State<AppState>,
+    user_id: UserId,
+    Path(id): Path<String>,
+) -> (StatusCode, Json<SimpleResponse>) {
+    let db = state.db.lock().unwrap();
+
+    // Get the shared item
+    let result = db.query_row(
+        "SELECT item_type, item_snapshot FROM shared_items WHERE id = ?1 AND recipient_id = ?2 AND status IN ('unread', 'read')",
+        rusqlite::params![id, user_id.0],
+        |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)),
+    );
+
+    let (item_type, snapshot_str) = match result {
+        Ok(r) => r,
+        Err(_) => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(SimpleResponse {
+                    success: false,
+                    message: Some("分享不存在".into()),
+                }),
+            )
+        }
+    };
+
+    let snapshot: serde_json::Value = serde_json::from_str(&snapshot_str).unwrap_or(json!({}));
+    let new_id = uuid::Uuid::new_v4().to_string()[..8].to_string();
+    let now = chrono::Utc::now().to_rfc3339();
+
+    // Create copy in user's data
+    match item_type.as_str() {
+        "todo" => {
+            let text = snapshot["text"].as_str().unwrap_or("(分享的任务)");
+            let content = snapshot["content"].as_str().unwrap_or("");
+            let tab = snapshot["tab"].as_str().unwrap_or("today");
+            let quadrant = snapshot["quadrant"].as_str().unwrap_or("not-important-not-urgent");
+            let tags = snapshot["tags"].as_str().unwrap_or("[]");
+
+            db.execute(
+                "INSERT INTO todos (id, user_id, text, content, tab, quadrant, progress, completed, tags, sort_order, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0, 0, ?7, 0.0, ?8, ?9)",
+                rusqlite::params![new_id, user_id.0, text, content, tab, quadrant, tags, now, now],
+            )
+            .ok();
+        }
+        "review" => {
+            let text = snapshot["text"].as_str().unwrap_or("(分享的例行)");
+            let frequency = snapshot["frequency"].as_str().unwrap_or("weekly");
+            let freq_config = snapshot["frequency_config"].as_str().unwrap_or("{}");
+            let notes = snapshot["notes"].as_str().unwrap_or("");
+            let category = snapshot["category"].as_str().unwrap_or("");
+
+            db.execute(
+                "INSERT INTO reviews (id, user_id, text, frequency, frequency_config, notes, category, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+                rusqlite::params![new_id, user_id.0, text, frequency, freq_config, notes, category, now, now],
+            )
+            .ok();
+        }
+        "scenario" => {
+            let title = snapshot["title"].as_str().unwrap_or("(分享的场景)");
+            let title_en = snapshot["title_en"].as_str().unwrap_or("");
+            let description = snapshot["description"].as_str().unwrap_or("");
+            let icon = snapshot["icon"].as_str().unwrap_or("📖");
+            let content = snapshot["content"].as_str().unwrap_or("");
+
+            db.execute(
+                "INSERT INTO english_scenarios (id, user_id, title, title_en, description, icon, content, status, archived, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 'ready', 0, ?8, ?9)",
+                rusqlite::params![new_id, user_id.0, title, title_en, description, icon, content, now, now],
+            )
+            .ok();
+        }
+        _ => {}
+    }
+
+    // Mark as accepted
+    db.execute(
+        "UPDATE shared_items SET status = 'accepted' WHERE id = ?1",
+        [&id],
+    )
+    .ok();
+
+    (
+        StatusCode::OK,
+        Json(SimpleResponse {
+            success: true,
+            message: Some("已收下".into()),
+        }),
+    )
+}
+
+pub async fn dismiss_shared(
+    State(state): State<AppState>,
+    user_id: UserId,
+    Path(id): Path<String>,
+) -> (StatusCode, Json<SimpleResponse>) {
+    let db = state.db.lock().unwrap();
+
+    let rows = db
+        .execute(
+            "UPDATE shared_items SET status = 'dismissed' WHERE id = ?1 AND recipient_id = ?2",
+            rusqlite::params![id, user_id.0],
+        )
+        .unwrap_or(0);
+
+    if rows == 0 {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(SimpleResponse {
+                success: false,
+                message: Some("分享不存在".into()),
+            }),
+        );
+    }
+
+    (
+        StatusCode::OK,
+        Json(SimpleResponse {
+            success: true,
+            message: Some("已忽略".into()),
+        }),
+    )
+}

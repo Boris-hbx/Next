@@ -1,0 +1,12 @@
+**/target/
+src-tauri/
+release/
+PrtSc/
+logo-drafts/
+.git/
+*.exe
+*.pdb
+nul
+temp-*.ps1
+docs/
+scripts/

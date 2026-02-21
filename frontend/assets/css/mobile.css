@@ -419,3 +419,310 @@
         bottom: calc(80px + env(safe-area-inset-bottom));
     }
 }
+
+/* ============================================
+   RESPONSIVE LAYOUT: Desktop → Mobile
+   ============================================ */
+
+/* Mobile Bottom Navigation Bar */
+.mobile-bottom-nav {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    /* Show mobile bottom nav */
+    .mobile-bottom-nav {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 56px;
+        background: var(--bg-secondary, #161b22);
+        border-top: 1px solid var(--border-color, rgba(255,255,255,0.08));
+        align-items: end;
+        padding-bottom: env(safe-area-inset-bottom, 0);
+        z-index: 1000;
+    }
+
+    .mobile-nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        padding: 6px 0;
+        text-decoration: none;
+        color: var(--text-muted, #484f58);
+        font-size: 12px;
+        cursor: pointer;
+        transition: color 0.2s;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .mobile-nav-item.active {
+        color: var(--primary-color, #667eea);
+    }
+
+    .mobile-nav-icon {
+        font-size: 20px;
+        line-height: 1;
+    }
+
+    .mobile-nav-label {
+        font-size: 11px;
+        font-weight: 500;
+    }
+
+    /* 阿宝导航按钮 - raised center button */
+    .mobile-nav-abao {
+        position: relative;
+    }
+
+    .mobile-nav-abao .mobile-nav-icon {
+        width: 48px;
+        height: 48px;
+        background: var(--primary-gradient, linear-gradient(135deg, #667eea, #764ba2));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        margin-top: -20px;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
+    }
+
+    /* Fix layout: stretch to full width */
+    .todo-main-layout {
+        align-items: stretch !important;
+    }
+
+    .todo-matrix-container {
+        width: 100% !important;
+    }
+
+    /* Hide desktop sidebar */
+    .sidebar {
+        display: none !important;
+    }
+
+    .sidebar-hint {
+        display: none !important;
+    }
+
+    /* Hide pet on mobile */
+    .pet {
+        display: none !important;
+    }
+
+    /* Adjust main content */
+    .container {
+        flex-direction: column;
+    }
+
+    .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding-bottom: calc(56px + env(safe-area-inset-bottom, 0) + 16px);
+    }
+
+    /* Hide desktop right sidebar on mobile (except inbox mode) */
+    body:not(.page-inbox) .right-sidebar {
+        display: none !important;
+    }
+
+    /* 收件箱模式：在手机端显示右侧边栏为主内容 */
+    body.page-inbox .right-sidebar {
+        display: flex !important;
+        flex-direction: column;
+        width: 100% !important;
+        position: static !important;
+        padding: 72px 16px 80px;
+        gap: 12px;
+    }
+
+    body.page-inbox .right-sidebar .sidebar-section {
+        width: 100% !important;
+        background: var(--bg-card, rgba(255,255,255,0.04));
+        border-radius: 12px;
+    }
+
+    body.page-inbox .main-content {
+        display: none !important;
+    }
+
+    /* 手机端：隐藏象限矩阵，显示扁平列表 */
+    .eisenhower-matrix {
+        display: none !important;
+    }
+
+    #flat-list-view {
+        display: block !important;
+        padding: 0 4px;
+    }
+
+    .flat-task-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 10px;
+        background: var(--bg-card, rgba(255,255,255,0.04));
+        border-radius: 10px;
+        margin-bottom: 6px;
+        gap: 10px;
+        min-height: 44px;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .flat-task-item.completed {
+        opacity: 0.5;
+    }
+
+    .flat-task-item.completed .task-text {
+        text-decoration: line-through;
+    }
+
+    .flat-task-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .flat-task-content .task-text {
+        font-size: 14px;
+        color: var(--text-color, #e6edf3);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .flat-task-meta {
+        margin-top: 3px;
+        font-size: 12px;
+    }
+
+    .flat-task-badge {
+        font-size: 14px;
+        flex-shrink: 0;
+        width: 24px;
+        text-align: center;
+    }
+
+    .flat-task-done-section {
+        margin-top: 16px;
+    }
+
+    .flat-task-done-toggle {
+        font-size: 13px;
+        color: var(--text-muted, #8b949e);
+        cursor: pointer;
+        padding: 8px 4px;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .flat-empty {
+        text-align: center;
+        color: var(--text-muted, #8b949e);
+        padding: 40px 0;
+        font-size: 14px;
+    }
+
+    /* Review header: stack on mobile */
+    .review-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 12px;
+    }
+
+    .review-actions {
+        width: 100%;
+    }
+
+    .review-filter-buttons {
+        flex-wrap: wrap;
+    }
+
+    .quadrant.collapsed .task-list {
+        display: none;
+    }
+
+    .quadrant-header {
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Top header: compact */
+    .top-header {
+        padding: 0 12px !important;
+    }
+
+    /* Particles: disable on mobile */
+    .particles-canvas-extended,
+    #living-line {
+        display: none !important;
+    }
+
+    /* Task items: larger touch targets */
+    .task-item {
+        min-height: 44px;
+        padding: 8px 10px !important;
+    }
+
+    /* Modal: full width on mobile */
+    .modal-content {
+        width: 95vw !important;
+        max-width: 95vw !important;
+        max-height: 85vh !important;
+        margin: 0 auto;
+    }
+
+    /* Toast: above bottom nav */
+    .toast-container,
+    .toast {
+        bottom: calc(70px + env(safe-area-inset-bottom, 0)) !important;
+    }
+
+    /* Font size: prevent iOS zoom */
+    input, select, textarea {
+        font-size: 16px !important;
+    }
+
+    /* 设置页面手机端适配 */
+    body.page-settings .right-sidebar {
+        display: none !important;
+    }
+
+    .settings-main-layout {
+        padding: 10px 16px 80px;
+    }
+
+    .settings-section {
+        padding: 16px;
+    }
+}
+
+/* Tablet: 769-1024px */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .sidebar {
+        width: 60px !important;
+    }
+
+    .main-content {
+        margin-left: 60px !important;
+    }
+
+    .matrix-grid {
+        grid-template-columns: 1fr 1fr !important;
+    }
+
+    .particles-canvas-extended {
+        opacity: 0.5;
+    }
+}
+
+/* Helper: mobile nav activation */
+@media (min-width: 769px) {
+    .mobile-bottom-nav {
+        display: none !important;
+    }
+}

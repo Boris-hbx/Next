@@ -4,7 +4,7 @@ var allReviews = [];
 var reviewModalMode = null; // 'create' | 'edit'
 var editingReviewId = null;
 var selectedFrequency = 'daily';
-var currentReviewFilter = 'all';
+var currentReviewFilter = 'daily';
 
 function loadReviews() {
     API.getReviews()
