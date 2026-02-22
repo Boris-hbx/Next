@@ -661,6 +661,40 @@
         flex-wrap: wrap;
     }
 
+    /* Review items: compact layout on mobile */
+    .review-item {
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 10px 12px;
+    }
+
+    .review-item-content {
+        flex: 1 1 auto;
+        min-width: 60%;
+    }
+
+    .review-item-text {
+        white-space: normal;
+        -webkit-line-clamp: 2;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .review-freq-label {
+        min-width: auto;
+        font-size: 11px;
+    }
+
+    .review-status {
+        min-width: auto;
+        font-size: 11px;
+    }
+
+    .review-item-actions {
+        opacity: 1;
+    }
+
     .quadrant.collapsed .task-list {
         display: none;
     }
