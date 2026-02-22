@@ -1,3 +1,43 @@
+
+// ========== Collaboration helpers ==========
+var _collabAPI = {
+    setCollaborator: async function(todoId, friendId) {
+        var resp = await fetch("/api/collaborate/todos/" + todoId, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            credentials: "same-origin", body: JSON.stringify({ friend_id: friendId })
+        });
+        return await resp.json();
+    },
+    removeCollaborator: async function(todoId, friendId) {
+        var resp = await fetch("/api/collaborate/todos/" + todoId, {
+            method: "DELETE", headers: { "Content-Type": "application/json" },
+            credentials: "same-origin", body: JSON.stringify({ friend_id: friendId })
+        });
+        return await resp.json();
+    },
+    listCollaborators: async function(todoId) {
+        var resp = await fetch("/api/collaborate/todos/" + todoId + "/collaborators", {credentials: "same-origin"});
+        return await resp.json();
+    },
+    getPendingConfirmations: async function() {
+        var resp = await fetch("/api/collaborate/confirmations/pending", {credentials: "same-origin"});
+        return await resp.json();
+    },
+    respondConfirmation: async function(confId, response) {
+        var resp = await fetch("/api/collaborate/confirmations/" + confId + "/respond", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            credentials: "same-origin", body: JSON.stringify({ response: response })
+        });
+        return await resp.json();
+    },
+    withdrawConfirmation: async function(confId) {
+        var resp = await fetch("/api/collaborate/confirmations/" + confId + "/withdraw", {
+            method: "POST", credentials: "same-origin"
+        });
+        return await resp.json();
+    }
+};
+
 // ========== 任务渲染、CRUD、象限逻辑 ==========
 
 function loadItems() {
@@ -6,6 +46,7 @@ function loadItems() {
             allItems = data.items || [];
             updateCounts();
             renderItems();
+            loadPendingConfirmations();
         })
         .catch(err => {
             console.error('[loadItems] error:', err);
@@ -418,7 +459,15 @@ function createItemHtml(item) {
         ? '<span class="task-due ' + getDueDateClass(item.due_date) + '">' + formatRelativeDate(item.due_date) + '</span>'
         : '';
 
-    return '<div class="task-item" data-id="' + item.id + '" onmousedown="startCustomDrag(event)">' +
+    var collabClass = item.is_collaborative ? " collaborative-task" : "";
+    var collabMeta = "";
+    if (item.is_collaborative) {
+        var roleText = item.my_role === 'owner' ? '' : '来自 ';
+        var nameText = item.collaborator_name || '协作';
+        collabMeta = '<span class="collab-chip" title="协作任务">' + roleText + escapeHtml(nameText) + '</span>';
+    }
+
+    return '<div class="task-item' + collabClass + '" data-id="' + item.id + '" onmousedown="startCustomDrag(event)">' +
         '<div class="drag-handle">⋮⋮</div>' +
         '<div class="task-checkbox" onclick="event.stopPropagation(); toggleComplete(\'' + item.id + '\')" onmousedown="event.stopPropagation()"></div>' +
         progressRing +
@@ -426,6 +475,7 @@ function createItemHtml(item) {
             '<div class="task-text">' + escapeHtml(item.text) + '</div>' +
         '</div>' +
         dueDateHtml +
+        collabMeta +
         assigneeHtml +
         '<button class="task-delete" onmousedown="event.stopPropagation()" onclick="event.stopPropagation(); deleteTask(\'' + item.id + '\')" title="删除">&times;</button>' +
     '</div>';
@@ -850,5 +900,69 @@ function editTask(itemId) {
             editInput.removeEventListener('blur', saveEdit);
             cancelEdit();
         }
+    });
+}
+
+// ========== Confirmation banners ==========
+var _pendingConfirmations = [];
+
+function loadPendingConfirmations() {
+    _collabAPI.getPendingConfirmations().then(function(data) {
+        if (data.success) {
+            _pendingConfirmations = data.items || [];
+            renderConfirmationBanners();
+        }
+    }).catch(function() {});
+}
+
+var sq = String.fromCharCode(39); // single quote helper
+
+function renderConfirmationBanners() {
+    var container = document.getElementById("confirmation-banners");
+    if (!container) {
+        var matrix = document.querySelector(".matrix-content") || document.querySelector(".main-content");
+        if (!matrix) return;
+        container = document.createElement("div");
+        container.id = "confirmation-banners";
+        matrix.insertBefore(container, matrix.firstChild);
+    }
+    if (_pendingConfirmations.length === 0) { container.innerHTML = ""; return; }
+    var html = "";
+    _pendingConfirmations.forEach(function(conf) {
+        var actionText = conf.action === "complete" ? "完成" : "删除";
+        var iName = conf.initiator_name || conf.initiator_username || "";
+        var iText = conf.item_text || "(未知)";
+        var meData = window._currentUser || {};
+        var isInit = conf.initiated_by === (meData.id || "");
+        html += "<div class=\"confirm-banner\">";
+        html += "<div class=\"confirm-banner-text\">";
+        html += "<strong>" + escapeHtml(iName) + "</strong> 请求" + actionText + ": <em>" + escapeHtml(iText) + "</em>";
+        html += "</div><div class=\"confirm-banner-actions\">";
+        if (isInit) {
+            html += "<button class=\"confirm-reject\" onclick=\"withdrawConfirmation(" + sq + conf.id + sq + ")\">撤回</button>";
+        } else {
+            html += "<button class=\"confirm-approve\" onclick=\"respondToConfirmation(" + sq + conf.id + sq + "," + sq + "approve" + sq + ")\">同意</button>";
+            html += "<button class=\"confirm-reject\" onclick=\"respondToConfirmation(" + sq + conf.id + sq + "," + sq + "reject" + sq + ")\">拒绝</button>";
+        }
+        html += "</div></div>";
+    });
+    container.innerHTML = html;
+}
+
+function respondToConfirmation(confId, response) {
+    _collabAPI.respondConfirmation(confId, response).then(function(data) {
+        if (data.success) {
+            showToast(data.message || "已回应", "success");
+            loadPendingConfirmations(); loadItems();
+        } else { showToast(data.message || "失败", "error"); }
+    });
+}
+
+function withdrawConfirmation(confId) {
+    _collabAPI.withdrawConfirmation(confId).then(function(data) {
+        if (data.success) {
+            showToast(data.message || "已撤回", "success");
+            loadPendingConfirmations();
+        } else { showToast(data.message || "失败", "error"); }
     });
 }

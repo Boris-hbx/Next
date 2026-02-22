@@ -5,14 +5,17 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 
+use serde_json::json;
+
 use crate::auth::UserId;
 use crate::models::todo::*;
 use crate::state::AppState;
+use crate::services::collaboration;
 
 #[derive(Debug, Serialize)]
 pub struct TodosResponse {
     pub success: bool,
-    pub items: Vec<Todo>,
+    pub items: Vec<serde_json::Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message: Option<String>,
 }
@@ -93,6 +96,7 @@ pub async fn list_todos(
 ) -> (StatusCode, Json<TodosResponse>) {
     let db = state.db.lock().unwrap();
 
+    // Own todos
     let mut items: Vec<Todo> = if let Some(tab) = &query.tab {
         let mut stmt = db
             .prepare(
@@ -115,16 +119,54 @@ pub async fn list_todos(
             .collect()
     };
 
+    // Collaborative todos (from todo_collaborators) - use collaborator view settings
+    let collab_sql_tab = "SELECT t.id, t.text, t.content, tc.tab, tc.quadrant, t.progress, t.completed_at, t.completed, t.due_date, t.deleted, t.assignee, t.tags, t.created_at, t.updated_at, t.deleted_at FROM todos t JOIN todo_collaborators tc ON t.id = tc.todo_id WHERE tc.user_id = ?1 AND tc.status = 'active' AND t.deleted = 0 AND tc.tab = ?2 ORDER BY t.completed ASC, t.created_at ASC";
+    let collab_sql_all = "SELECT t.id, t.text, t.content, tc.tab, tc.quadrant, t.progress, t.completed_at, t.completed, t.due_date, t.deleted, t.assignee, t.tags, t.created_at, t.updated_at, t.deleted_at FROM todos t JOIN todo_collaborators tc ON t.id = tc.todo_id WHERE tc.user_id = ?1 AND tc.status = 'active' AND t.deleted = 0 ORDER BY t.completed ASC, t.created_at ASC";
+
+    let collab_items: Vec<Todo> = if let Some(tab) = &query.tab {
+        let mut stmt = db.prepare(collab_sql_tab).unwrap();
+        stmt.query_map(rusqlite::params![user_id.0, tab], row_to_todo)
+            .unwrap()
+            .filter_map(|r| r.ok())
+            .collect()
+    } else {
+        let mut stmt = db.prepare(collab_sql_all).unwrap();
+        stmt.query_map([&user_id.0], row_to_todo)
+            .unwrap()
+            .filter_map(|r| r.ok())
+            .collect()
+    };
+
+    // Merge and deduplicate (own todos take priority)
+    let own_ids: std::collections::HashSet<String> = items.iter().map(|t| t.id.clone()).collect();
+    for ct in collab_items {
+        if !own_ids.contains(&ct.id) {
+            items.push(ct);
+        }
+    }
+
     // Load changelogs
     for todo in &mut items {
         todo.changelog = load_changelog(&db, &todo.id);
+    }
+
+    // Enrich with collaboration info
+    let mut enriched_items: Vec<serde_json::Value> = Vec::new();
+    for todo in &items {
+        let mut val = serde_json::to_value(todo).unwrap();
+        if let Some(info) = collaboration::get_collab_info(&db, &todo.id, &user_id.0) {
+            val["is_collaborative"] = json!(true);
+            val["collaborator_name"] = json!(info.collaborator_name);
+            val["my_role"] = json!(info.my_role);
+        }
+        enriched_items.push(val);
     }
 
     (
         StatusCode::OK,
         Json(TodosResponse {
             success: true,
-            items,
+            items: enriched_items,
             message: None,
         }),
     )
@@ -137,11 +179,23 @@ pub async fn get_todo(
 ) -> (StatusCode, Json<TodoResponse>) {
     let db = state.db.lock().unwrap();
 
+    // Try owner first, then collaborator
     let result = db.query_row(
         "SELECT id, text, content, tab, quadrant, progress, completed_at, completed, due_date, deleted, assignee, tags, created_at, updated_at, deleted_at FROM todos WHERE id = ?1 AND user_id = ?2",
         rusqlite::params![id, user_id.0],
         row_to_todo,
     );
+
+    let result = match result {
+        Ok(todo) => Ok(todo),
+        Err(_) => {
+            db.query_row(
+                "SELECT t.id, t.text, t.content, tc.tab, tc.quadrant, t.progress, t.completed_at, t.completed, t.due_date, t.deleted, t.assignee, t.tags, t.created_at, t.updated_at, t.deleted_at FROM todos t JOIN todo_collaborators tc ON t.id = tc.todo_id WHERE t.id = ?1 AND tc.user_id = ?2 AND tc.status = 'active'",
+                rusqlite::params![id, user_id.0],
+                row_to_todo,
+            )
+        }
+    };
 
     match result {
         Ok(mut todo) => {
@@ -242,12 +296,23 @@ pub async fn update_todo(
 ) -> (StatusCode, Json<TodoResponse>) {
     let db = state.db.lock().unwrap();
 
-    // Fetch current todo
-    let current = db.query_row(
-        "SELECT id, text, content, tab, quadrant, progress, completed_at, completed, due_date, deleted, assignee, tags, created_at, updated_at, deleted_at FROM todos WHERE id = ?1 AND user_id = ?2",
-        rusqlite::params![id, user_id.0],
-        row_to_todo,
-    );
+    // Check role: owner or collaborator
+    let is_collaborator = !collaboration::check_todo_owner(&db, &id, &user_id.0) 
+                          && collaboration::check_todo_collaborator(&db, &id, &user_id.0);
+    
+    let current = if is_collaborator {
+        db.query_row(
+            "SELECT t.id, t.text, t.content, tc.tab, tc.quadrant, t.progress, t.completed_at, t.completed, t.due_date, t.deleted, t.assignee, t.tags, t.created_at, t.updated_at, t.deleted_at FROM todos t JOIN todo_collaborators tc ON t.id = tc.todo_id WHERE t.id = ?1 AND tc.user_id = ?2 AND tc.status = 'active'",
+            rusqlite::params![id, user_id.0],
+            row_to_todo,
+        )
+    } else {
+        db.query_row(
+            "SELECT id, text, content, tab, quadrant, progress, completed_at, completed, due_date, deleted, assignee, tags, created_at, updated_at, deleted_at FROM todos WHERE id = ?1 AND user_id = ?2",
+            rusqlite::params![id, user_id.0],
+            row_to_todo,
+        )
+    };
 
     let mut todo = match current {
         Ok(t) => t,
@@ -344,25 +409,49 @@ pub async fn update_todo(
     todo.updated_at = now;
     let tags_json = serde_json::to_string(&todo.tags).unwrap();
 
-    db.execute(
-        "UPDATE todos SET text=?1, content=?2, tab=?3, quadrant=?4, progress=?5, completed=?6, completed_at=?7, due_date=?8, assignee=?9, tags=?10, updated_at=?11 WHERE id=?12 AND user_id=?13",
-        rusqlite::params![
-            todo.text,
-            todo.content,
-            todo.tab.as_str(),
-            todo.quadrant.as_str(),
-            todo.progress as i32,
-            todo.completed as i32,
-            todo.completed_at,
-            todo.due_date,
-            todo.assignee,
-            tags_json,
-            todo.updated_at,
-            id,
-            user_id.0,
-        ],
-    )
-    .unwrap();
+    if is_collaborator {
+        // Collaborator: tab/quadrant updates go to todo_collaborators
+        db.execute(
+            "UPDATE todo_collaborators SET tab=?1, quadrant=?2 WHERE todo_id=?3 AND user_id=?4 AND status='active'",
+            rusqlite::params![todo.tab.as_str(), todo.quadrant.as_str(), id, user_id.0],
+        ).ok();
+        // Shared fields update the main todos table
+        db.execute(
+            "UPDATE todos SET text=?1, content=?2, progress=?3, completed=?4, completed_at=?5, due_date=?6, assignee=?7, tags=?8, updated_at=?9 WHERE id=?10",
+            rusqlite::params![
+                todo.text,
+                todo.content,
+                todo.progress as i32,
+                todo.completed as i32,
+                todo.completed_at,
+                todo.due_date,
+                todo.assignee,
+                tags_json,
+                todo.updated_at,
+                id,
+            ],
+        ).ok();
+    } else {
+        db.execute(
+            "UPDATE todos SET text=?1, content=?2, tab=?3, quadrant=?4, progress=?5, completed=?6, completed_at=?7, due_date=?8, assignee=?9, tags=?10, updated_at=?11 WHERE id=?12 AND user_id=?13",
+            rusqlite::params![
+                todo.text,
+                todo.content,
+                todo.tab.as_str(),
+                todo.quadrant.as_str(),
+                todo.progress as i32,
+                todo.completed as i32,
+                todo.completed_at,
+                todo.due_date,
+                todo.assignee,
+                tags_json,
+                todo.updated_at,
+                id,
+                user_id.0,
+            ],
+        )
+        .unwrap();
+    }
 
     todo.changelog = load_changelog(&db, &id);
 
@@ -406,6 +495,23 @@ pub async fn delete_todo(
 ) -> (StatusCode, Json<SimpleResponse>) {
     let db = state.db.lock().unwrap();
     let now = chrono::Utc::now().to_rfc3339();
+
+    // For collaborative todos, create a pending confirmation instead of immediate delete
+    if collaboration::is_todo_collaborative(&db, &id) && collaboration::check_todo_participant(&db, &id, &user_id.0) {
+        let conf_id = uuid::Uuid::new_v4().to_string()[..8].to_string();
+        db.execute(
+            "INSERT INTO pending_confirmations (id, item_type, item_id, action, initiated_by, initiated_at, status) VALUES (?1, 'todo', ?2, 'delete', ?3, ?4, 'pending')",
+            rusqlite::params![conf_id, id, user_id.0, now],
+        ).ok();
+
+        return (
+            StatusCode::OK,
+            Json(SimpleResponse {
+                success: true,
+                message: Some("已发起删除确认，等待协作者同意".into()),
+            }),
+        );
+    }
 
     let rows = db
         .execute(

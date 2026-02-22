@@ -150,6 +150,7 @@ async fn main() {
     // Collaborate routes (todo + routine collaboration + confirmations)
     let collaborate_routes = Router::new()
         .route("/todos/{id}", post(routes::collaborate::set_collaborator).delete(routes::collaborate::remove_collaborator))
+        .route("/todos/{id}/collaborators", get(routes::collaborate::list_collaborators))
         .route("/routines/{id}", post(routes::routine_collab::set_routine_collaborator).delete(routes::routine_collab::remove_routine_collaborator))
         .route("/confirmations/pending", get(routes::collaborate::list_pending_confirmations))
         .route("/confirmations/{id}/respond", post(routes::collaborate::respond_confirmation))

@@ -95,7 +95,18 @@ function openTaskModal(mode, item, tab, quadrant) {
 
     if (typeof syncDatePicker === 'function') syncDatePicker();
 
-    overlay.style.display = 'flex';
+    // Load collaborators (SPEC-041)
+    var collabSection = document.getElementById('modal-collab-section');
+    if (collabSection) {
+        if (item && item.id) {
+            collabSection.style.display = 'block';
+            if (typeof loadModalCollaborators === 'function') loadModalCollaborators(item.id);
+        } else {
+            collabSection.style.display = 'none';
+        }
+    }
+
+        overlay.style.display = 'flex';
 
     if (mode === 'create' || mode === 'edit') {
         setTimeout(function() { titleInput.focus(); }, 100);
@@ -409,3 +420,75 @@ document.querySelectorAll('.quadrant-cell').forEach(function(opt) {
     });
 });
 
+
+// ========== Collaborator selector (SPEC-041) ==========
+var _modalCollaborators = [];
+
+function loadModalCollaborators(todoId) {
+    if (\!todoId || typeof _collabAPI === "undefined") return;
+    _collabAPI.listCollaborators(todoId).then(function(data) {
+        if (data.success) { _modalCollaborators = data.items || []; renderModalCollaborators(_modalCollaborators); }
+    }).catch(function() { renderModalCollaborators([]); });
+}
+
+function renderModalCollaborators(collabs) {
+    var section = document.getElementById("modal-collab-section");
+    if (\!section) return;
+    var html = "";
+    if (collabs.length === 0) {
+        html = "<div class="collab-empty">点击下方按钮添加协作者</div><button class="collab-add-btn" onclick="showAddCollaboratorDialog()">+ 添加协作者</button>";
+    } else {
+        collabs.forEach(function(c) {
+            var rl = c.role === "owner" ? "所有者" : "协作者";
+            html += "<div class=\"collab-person\"><span class=\"collab-person-name\">" + escapeHtml(c.display_name) + "</span>";
+            html += "<span class=\"collab-person-role\">" + rl + "</span></div>";
+        });
+        if (modalTaskItem && modalTaskItem.my_role === "owner") {
+            html += "<button class=\"collab-add-btn\" onclick=\"showAddCollaboratorDialog()\">+ 添加协作者</button>";
+        }
+    }
+    section.innerHTML = html;
+}
+function showAddCollaboratorDialog() {
+    if (\!modalTaskId) { showToast("请先保存任务", "error"); return; }
+    API.getFriends().then(function(data) {
+        if (\!data.success || \!data.items || data.items.length === 0) { showToast("暂无好友", "info"); return; }
+        var existing = _modalCollaborators.map(function(c) { return c.user_id; });
+        var avail = data.items.filter(function(f) { return existing.indexOf(f.id) === -1; });
+        if (avail.length === 0) { showToast("所有好友已是协作者", "info"); return; }
+        var ov = document.createElement("div");
+        ov.className = "collab-picker-overlay";
+        var lh = "";
+        avail.forEach(function(f) {
+            lh += "<div class="collab-picker-item" data-fid="" + f.id + "">" + escapeHtml(f.display_name || f.username) + "</div>";
+        });
+        ov.innerHTML = "<div class="collab-picker-dialog"><div class="collab-picker-title">选择协作者</div>" + lh + "<button class="collab-picker-close">取消</button></div>";
+        document.body.appendChild(ov);
+        ov.addEventListener("click", function(e) {
+            if (e.target === ov || e.target.classList.contains("collab-picker-close")) { ov.remove(); return; }
+            var el = e.target.closest(".collab-picker-item");
+            if (el) { pickCollaborator(el.dataset.fid, ov); }
+        });
+    });
+}
+
+function pickCollaborator(friendId, overlay) {
+    _collabAPI.setCollaborator(modalTaskId, friendId).then(function(data) {
+        if (data.success) {
+            showToast(data.message || "已添加", "success");
+            loadModalCollaborators(modalTaskId);
+            if (overlay) overlay.remove();
+            if (typeof loadItems === "function") loadItems();
+        } else { showToast(data.message || "失败", "error"); }
+    });
+}
+
+function removeCollabFromModal(userId) {
+    _collabAPI.removeCollaborator(modalTaskId, userId).then(function(data) {
+        if (data.success) {
+            showToast(data.message || "已移除", "success");
+            loadModalCollaborators(modalTaskId);
+            if (typeof loadItems === "function") loadItems();
+        } else { showToast(data.message || "失败", "error"); }
+    });
+}
