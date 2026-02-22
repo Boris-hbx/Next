@@ -294,25 +294,35 @@
     padding-left: 4px;
 }
 
-/* Mobile FAB (Floating Action Button) */
+/* Mobile FAB (Floating Action Button) — hidden on desktop */
 .mobile-fab {
-    position: fixed;
-    bottom: 80px;
-    right: 20px;
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: var(--primary-gradient);
-    color: white;
-    font-size: 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
-    border: none;
-    cursor: pointer;
-    z-index: 90;
-    transition: all var(--transition-fast);
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .mobile-fab {
+        position: fixed;
+        bottom: 80px;
+        right: 20px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: var(--primary-gradient);
+        color: white;
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+        border: none;
+        cursor: pointer;
+        z-index: 90;
+        transition: all var(--transition-fast);
+    }
+
+    .mobile-fab.hidden {
+        display: none;
+    }
 }
 
 .mobile-fab:active {
@@ -468,6 +478,13 @@
     .mobile-nav-icon {
         font-size: 20px;
         line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .mobile-nav-icon svg {
+        display: block;
     }
 
     .mobile-nav-label {
@@ -491,6 +508,7 @@
         font-size: 20px;
         margin-top: -20px;
         box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
+        color: #fff;
     }
 
     /* Fix layout: stretch to full width */
@@ -676,9 +694,9 @@
         margin: 0 auto;
     }
 
-    /* Toast: above bottom nav */
+    /* Toast: above bottom nav (exclude mouse-positioned toasts) */
     .toast-container,
-    .toast {
+    .toast:not(.toast-at-mouse) {
         bottom: calc(70px + env(safe-area-inset-bottom, 0)) !important;
     }
 
@@ -724,5 +742,21 @@
 @media (min-width: 769px) {
     .mobile-bottom-nav {
         display: none !important;
+    }
+}
+
+/* Notification panel - mobile */
+@media (max-width: 768px) {
+    .notif-panel {
+        right: 8px;
+        left: 8px;
+        width: auto;
+        max-height: 60vh;
+    }
+    .notif-banner-container {
+        width: auto;
+        left: 8px;
+        right: 8px;
+        transform: none;
     }
 }

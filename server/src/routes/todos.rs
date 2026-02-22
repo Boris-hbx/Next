@@ -41,6 +41,24 @@ pub struct ListQuery {
     pub tab: Option<String>,
 }
 
+/// Load the next pending/triggered reminder for a todo
+fn load_next_reminder(db: &rusqlite::Connection, todo_id: &str, user_id: &str) -> Option<TodoReminder> {
+    db.query_row(
+        "SELECT id, remind_at, status FROM reminders \
+         WHERE related_todo_id = ?1 AND user_id = ?2 AND status IN ('pending', 'triggered') \
+         ORDER BY CASE status WHEN 'triggered' THEN 0 ELSE 1 END, remind_at ASC LIMIT 1",
+        rusqlite::params![todo_id, user_id],
+        |row| {
+            Ok(TodoReminder {
+                id: row.get(0)?,
+                remind_at: row.get(1)?,
+                status: row.get(2)?,
+            })
+        },
+    )
+    .ok()
+}
+
 /// Load changelog for a todo from the database
 fn load_changelog(db: &rusqlite::Connection, todo_id: &str) -> Vec<ChangeEntry> {
     let mut stmt = db
@@ -86,6 +104,7 @@ fn row_to_todo(row: &rusqlite::Row) -> rusqlite::Result<Todo> {
         updated_at: row.get(13)?,
         deleted_at: row.get(14)?,
         changelog: Vec::new(), // loaded separately
+        next_reminder: None,   // loaded separately
     })
 }
 
@@ -145,9 +164,10 @@ pub async fn list_todos(
         }
     }
 
-    // Load changelogs
+    // Load changelogs and next reminders
     for todo in &mut items {
         todo.changelog = load_changelog(&db, &todo.id);
+        todo.next_reminder = load_next_reminder(&db, &todo.id, &user_id.0);
     }
 
     // Enrich with collaboration info
@@ -276,6 +296,7 @@ pub async fn create_todo(
         changelog: Vec::new(),
         deleted: false,
         deleted_at: None,
+        next_reminder: None,
     };
 
     (

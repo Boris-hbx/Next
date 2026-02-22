@@ -75,6 +75,10 @@ pub fn execute_tool(db: &Connection, user_id: &str, tool_name: &str, input: &Val
         "get_current_datetime" => tool_get_current_datetime(),
         "create_english_scenario" => tool_create_english_scenario(db, user_id, input),
         "query_english_scenarios" => tool_query_english_scenarios(db, user_id, input),
+        "create_reminder" => tool_create_reminder(db, user_id, input),
+        "query_reminders" => tool_query_reminders(db, user_id, input),
+        "cancel_reminder" => tool_cancel_reminder(db, user_id, input),
+        "snooze_reminder" => tool_snooze_reminder(db, user_id, input),
         _ => json!({"error": format!("Unknown tool: {}", tool_name)}),
     }
 }
@@ -241,6 +245,53 @@ pub fn tool_definitions() -> Vec<Value> {
                 "properties": {
                     "keyword": {"type": "string", "description": "按关键词搜索场景标题"}
                 }
+            }
+        }),
+        json!({
+            "name": "create_reminder",
+            "description": "创建一个定时提醒。用户说'X点提醒我做Y'时使用此工具。",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "text": {"type": "string", "description": "提醒内容，如'开会'、'吃药'、'接孩子'"},
+                    "remind_at": {"type": "string", "description": "提醒时间，ISO 8601 带时区偏移，如 '2026-02-21T15:00:00+08:00'。必须是未来的时间。"},
+                    "related_todo_id": {"type": "string", "description": "关联的任务ID（可选）"},
+                    "repeat": {"type": "string", "enum": ["daily", "weekly", "monthly"], "description": "重复频率（可选）"}
+                },
+                "required": ["text", "remind_at"]
+            }
+        }),
+        json!({
+            "name": "query_reminders",
+            "description": "查询用户的提醒列表",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "status": {"type": "string", "enum": ["pending", "triggered", "all"], "description": "按状态过滤，默认 pending"}
+                }
+            }
+        }),
+        json!({
+            "name": "cancel_reminder",
+            "description": "取消一个提醒",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string", "description": "提醒ID"}
+                },
+                "required": ["id"]
+            }
+        }),
+        json!({
+            "name": "snooze_reminder",
+            "description": "推迟一个已触发的提醒",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string", "description": "提醒ID"},
+                    "minutes": {"type": "integer", "description": "推迟分钟数，默认5分钟", "minimum": 1, "maximum": 120}
+                },
+                "required": ["id"]
             }
         }),
     ]
@@ -762,4 +813,257 @@ fn tool_query_english_scenarios(db: &Connection, user_id: &str, input: &Value) -
 
     let items: Vec<Value> = rows.flatten().collect();
     json!({"success": true, "count": items.len(), "items": items})
+}
+
+// ─── Reminder helpers ───
+
+/// Compute which tab a reminder should go to based on its remind_at time.
+/// Uses Asia/Shanghai (UTC+8) timezone.
+/// - Same day → "today"
+/// - Same week (Mon-Sun) → "week"
+/// - Everything else → "month"
+pub fn compute_tab_for_time(remind_at: &str) -> &'static str {
+    use chrono::Datelike;
+
+    let parsed = match chrono::DateTime::parse_from_rfc3339(remind_at) {
+        Ok(dt) => dt,
+        Err(_) => return "today",
+    };
+
+    let shanghai = chrono::FixedOffset::east_opt(8 * 3600).unwrap();
+    let remind_local = parsed.with_timezone(&shanghai);
+    let now_local = chrono::Utc::now().with_timezone(&shanghai);
+
+    // Same day → today
+    if remind_local.date_naive() == now_local.date_naive() {
+        return "today";
+    }
+
+    // Same week (Monday-Sunday) → week
+    let today_weekday = now_local.weekday().num_days_from_monday(); // 0=Mon, 6=Sun
+    let week_start = now_local.date_naive() - chrono::Duration::days(today_weekday as i64);
+    let week_end = week_start + chrono::Duration::days(6); // Sunday
+
+    let remind_date = remind_local.date_naive();
+    if remind_date >= week_start && remind_date <= week_end {
+        return "week";
+    }
+
+    // Everything else → month
+    "month"
+}
+
+/// Auto-create a todo for a reminder if no related_todo_id exists.
+/// Returns (todo_id, tab) on success.
+fn auto_create_todo_for_reminder(
+    db: &Connection,
+    user_id: &str,
+    text: &str,
+    remind_at: &str,
+    reminder_id: &str,
+) -> Option<(String, String)> {
+    let tab = compute_tab_for_time(remind_at);
+    let todo_id = uuid::Uuid::new_v4().to_string()[..8].to_string();
+    let now = chrono::Utc::now().to_rfc3339();
+
+    // Create the todo
+    if db.execute(
+        "INSERT INTO todos (id, user_id, text, content, tab, quadrant, progress, completed, assignee, tags, sort_order, created_at, updated_at) VALUES (?1, ?2, ?3, '', ?4, 'not-important-not-urgent', 0, 0, '', '[]', 0.0, ?5, ?6)",
+        rusqlite::params![todo_id, user_id, text, tab, now, now],
+    ).is_err() {
+        return None;
+    }
+
+    // Back-fill the reminder's related_todo_id
+    db.execute(
+        "UPDATE reminders SET related_todo_id=?1 WHERE id=?2 AND user_id=?3",
+        rusqlite::params![todo_id, reminder_id, user_id],
+    ).ok();
+
+    Some((todo_id.clone(), tab.to_string()))
+}
+
+// ─── Reminder tool implementations ───
+
+fn tool_create_reminder(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let text = match input["text"].as_str() {
+        Some(t) if !t.trim().is_empty() => t.trim(),
+        _ => return json!({"error": "text is required"}),
+    };
+    let remind_at = match input["remind_at"].as_str() {
+        Some(t) => t,
+        None => return json!({"error": "remind_at is required"}),
+    };
+
+    let parsed = match chrono::DateTime::parse_from_rfc3339(remind_at) {
+        Ok(dt) => dt,
+        Err(_) => return json!({"error": "remind_at must be a valid ISO 8601 timestamp with timezone offset, e.g. 2026-02-21T15:00:00+08:00"}),
+    };
+
+    if parsed <= chrono::Utc::now() {
+        return json!({"error": "remind_at must be in the future"});
+    }
+
+    let id = uuid::Uuid::new_v4().to_string()[..8].to_string();
+    let related_todo_id = input["related_todo_id"].as_str();
+    let repeat = input["repeat"].as_str();
+    let now = chrono::Utc::now().to_rfc3339();
+
+    match db.execute(
+        "INSERT INTO reminders (id, user_id, text, remind_at, status, related_todo_id, repeat, created_at) VALUES (?1, ?2, ?3, ?4, 'pending', ?5, ?6, ?7)",
+        rusqlite::params![id, user_id, text, remind_at, related_todo_id, repeat, now],
+    ) {
+        Ok(_) => {
+            let display_time = parsed
+                .with_timezone(&chrono::FixedOffset::east_opt(8 * 3600).unwrap())
+                .format("%m月%d日 %H:%M")
+                .to_string();
+
+            // Auto-create a todo if no related_todo_id
+            let (todo_id, tab) = if related_todo_id.is_none() {
+                auto_create_todo_for_reminder(db, user_id, text, remind_at, &id)
+                    .map(|(tid, t)| (Some(tid), Some(t)))
+                    .unwrap_or((None, None))
+            } else {
+                (None, None)
+            };
+
+            let mut result = json!({
+                "success": true,
+                "id": id,
+                "text": text,
+                "remind_at": remind_at,
+                "display_time": display_time,
+                "message": format!("已设定提醒：{} ({})", text, display_time)
+            });
+            if let Some(tid) = todo_id {
+                result["todo_id"] = json!(tid);
+            }
+            if let Some(t) = tab {
+                result["tab"] = json!(t);
+            }
+            result
+        }
+        Err(e) => json!({"error": format!("Failed to create reminder: {}", e)}),
+    }
+}
+
+fn tool_query_reminders(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let status = input["status"].as_str().unwrap_or("pending");
+
+    let (sql, params): (String, Vec<Box<dyn rusqlite::types::ToSql>>) = if status == "all" {
+        (
+            "SELECT id, text, remind_at, status FROM reminders WHERE user_id=?1 AND status != 'cancelled' ORDER BY remind_at ASC LIMIT 20".into(),
+            vec![Box::new(user_id.to_string())],
+        )
+    } else {
+        (
+            "SELECT id, text, remind_at, status FROM reminders WHERE user_id=?1 AND status=?2 ORDER BY remind_at ASC LIMIT 20".into(),
+            vec![Box::new(user_id.to_string()), Box::new(status.to_string())],
+        )
+    };
+
+    let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+    let mut stmt = match db.prepare(&sql) {
+        Ok(s) => s,
+        Err(e) => return json!({"error": format!("Query failed: {}", e)}),
+    };
+
+    let rows = match stmt.query_map(param_refs.as_slice(), |row| {
+        let remind_at_str: String = row.get(2)?;
+        let display_time = chrono::DateTime::parse_from_rfc3339(&remind_at_str)
+            .map(|dt| {
+                dt.with_timezone(&chrono::FixedOffset::east_opt(8 * 3600).unwrap())
+                    .format("%m月%d日 %H:%M")
+                    .to_string()
+            })
+            .unwrap_or_else(|_| remind_at_str.clone());
+
+        Ok(json!({
+            "id": row.get::<_, String>(0)?,
+            "text": row.get::<_, String>(1)?,
+            "remind_at": remind_at_str,
+            "display_time": display_time,
+            "status": row.get::<_, String>(3)?
+        }))
+    }) {
+        Ok(r) => r,
+        Err(e) => return json!({"error": format!("Query failed: {}", e)}),
+    };
+
+    let items: Vec<Value> = rows.flatten().collect();
+    json!({"success": true, "count": items.len(), "items": items})
+}
+
+fn tool_cancel_reminder(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let id = match input["id"].as_str() {
+        Some(id) => id,
+        None => return json!({"error": "id is required"}),
+    };
+    let now = chrono::Utc::now().to_rfc3339();
+
+    match db.execute(
+        "UPDATE reminders SET status='cancelled', acknowledged_at=?1 WHERE id=?2 AND user_id=?3 AND status IN ('pending', 'triggered')",
+        rusqlite::params![now, id, user_id],
+    ) {
+        Ok(0) => json!({"error": "Reminder not found"}),
+        Ok(_) => json!({"success": true, "id": id, "message": "提醒已取消"}),
+        Err(e) => json!({"error": format!("Cancel failed: {}", e)}),
+    }
+}
+
+fn tool_snooze_reminder(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let id = match input["id"].as_str() {
+        Some(id) => id,
+        None => return json!({"error": "id is required"}),
+    };
+    let minutes = input["minutes"].as_i64().unwrap_or(5).max(1).min(120);
+
+    let text: String = match db.query_row(
+        "SELECT text FROM reminders WHERE id=?1 AND user_id=?2 AND status='triggered'",
+        rusqlite::params![id, user_id],
+        |r| r.get(0),
+    ) {
+        Ok(t) => t,
+        Err(_) => return json!({"error": "Reminder not found or not triggered"}),
+    };
+
+    let now = chrono::Utc::now();
+    let now_str = now.to_rfc3339();
+
+    db.execute(
+        "UPDATE reminders SET status='acknowledged', acknowledged_at=?1 WHERE id=?2",
+        rusqlite::params![now_str, id],
+    ).ok();
+
+    db.execute(
+        "UPDATE notifications SET read=1 WHERE reminder_id=?1 AND user_id=?2",
+        rusqlite::params![id, user_id],
+    ).ok();
+
+    let new_id = uuid::Uuid::new_v4().to_string()[..8].to_string();
+    let snooze_time = now + chrono::Duration::minutes(minutes);
+    let snooze_at = snooze_time
+        .with_timezone(&chrono::FixedOffset::east_opt(8 * 3600).unwrap())
+        .to_rfc3339();
+
+    match db.execute(
+        "INSERT INTO reminders (id, user_id, text, remind_at, status, created_at) VALUES (?1, ?2, ?3, ?4, 'pending', ?5)",
+        rusqlite::params![new_id, user_id, text, snooze_at, now_str],
+    ) {
+        Ok(_) => {
+            let display_time = snooze_time
+                .with_timezone(&chrono::FixedOffset::east_opt(8 * 3600).unwrap())
+                .format("%H:%M")
+                .to_string();
+            json!({
+                "success": true,
+                "id": new_id,
+                "text": text,
+                "remind_at": snooze_at,
+                "message": format!("已推迟{}分钟，将在 {} 再次提醒", minutes, display_time)
+            })
+        }
+        Err(e) => json!({"error": format!("Snooze failed: {}", e)}),
+    }
 }

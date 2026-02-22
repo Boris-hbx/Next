@@ -178,11 +178,13 @@ function renderFlatList() {
             var dueDateHtml = (item.due_date && typeof formatRelativeDate === 'function')
                 ? '<span class="task-due ' + getDueDateClass(item.due_date) + '">' + formatRelativeDate(item.due_date) + '</span>'
                 : '';
-            html += '<div class="flat-task-item" data-id="' + item.id + '">' +
+            var flatReminderHtml = getReminderBadgeHtml(item);
+            var flatTriggeredClass = (item.next_reminder && item.next_reminder.status === 'triggered') ? ' task-item-triggered' : '';
+            html += '<div class="flat-task-item' + flatTriggeredClass + '" data-id="' + item.id + '">' +
                 '<div class="task-checkbox" onclick="event.stopPropagation(); toggleComplete(\'' + item.id + '\')"></div>' +
                 '<div class="flat-task-content" onclick="showTaskCard(\'' + item.id + '\')">' +
                     '<div class="task-text">' + escapeHtml(item.text) + '</div>' +
-                    (dueDateHtml ? '<div class="flat-task-meta">' + dueDateHtml + '</div>' : '') +
+                    ((dueDateHtml || flatReminderHtml) ? '<div class="flat-task-meta">' + flatReminderHtml + dueDateHtml + '</div>' : '') +
                 '</div>' +
                 '<span class="flat-task-badge ' + badge.cls + '">' + badge.icon + '</span>' +
             '</div>';
@@ -445,6 +447,22 @@ function filterByAssignee(name) {
     renderItems();
 }
 
+function getReminderBadgeHtml(item) {
+    if (!item.next_reminder) return '';
+    var r = item.next_reminder;
+    var cls = r.status === 'triggered' ? 'reminder-badge triggered' : 'reminder-badge';
+    var timeStr = '';
+    try {
+        var dt = new Date(r.remind_at);
+        var h = dt.getHours();
+        var m = dt.getMinutes();
+        timeStr = (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+    } catch(e) {
+        timeStr = '';
+    }
+    return '<span class="' + cls + '" title="提醒: ' + timeStr + '">🔔' + (timeStr ? timeStr : '') + '</span>';
+}
+
 function createItemHtml(item) {
     var progress = item.progress || 0;
     var progressRing = '<div class="progress-ring" style="--progress:' + progress + '" onclick="event.stopPropagation(); showProgressPopup(\'' + item.id + '\', this)" onmousedown="event.stopPropagation()" title="点击更新进度">' +
@@ -467,13 +485,17 @@ function createItemHtml(item) {
         collabMeta = '<span class="collab-chip" title="协作任务">' + roleText + escapeHtml(nameText) + '</span>';
     }
 
-    return '<div class="task-item' + collabClass + '" data-id="' + item.id + '" onmousedown="startCustomDrag(event)">' +
+    var reminderHtml = getReminderBadgeHtml(item);
+    var triggeredClass = (item.next_reminder && item.next_reminder.status === 'triggered') ? ' task-item-triggered' : '';
+
+    return '<div class="task-item' + collabClass + triggeredClass + '" data-id="' + item.id + '" onmousedown="startCustomDrag(event)">' +
         '<div class="drag-handle">⋮⋮</div>' +
         '<div class="task-checkbox" onclick="event.stopPropagation(); toggleComplete(\'' + item.id + '\')" onmousedown="event.stopPropagation()"></div>' +
         progressRing +
         '<div class="task-content" onclick="showTaskCard(\'' + item.id + '\', this.closest(\'.task-item\'))">' +
             '<div class="task-text">' + escapeHtml(item.text) + '</div>' +
         '</div>' +
+        reminderHtml +
         dueDateHtml +
         collabMeta +
         assigneeHtml +

@@ -136,6 +136,16 @@ pub struct Todo {
     pub deleted: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub deleted_at: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub next_reminder: Option<TodoReminder>,
+}
+
+/// Minimal reminder info attached to a todo card
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TodoReminder {
+    pub id: String,
+    pub remind_at: String,
+    pub status: String,
 }
 
 impl Todo {

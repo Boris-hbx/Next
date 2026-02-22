@@ -8,12 +8,12 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Next">
     <title>Next - Focus on the Right Thing</title>
-    <link rel="stylesheet" href="assets/css/base.css?v=20260221j">
-    <link rel="stylesheet" href="assets/css/style.css?v=20260221j">
-    <link rel="stylesheet" href="assets/css/components.css?v=20260221j">
-    <link rel="stylesheet" href="assets/css/mobile.css?v=20260221j">
-    <link rel="stylesheet" href="assets/css/abao.css?v=20260221j">
-    <link rel="stylesheet" href="assets/css/english.css?v=20260221j">
+    <link rel="stylesheet" href="assets/css/base.css?v=20260221z">
+    <link rel="stylesheet" href="assets/css/style.css?v=20260221z">
+    <link rel="stylesheet" href="assets/css/components.css?v=20260221z">
+    <link rel="stylesheet" href="assets/css/mobile.css?v=20260221z">
+    <link rel="stylesheet" href="assets/css/abao.css?v=20260221z">
+    <link rel="stylesheet" href="assets/css/english.css?v=20260221z">
     <link rel="manifest" href="assets/manifest.json">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
     <script>
@@ -41,6 +41,10 @@
         <div class="header-left">
         </div>
         <div class="header-right">
+            <div class="notif-bell-wrapper" id="notif-bell-wrapper" onclick="Notifications.togglePanel(event)">
+                <svg class="notif-bell-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                <span class="notif-badge" id="notif-badge" style="display:none">0</span>
+            </div>
             <div class="header-avatar-wrapper">
                 <div class="header-avatar" id="header-avatar" onclick="toggleAvatarMenu(event)">
                     <span class="avatar-text" id="avatar-text">B</span>
@@ -52,6 +56,9 @@
                     </a>
                     <a class="avatar-menu-item" onclick="switchPage('settings'); closeAvatarMenu()">
                         <span>⚙</span> 设置
+                    </a>
+                    <a class="avatar-menu-item" onclick="if(typeof openAbout==='function')openAbout(); closeAvatarMenu()">
+                        <span>ℹ</span> 关于
                     </a>
                     <div class="avatar-menu-divider"></div>
                     <a class="avatar-menu-item" onclick="doLogout()">
@@ -415,6 +422,15 @@
                 </div>
                 <button class="btn btn-primary settings-add-friend-btn" id="add-friend-btn">+ 添加好友</button>
             </div>
+            <!-- 推送通知 -->
+            <div class="settings-section">
+                <h4>推送通知</h4>
+                <div class="setting-group">
+                    <label>状态</label>
+                    <div class="settings-value" id="push-status-text">检查中...</div>
+                </div>
+                <button class="btn btn-primary settings-push-btn" id="push-toggle-btn" style="display:none">开启推送</button>
+            </div>
             <!-- 退出登录 -->
             <div class="settings-section">
                 <button class="btn btn-danger settings-logout-btn"
@@ -630,6 +646,27 @@
                             <span>✅</span>
                             <span class="meta-text">完成于 --</span>
                         </div>
+                        <div class="meta-item meta-reminder" id="modal-reminder-row" style="display:none;">
+                            <span>🔔</span>
+                            <span class="meta-text" id="modal-reminder-text">无提醒</span>
+                            <button class="meta-reminder-btn" id="modal-set-reminder-btn" onclick="openSetReminderUI()">设置提醒</button>
+                        </div>
+                    </div>
+                    <!-- 快捷设置提醒 -->
+                    <div class="reminder-picker" id="modal-reminder-picker" style="display:none;">
+                        <div class="reminder-picker-row">
+                            <input type="datetime-local" id="reminder-datetime-input" class="reminder-datetime-input">
+                            <select id="reminder-repeat-select" class="reminder-repeat-select">
+                                <option value="">不重复</option>
+                                <option value="daily">每天</option>
+                                <option value="weekly">每周</option>
+                                <option value="monthly">每月</option>
+                            </select>
+                        </div>
+                        <div class="reminder-picker-actions">
+                            <button class="btn btn-sm" onclick="cancelReminderPicker()">取消</button>
+                            <button class="btn btn-sm btn-primary" onclick="confirmSetReminder()">确定</button>
+                        </div>
                     </div>
                 </div>
                 <!-- 右栏：内容 -->
@@ -704,26 +741,29 @@
     <!-- Gesture Hint -->
     <div class="gesture-hint" id="gesture-hint"></div>
 
+    <!-- Mobile FAB (Floating Action Button) for adding tasks -->
+    <button class="mobile-fab" id="mobile-fab" onclick="showAddModal()">+</button>
+
     <!-- Mobile Bottom Navigation (hidden on desktop via CSS) -->
     <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
         <a class="mobile-nav-item active" data-page="todo" onclick="switchPage('todo'); activateMobileNav(this)">
-            <span class="mobile-nav-icon">&#10003;</span>
+            <span class="mobile-nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
             <span class="mobile-nav-label">Todo</span>
         </a>
         <a class="mobile-nav-item" data-page="review" onclick="switchPage('review'); activateMobileNav(this)">
-            <span class="mobile-nav-icon">🔄</span>
+            <span class="mobile-nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg></span>
             <span class="mobile-nav-label">例行</span>
         </a>
-        <a class="mobile-nav-item mobile-nav-abao" onclick="Abao.toggle()">
+        <a class="mobile-nav-item mobile-nav-abao" id="mobile-nav-abao">
             <span class="mobile-nav-icon">🐾</span>
             <span class="mobile-nav-label">阿宝</span>
         </a>
         <a class="mobile-nav-item" data-page="english" onclick="switchPage('english'); activateMobileNav(this)">
-            <span class="mobile-nav-icon">📖</span>
+            <span class="mobile-nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="12" y1="7" x2="12" y2="13"/></svg></span>
             <span class="mobile-nav-label">英语</span>
         </a>
         <a class="mobile-nav-item" data-page="inbox" onclick="switchPage('inbox'); activateMobileNav(this)">
-            <span class="mobile-nav-icon">📦<span class="inbox-badge" id="inbox-badge" style="display:none;"></span></span>
+            <span class="mobile-nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg><span class="inbox-badge" id="inbox-badge" style="display:none;"></span></span>
             <span class="mobile-nav-label">潘多拉</span>
         </a>
     </nav>
@@ -731,21 +771,33 @@
     <!-- 阿宝对话面板 -->
     <div class="abao-overlay" id="abao-overlay"></div>
     <div class="abao-panel" id="abao-panel">
-        <div class="abao-header">
-            <div class="abao-drag-bar"><span></span></div>
+        <!-- 冰晶效果层（移动端可见） -->
+        <div class="abao-refract-edge left"></div>
+        <div class="abao-refract-edge right"></div>
+        <div class="abao-refract-edge top"></div>
+        <div class="abao-ice-highlight"></div>
+        <div class="abao-ice-sheen"></div>
+        <div class="abao-ice-ripple"></div>
+
+        <div class="abao-header" id="abao-header">
+            <div class="abao-drag-bar">
+                <div class="abao-bar-identity">
+                    <div class="abao-mini-avatar">🐾</div>
+                    <span class="abao-mini-name">阿宝</span>
+                </div>
+                <div class="abao-bar-handle"><span></span></div>
+            </div>
             <div class="abao-header-left">
                 <div class="abao-avatar">🐾</div>
                 <span class="abao-header-title">阿宝</span>
                 <span class="abao-header-status">· 在线</span>
             </div>
-            <div style="display:flex;gap:4px;">
-                <button class="abao-close-btn" id="abao-new-chat" title="新对话">+</button>
-                <button class="abao-close-btn" id="abao-close" title="关闭 (Esc)">&times;</button>
-            </div>
+            <!-- 按钮已移除：关闭用下滑手势，新对话移到快捷区 -->
         </div>
         <div class="abao-messages" id="abao-messages"></div>
         <button class="abao-scroll-bottom" id="abao-scroll-bottom">↓ 回到底部</button>
         <div class="abao-shortcuts">
+            <button class="abao-shortcut-btn" id="abao-new-chat" data-text="">🔄 新对话</button>
             <button class="abao-shortcut-btn" data-text="今天有什么任务？">今日概览</button>
             <button class="abao-shortcut-btn" data-text="帮我整理待分类任务">整理分类</button>
             <button class="abao-shortcut-btn" data-text="这周完成了多少？">本周统计</button>
@@ -758,23 +810,38 @@
         </div>
     </div>
 
+    <!-- Notification Panel -->
+    <div class="notif-panel" id="notif-panel" style="display:none">
+        <div class="notif-panel-header">
+            <span class="notif-panel-title">通知</span>
+            <button class="notif-read-all" id="notif-read-all" onclick="Notifications.readAll()">全部已读</button>
+        </div>
+        <div class="notif-panel-body" id="notif-panel-body">
+            <div class="notif-empty">暂无通知</div>
+        </div>
+    </div>
+
+    <!-- Reminder Banner Container (top of screen, non-dismissible) -->
+    <div class="notif-banner-container" id="notif-banner-container"></div>
+
     <!-- JS Modules -->
-    <script src="assets/js/api.js?v=20260221j"></script>
-    <script src="assets/js/utils.js?v=20260221j"></script>
-    <script src="assets/js/app.js?v=20260221j"></script>
-    <script src="assets/js/tasks.js?v=20260221j"></script>
-    <script src="assets/js/modal.js?v=20260221j"></script>
-    <script src="assets/js/datepicker.js?v=20260221j"></script>
-    <script src="assets/js/drag.js?v=20260221j"></script>
-    <script src="assets/js/review.js?v=20260221j"></script>
-    <script src="assets/js/routines.js?v=20260221j"></script>
-    <script src="assets/js/features.js?v=20260221j"></script>
-    <script src="assets/js/particles.js?v=20260221j"></script>
-    <script src="assets/js/living-line.js?v=20260221j"></script>
-    <script src="assets/js/abao.js?v=20260221j"></script>
-    <script src="assets/js/english.js?v=20260221j"></script>
-    <script src="assets/js/friends.js?v=20260221j"></script>
-    <script src="assets/js/settings.js?v=20260221j"></script>
+    <script src="assets/js/api.js?v=20260221z"></script>
+    <script src="assets/js/utils.js?v=20260221z"></script>
+    <script src="assets/js/app.js?v=20260221z"></script>
+    <script src="assets/js/tasks.js?v=20260221z"></script>
+    <script src="assets/js/modal.js?v=20260221z"></script>
+    <script src="assets/js/datepicker.js?v=20260221z"></script>
+    <script src="assets/js/drag.js?v=20260221z"></script>
+    <script src="assets/js/review.js?v=20260221z"></script>
+    <script src="assets/js/routines.js?v=20260221z"></script>
+    <script src="assets/js/features.js?v=20260221z"></script>
+    <script src="assets/js/particles.js?v=20260221z"></script>
+    <script src="assets/js/living-line.js?v=20260221z"></script>
+    <script src="assets/js/abao.js?v=20260221z"></script>
+    <script src="assets/js/english.js?v=20260221z"></script>
+    <script src="assets/js/friends.js?v=20260221z"></script>
+    <script src="assets/js/notifications.js?v=20260221z"></script>
+    <script src="assets/js/settings.js?v=20260221z"></script>
 
     <script>
     // Initialize

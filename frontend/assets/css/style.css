@@ -2335,6 +2335,26 @@ body {
     flex-shrink: 0;
 }
 
+/* Reminder badge on task card */
+.reminder-badge {
+    font-size: 11px;
+    color: var(--primary-color, #667eea);
+    margin-left: 6px;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+.reminder-badge.triggered {
+    color: #f0883e;
+}
+/* Triggered reminder: orange left border */
+.task-item.task-item-triggered {
+    border-left: 3px solid #f0883e;
+}
+.flat-task-item.task-item-triggered {
+    border-left: 3px solid #f0883e;
+    padding-left: 9px;
+}
+
 .task-item.completed .task-text {
     text-decoration: line-through;
     color: #95a5a6;
@@ -8805,6 +8825,15 @@ textarea.ocr-text:focus {
 
 .settings-change-pwd-btn:hover {
     opacity: 0.9;
+}
+
+/* 推送设置按钮 */
+.settings-push-btn {
+    width: 100%;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    margin-top: 8px;
 }
 
 /* 退出登录按钮 */

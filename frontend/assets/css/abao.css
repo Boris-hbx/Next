@@ -162,6 +162,61 @@
     color: var(--text-muted, #8b949e);
 }
 
+/* --- 提醒卡片 --- */
+.abao-reminder-card {
+    border-left: 3px solid var(--primary-color, #667eea);
+}
+.abao-reminder-actions {
+    margin-top: 8px;
+}
+.abao-reminder-cancel {
+    background: none;
+    border: 1px solid var(--border-color, rgba(255,255,255,0.15));
+    color: var(--text-muted, #8b949e);
+    padding: 4px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+.abao-reminder-cancel:hover {
+    color: #f85149;
+    border-color: #f85149;
+}
+.abao-reminder-cancel:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+/* --- 推送引导卡片 --- */
+.abao-push-prompt {
+    border-left: 3px solid #f0883e;
+}
+.abao-push-enable-btn {
+    background: var(--primary-color, #667eea);
+    color: #fff;
+    border: none;
+    padding: 5px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-right: 8px;
+}
+.abao-push-enable-btn:hover {
+    opacity: 0.9;
+}
+.abao-push-dismiss-btn {
+    background: none;
+    border: 1px solid var(--border-color, rgba(255,255,255,0.15));
+    color: var(--text-muted, #8b949e);
+    padding: 4px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+.abao-push-dismiss-btn:hover {
+    color: var(--text-primary, #e6edf3);
+}
+
 /* --- 思考状态 --- */
 .abao-thinking {
     align-self: flex-start;
@@ -381,71 +436,386 @@
     background: rgba(0,0,0,0.15);
 }
 
+/* ========== 冰晶效果层（默认隐藏，移动端显示） ========== */
+.abao-refract-edge,
+.abao-ice-highlight,
+.abao-ice-sheen,
+.abao-ice-ripple {
+    display: none;
+}
+
+/* 拖拽条内的微标识（默认隐藏，移动端显示） */
+.abao-bar-identity { display: none; }
+.abao-bar-handle { display: none; }
+
+/* 消息头像（默认隐藏，移动端显示） */
+.abao-msg-avatar { display: none; }
+
 /* ========== 移动端适配 ========== */
 @media (max-width: 768px) {
-    /* 遮罩层 - 拦截触摸事件 */
+    /* 遮罩层 — Apple 风格深色蒙版 */
     .abao-overlay {
         display: none;
         position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0,0,0,0.3);
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.25);
         z-index: 999;
+        opacity: 0;
+        transition: opacity 0.4s ease;
     }
-
     .abao-overlay.open {
         display: block;
+        opacity: 1;
     }
 
-    /* 底部弹出半屏面板 */
+    /* --- Apple-style 底部 Sheet 面板 --- */
     .abao-panel {
+        display: flex !important;  /* 始终flex，不用display切换 */
         width: 100%;
         top: auto;
         bottom: 0;
         left: 0;
         right: 0;
-        height: 60vh;
-        border-radius: 16px 16px 0 0;
-        border-left: none;
-        border-top: 1px solid var(--border-color);
+        height: 62vh;
+        border-radius: 14px 14px 0 0;
+        border: none;
+        overflow: hidden;
+
+        /* 冰晶毛玻璃 */
+        background: rgba(20, 20, 22, 0.55);
+        backdrop-filter: blur(60px) saturate(2.0);
+        -webkit-backdrop-filter: blur(60px) saturate(2.0);
+
+        /* 深度阴影 */
+        box-shadow:
+            0 -10px 50px rgba(0, 0, 0, 0.3),
+            0 -1px 0 rgba(255, 255, 255, 0.06);
+
+        /* 隐藏状态：不用display:none */
+        visibility: hidden;
+        pointer-events: none;
         transform: translateY(100%);
-        background: rgba(13, 17, 23, 0.55);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
+        opacity: 0;
+        transition:
+            transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+            opacity 0.4s ease,
+            visibility 0s linear 0.45s;
     }
-
     .abao-panel.open {
+        visibility: visible;
+        pointer-events: auto;
         transform: translateY(0);
+        opacity: 1;
+        transition:
+            transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+            opacity 0.4s ease,
+            visibility 0s linear 0s;
+    }
+    /* 手势拖拽中：跳过 CSS transition，由 JS 直接控制 transform */
+    .abao-panel.gesture-dragging {
+        visibility: visible !important;
+        pointer-events: none;
+        opacity: 1;
+        transition: none !important;
     }
 
-    /* 拖拽条 */
+    /* 关闭动画：先变透明再滑走 */
+    .abao-panel.closing {
+        visibility: visible;
+        pointer-events: none;
+        transform: translateY(100%);
+        opacity: 0;
+        transition:
+            transform 0.35s cubic-bezier(0.4, 0, 1, 1),
+            opacity 0.15s ease,
+            visibility 0s linear 0.35s;
+    }
+
+    /* --- 边缘效果（极简化，Apple 风格无需花哨折射） --- */
+    .abao-refract-edge { display: none; }
+
+    /* --- 顶部高光线：细微的分界线 --- */
+    .abao-ice-highlight {
+        display: block;
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 0.5px;
+        background: rgba(255,255,255,0.2);
+        z-index: 3;
+        pointer-events: none;
+    }
+
+    /* --- 反光扫过（保留但更柔和） --- */
+    .abao-ice-sheen {
+        display: block;
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: linear-gradient(105deg,
+            transparent 0%, transparent 38%,
+            rgba(255,255,255,0.03) 42%,
+            rgba(255,255,255,0.06) 45%,
+            rgba(255,255,255,0.03) 48%,
+            transparent 52%, transparent 100%
+        );
+        background-size: 250% 100%;
+        animation: abao-sheen-sweep 8s ease-in-out infinite;
+        animation-play-state: paused;
+        pointer-events: none;
+        z-index: 2;
+    }
+    .abao-panel.open > .abao-ice-sheen { animation-play-state: running; }
+    @keyframes abao-sheen-sweep {
+        0%   { background-position: 150% 0; }
+        100% { background-position: -50% 0; }
+    }
+
+    /* --- 水纹（更柔和的色彩流动） --- */
+    .abao-ice-ripple {
+        display: block;
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background:
+            radial-gradient(ellipse 100% 60% at 15% 20%, rgba(102,126,234,0.06), transparent 60%),
+            radial-gradient(ellipse 80% 50% at 80% 50%, rgba(168,85,247,0.05), transparent 60%),
+            radial-gradient(ellipse 70% 70% at 40% 85%, rgba(56,189,248,0.04), transparent 60%);
+        background-size: 200% 200%, 200% 200%, 200% 200%;
+        animation: abao-ice-ripple 10s ease-in-out infinite;
+        animation-play-state: paused;
+        pointer-events: none;
+        z-index: 1;
+    }
+    .abao-panel.open > .abao-ice-ripple { animation-play-state: running; }
+    @keyframes abao-ice-ripple {
+        0%   { background-position: 0% 0%, 100% 100%, 50% 50%; }
+        25%  { background-position: 40% 30%, 60% 30%, 15% 75%; }
+        50%  { background-position: 70% 60%, 20% 65%, 85% 25%; }
+        75%  { background-position: 30% 80%, 75% 15%, 45% 60%; }
+        100% { background-position: 0% 0%, 100% 100%, 50% 50%; }
+    }
+
+    /* --- Header 变为紧凑拖拽条 --- */
+    .abao-header {
+        padding: 8px 12px 6px;
+        border-bottom: none;
+        position: relative;
+        z-index: 5;
+    }
+    /* 隐藏桌面端的大头像/标题/状态 */
+    .abao-header-left { display: none; }
+    .abao-header-status { display: none; }
+
+    /* 显示拖拽条 */
     .abao-drag-bar {
         display: flex;
-        justify-content: center;
-        padding: 8px 0 0;
+        align-items: center;
         width: 100%;
-    }
-    .abao-drag-bar span {
-        width: 36px;
-        height: 4px;
-        border-radius: 2px;
-        background: rgba(255,255,255,0.2);
+        padding: 0;
     }
 
-    .abao-msg {
+    /* 微标识：左侧 */
+    .abao-bar-identity {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        flex-shrink: 0;
+    }
+    .abao-mini-avatar {
+        width: 20px; height: 20px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 10px; line-height: 1;
+    }
+    .abao-mini-name {
+        font-size: 11px;
+        color: rgba(255,255,255,0.35);
+        font-weight: 500;
+    }
+
+    /* 拖拽手柄：中间 */
+    .abao-bar-handle {
+        display: flex;
+        flex: 1;
+        justify-content: center;
+    }
+    .abao-bar-handle span {
+        width: 36px; height: 5px;
+        border-radius: 2.5px;
+        background: rgba(255,255,255,0.3);
+    }
+
+    /* --- 消息区 --- */
+    .abao-messages {
+        padding: 6px 16px 12px;
+        gap: 10px;
+        position: relative;
+        z-index: 5;
+    }
+
+    /* --- 消息头像（移动端显示） --- */
+    .abao-msg-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
         max-width: 90%;
+        animation: abao-fade-in 0.2s ease;
+    }
+    .abao-msg-row.assistant { align-self: flex-start; }
+    .abao-msg-row.user { align-self: flex-end; flex-direction: row-reverse; }
+
+    .abao-msg-avatar {
+        display: flex;
+        width: 24px; height: 24px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px; line-height: 1;
+        overflow: hidden;
+    }
+    .abao-msg-row.assistant .abao-msg-avatar {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+    }
+    .abao-msg-row.user .abao-msg-avatar {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        font-weight: 600; color: white;
+    }
+    .abao-msg-row.user .abao-msg-avatar img {
+        width: 100%; height: 100%;
+        object-fit: cover; border-radius: 50%;
+    }
+
+    /* 气泡调整 */
+    .abao-msg-row .abao-msg {
+        max-width: none;
+    }
+    .abao-msg-row.user .abao-msg {
+        background: linear-gradient(135deg, rgba(102,126,234,0.7), rgba(118,75,162,0.7));
+    }
+    .abao-msg-row.assistant .abao-msg {
+        background: rgba(255,255,255,0.08);
+    }
+
+    /* 回到底部按钮 - 移动端小胶囊 */
+    .abao-scroll-bottom {
+        bottom: 80px;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 11px;
+        background: rgba(0,0,0,0.25);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.15);
+        color: rgba(255,255,255,0.7);
+        z-index: 10;
+    }
+    [data-theme="light"] .abao-scroll-bottom {
+        background: rgba(255,255,255,0.6);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-color: rgba(0,0,0,0.08);
+        color: rgba(0,0,0,0.5);
+    }
+
+    /* 其余内容层 z-index */
+    .abao-shortcuts,
+    .abao-input-area {
+        position: relative;
+        z-index: 5;
+    }
+
+    .abao-input-area {
+        border-top-color: rgba(255,255,255,0.08);
     }
 
     .abao-input {
-        font-size: 16px; /* prevent iOS zoom */
+        font-size: 16px;
+        background: rgba(255,255,255,0.08);
+        border-color: rgba(255,255,255,0.12);
+    }
+
+    .abao-shortcuts {
+        border-top-color: rgba(255,255,255,0.08);
     }
 
     .abao-shortcut-btn {
         min-height: 44px;
         display: flex;
         align-items: center;
+        border-color: rgba(255,255,255,0.12);
+        color: rgba(255,255,255,0.5);
+    }
+
+    /* 浅色主题移动端覆盖 — 冰晶 */
+    [data-theme="light"] .abao-panel {
+        background: rgba(255, 255, 255, 0.45);
+        backdrop-filter: blur(60px) saturate(2.0);
+        -webkit-backdrop-filter: blur(60px) saturate(2.0);
+        box-shadow:
+            0 -10px 50px rgba(0, 0, 0, 0.1),
+            0 -1px 0 rgba(255, 255, 255, 0.7);
+    }
+    [data-theme="light"] .abao-ice-highlight {
+        background: rgba(255,255,255,0.8);
+    }
+    [data-theme="light"] .abao-ice-sheen {
+        background: linear-gradient(105deg,
+            transparent 0%, transparent 38%,
+            rgba(255,255,255,0.08) 42%, rgba(255,255,255,0.15) 45%,
+            rgba(255,255,255,0.08) 48%, transparent 52%, transparent 100%
+        );
+        background-size: 250% 100%;
+    }
+    [data-theme="light"] .abao-mini-name {
+        color: rgba(0,0,0,0.45);
+    }
+    [data-theme="light"] .abao-bar-handle span {
+        background: rgba(0,0,0,0.18);
+    }
+    [data-theme="light"] .abao-msg-row.assistant .abao-msg {
+        background: rgba(255, 255, 255, 0.6);
+        color: #1a1a2e;
+    }
+    [data-theme="light"] .abao-msg-row.user .abao-msg {
+        background: linear-gradient(135deg, rgba(102,126,234,0.85), rgba(118,75,162,0.85));
+        color: #fff;
+    }
+    [data-theme="light"] .abao-msg.assistant {
+        background: rgba(255, 255, 255, 0.6);
+        color: #1a1a2e;
+    }
+    [data-theme="light"] .abao-msg.user {
+        background: linear-gradient(135deg, rgba(102,126,234,0.85), rgba(118,75,162,0.85));
+        color: #fff;
+    }
+    [data-theme="light"] .abao-msg.error {
+        background: rgba(248,81,73,0.12);
+    }
+    [data-theme="light"] .abao-shortcut-btn {
+        color: rgba(0,0,0,0.45);
+        border-color: rgba(0,0,0,0.1);
+    }
+    [data-theme="light"] .abao-input {
+        background: rgba(255,255,255,0.55);
+        border-color: rgba(0,0,0,0.06);
+        color: #24292f;
+    }
+    [data-theme="light"] .abao-input::placeholder {
+        color: rgba(0,0,0,0.35);
+    }
+    [data-theme="light"] .abao-input-area {
+        border-top-color: rgba(0,0,0,0.06);
+    }
+    [data-theme="light"] .abao-shortcuts {
+        border-top-color: rgba(0,0,0,0.06);
+    }
+    [data-theme="light"] .abao-thinking-dot {
+        background: rgba(0,0,0,0.3);
+    }
+    [data-theme="light"] .abao-thinking-text {
+        color: rgba(0,0,0,0.4);
     }
 }
 

@@ -19,6 +19,10 @@ async function loadSettingsData() {
     // 初始化头像选择器
     highlightSelectedPreset();
     applyAvatar();
+    // 更新推送通知状态
+    if (typeof Notifications !== 'undefined' && Notifications.updatePushStatus) {
+        Notifications.updatePushStatus();
+    }
 }
 
 // 修改密码
@@ -81,6 +85,8 @@ function selectPresetAvatar(el) {
     localStorage.setItem('userAvatar', value);
     highlightSelectedPreset();
     applyAvatar();
+    // Sync to server
+    API.updateAvatar(value).catch(function() {});
 }
 
 // 上传自定义头像（canvas 压缩到 128x128）
@@ -109,6 +115,8 @@ function handleAvatarUpload(event) {
             }
             highlightSelectedPreset();
             applyAvatar();
+            // Sync to server
+            API.updateAvatar(dataURL).catch(function() {});
             showToast('头像已更新', 'success');
         };
         img.src = e.target.result;

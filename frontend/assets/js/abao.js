@@ -14,6 +14,41 @@ var Abao = (function() {
     var autoScroll = true;
     var thinkingTimer = null;
 
+    // ─── 手势物理常量 ───
+    var GESTURE = {
+        DEAD_ZONE: 10,              // 点击 vs 滑动区分 (px)
+        SCROLL_TOP_TOLERANCE: 5,    // 消息区"已到顶"判定 (px)
+        VELOCITY_THRESHOLD: 0.5,    // 快速轻扫阈值 (px/ms)
+        DISTANCE_RATIO: 0.33,       // 拖过 1/3 面板高度则执行
+        SNAP_BACK_DURATION: 350,    // 弹回动画时长 (ms)
+        SNAP_BACK_EASING: 'cubic-bezier(0.2, 0.9, 0.3, 1.1)', // 弹簧 overshoot
+        CLOSE_DURATION: 300,        // 关闭动画时长 (ms)
+        OPEN_DURATION: 350,         // 打开动画时长 (ms)
+        HISTORY_SIZE: 5             // 速度计算用最近 N 个触摸点
+    };
+
+    // 手势状态
+    var gesture = {
+        animating: false,           // 动画进行中，阻止新手势
+        // 🐾 上滑拉出
+        paw: {
+            active: false,
+            startY: 0,
+            startX: 0,
+            pastDeadZone: false,
+            history: []             // [{y, t}, ...]
+        },
+        // 面板下滑关闭
+        panel: {
+            active: false,
+            startY: 0,
+            startX: 0,
+            commitment: 'UNDECIDED', // UNDECIDED | PANEL_DRAGGING | SCROLLING
+            history: [],
+            touchTarget: null
+        }
+    };
+
     // ─── Init ───
     function init() {
         panel = document.getElementById('abao-panel');
@@ -46,12 +81,6 @@ var Abao = (function() {
             });
         }
 
-        // Close button
-        var closeBtn = document.getElementById('abao-close');
-        if (closeBtn) {
-            closeBtn.addEventListener('click', close);
-        }
-
         // Overlay click to close
         if (overlay) {
             overlay.addEventListener('click', close);
@@ -78,10 +107,17 @@ var Abao = (function() {
             });
         }
 
-        // Shortcut buttons
+        // Shortcut buttons (including 新对话)
         var shortcuts = document.querySelectorAll('.abao-shortcut-btn');
         shortcuts.forEach(function(btn) {
             btn.addEventListener('click', function() {
+                // 新对话按钮: data-text="" and id="abao-new-chat"
+                if (btn.id === 'abao-new-chat') {
+                    conversationId = null;
+                    clearMessages();
+                    addSystemMessage('新对话已开始');
+                    return;
+                }
                 var text = btn.getAttribute('data-text');
                 if (text && inputEl) {
                     inputEl.value = text;
@@ -89,16 +125,6 @@ var Abao = (function() {
                 }
             });
         });
-
-        // New chat button
-        var newChatBtn = document.getElementById('abao-new-chat');
-        if (newChatBtn) {
-            newChatBtn.addEventListener('click', function() {
-                conversationId = null;
-                clearMessages();
-                addSystemMessage('新对话已开始');
-            });
-        }
 
         // Keyboard shortcut: B to toggle
         document.addEventListener('keydown', function(e) {
@@ -130,57 +156,17 @@ var Abao = (function() {
                 }, 600);
             }, { passive: true });
             avatar.addEventListener('touchend', function() { clearTimeout(longPressTimer); });
-            // Override click: only toggle if not long-pressed
+            // Override click: show avatar menu (not Abao), but skip if long-pressed
             avatar.onclick = function(e) {
                 if (longPressed) { longPressed = false; return; }
-                toggle();
+                toggleAvatarMenu(e);
             };
         }
 
-        // Mobile: drag-to-close gesture on drag bar and header
-        if (window.matchMedia('(max-width: 768px)').matches) {
-            var dragBar = panel.querySelector('.abao-drag-bar');
-            var header = panel.querySelector('.abao-header');
-            var touchStartY = 0;
-            var touchDeltaY = 0;
-            var dragging = false;
-
-            function onTouchStart(e) {
-                touchStartY = e.touches[0].clientY;
-                touchDeltaY = 0;
-                dragging = true;
-                panel.style.transition = 'none';
-            }
-
-            function onTouchMove(e) {
-                if (!dragging) return;
-                touchDeltaY = e.touches[0].clientY - touchStartY;
-                if (touchDeltaY > 0) {
-                    panel.style.transform = 'translateY(' + touchDeltaY + 'px)';
-                }
-            }
-
-            function onTouchEnd() {
-                if (!dragging) return;
-                dragging = false;
-                panel.style.transition = '';
-                if (touchDeltaY > 80) {
-                    close();
-                } else {
-                    panel.style.transform = '';
-                }
-            }
-
-            if (dragBar) {
-                dragBar.addEventListener('touchstart', onTouchStart, { passive: true });
-                dragBar.addEventListener('touchmove', onTouchMove, { passive: true });
-                dragBar.addEventListener('touchend', onTouchEnd);
-            }
-            if (header) {
-                header.addEventListener('touchstart', onTouchStart, { passive: true });
-                header.addEventListener('touchmove', onTouchMove, { passive: true });
-                header.addEventListener('touchend', onTouchEnd);
-            }
+        // ─── Mobile gesture system ───
+        if (_isMobile) {
+            initPawGesture();
+            initPanelGesture();
         }
 
         // Virtual keyboard adaptation
@@ -198,14 +184,323 @@ var Abao = (function() {
         }
     }
 
+    // ─── 速度计算 ───
+    function computeVelocity(history) {
+        if (history.length < 2) return 0;
+        var first = history[0];
+        var last = history[history.length - 1];
+        var dt = last.t - first.t;
+        if (dt <= 0) return 0;
+        return (last.y - first.y) / dt; // px/ms, 正=下滑, 负=上滑
+    }
+
+    function addToHistory(history, y) {
+        var now = Date.now();
+        history.push({ y: y, t: now });
+        while (history.length > GESTURE.HISTORY_SIZE) {
+            history.shift();
+        }
+    }
+
+    // ─── 判断是否应启动手势（排除交互元素） ───
+    function shouldStartGesture(target) {
+        if (!target) return true;
+        var tag = target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'BUTTON' || tag === 'A') return false;
+        // 也检查最近的可交互祖先
+        if (target.closest('button, a, input, textarea, [contenteditable]')) return false;
+        return true;
+    }
+
+    // ─── 🐾 上滑拉出面板 ───
+    function initPawGesture() {
+        var pawBtn = document.getElementById('mobile-nav-abao');
+        if (!pawBtn) return;
+
+        pawBtn.addEventListener('touchstart', function(e) {
+            if (gesture.animating) return;
+            var touch = e.touches[0];
+            gesture.paw.active = true;
+            gesture.paw.startY = touch.clientY;
+            gesture.paw.startX = touch.clientX;
+            gesture.paw.pastDeadZone = false;
+            gesture.paw.history = [{ y: touch.clientY, t: Date.now() }];
+        }, { passive: true });
+
+        // Move/End on document since finger leaves button area
+        document.addEventListener('touchmove', function(e) {
+            if (!gesture.paw.active) return;
+            var touch = e.touches[0];
+            var deltaY = gesture.paw.startY - touch.clientY; // positive = upward
+            var deltaX = Math.abs(touch.clientX - gesture.paw.startX);
+
+            addToHistory(gesture.paw.history, touch.clientY);
+
+            // Dead zone check
+            if (!gesture.paw.pastDeadZone) {
+                if (Math.abs(deltaY) < GESTURE.DEAD_ZONE && deltaX < GESTURE.DEAD_ZONE) return;
+                // Horizontal swipe → not our gesture
+                if (deltaX > Math.abs(deltaY)) {
+                    gesture.paw.active = false;
+                    return;
+                }
+                // Downward swipe from paw → not our gesture (might be closing if open)
+                if (deltaY < 0) {
+                    gesture.paw.active = false;
+                    return;
+                }
+                gesture.paw.pastDeadZone = true;
+                // Start dragging: show panel in gesture mode
+                if (!isOpen) {
+                    panel.classList.add('gesture-dragging');
+                    panel.classList.remove('open', 'closing');
+                }
+            }
+
+            if (gesture.paw.pastDeadZone && !isOpen) {
+                var panelHeight = panel.offsetHeight;
+                // fingerTravel = how far up the user has swiped
+                var fingerTravel = Math.max(0, gesture.paw.startY - touch.clientY);
+                var translateY = Math.max(0, panelHeight - fingerTravel);
+                panel.style.transform = 'translateY(' + translateY + 'px)';
+                panel.style.opacity = Math.min(1, fingerTravel / (panelHeight * 0.5));
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchend', function(e) {
+            if (!gesture.paw.active) return;
+            gesture.paw.active = false;
+
+            // Not past dead zone → treat as click (toggle)
+            if (!gesture.paw.pastDeadZone) {
+                toggle();
+                return;
+            }
+
+            // Past dead zone → decide open or snap back
+            if (!isOpen) {
+                var panelHeight = panel.offsetHeight;
+                var velocity = -computeVelocity(gesture.paw.history); // negate: upward is positive
+                var lastTouch = gesture.paw.history[gesture.paw.history.length - 1];
+                var fingerTravel = gesture.paw.startY - (lastTouch ? lastTouch.y : gesture.paw.startY);
+                var openRatio = fingerTravel / panelHeight;
+
+                if (velocity > GESTURE.VELOCITY_THRESHOLD || openRatio > GESTURE.DISTANCE_RATIO) {
+                    // Complete open
+                    completeOpen();
+                } else {
+                    // Snap back (hide)
+                    snapBackHide();
+                }
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchcancel', function() {
+            if (gesture.paw.active) {
+                gesture.paw.active = false;
+                if (gesture.paw.pastDeadZone && !isOpen) {
+                    snapBackHide();
+                }
+            }
+        }, { passive: true });
+    }
+
+    function completeOpen() {
+        gesture.animating = true;
+        // CRITICAL: add .open BEFORE removing gesture-dragging
+        // so visibility never flashes to hidden (both provide visibility: visible)
+        panel.classList.add('open');
+        isOpen = true;
+        if (overlay) overlay.classList.add('open');
+        document.getElementById('header-avatar')?.classList.add('abao-active');
+        panel.classList.remove('gesture-dragging');
+
+        // .open's transition handles the rest: animate from current inline
+        // position to class values (translateY(0), opacity 1)
+        // Force reflow so browser registers current inline values as start point
+        panel.offsetHeight;
+        // Clear inline styles → .open class values become target → transition plays
+        panel.style.transform = '';
+        panel.style.opacity = '';
+
+        setTimeout(function() {
+            gesture.animating = false;
+            // Load conversation history if none loaded
+            if (messagesContainer && messagesContainer.children.length === 0) {
+                addSystemMessage('有什么事？说吧。');
+            }
+        }, GESTURE.OPEN_DURATION);
+    }
+
+    function snapBackHide() {
+        gesture.animating = true;
+        // Keep visibility via inline style while animating away
+        panel.style.visibility = 'visible';
+        panel.classList.remove('gesture-dragging');
+        panel.style.transition = 'transform ' + GESTURE.SNAP_BACK_DURATION + 'ms ' + GESTURE.SNAP_BACK_EASING + ', opacity ' + GESTURE.SNAP_BACK_DURATION + 'ms ease';
+        panel.style.transform = 'translateY(100%)';
+        panel.style.opacity = '0';
+        setTimeout(function() {
+            panel.style.transition = '';
+            panel.style.transform = '';
+            panel.style.opacity = '';
+            panel.style.visibility = '';
+            gesture.animating = false;
+        }, GESTURE.SNAP_BACK_DURATION);
+    }
+
+    // ─── 面板下滑关闭手势 ───
+    function initPanelGesture() {
+        panel.addEventListener('touchstart', function(e) {
+            if (gesture.animating || !isOpen) return;
+            if (!shouldStartGesture(e.target)) {
+                gesture.panel.active = false;
+                return;
+            }
+            var touch = e.touches[0];
+            gesture.panel.active = true;
+            gesture.panel.startY = touch.clientY;
+            gesture.panel.startX = touch.clientX;
+            gesture.panel.commitment = 'UNDECIDED';
+            gesture.panel.history = [{ y: touch.clientY, t: Date.now() }];
+            gesture.panel.touchTarget = e.target;
+        }, { passive: true });
+
+        panel.addEventListener('touchmove', function(e) {
+            if (!gesture.panel.active || !isOpen) return;
+            var touch = e.touches[0];
+            var deltaY = touch.clientY - gesture.panel.startY; // positive = downward
+            var deltaX = Math.abs(touch.clientX - gesture.panel.startX);
+
+            addToHistory(gesture.panel.history, touch.clientY);
+
+            // Commitment phase
+            if (gesture.panel.commitment === 'UNDECIDED') {
+                if (Math.abs(deltaY) < GESTURE.DEAD_ZONE && deltaX < GESTURE.DEAD_ZONE) return;
+
+                // Horizontal → not our gesture
+                if (deltaX > Math.abs(deltaY)) {
+                    gesture.panel.active = false;
+                    return;
+                }
+
+                // Upward swipe → not closing
+                if (deltaY < 0) {
+                    gesture.panel.commitment = 'SCROLLING';
+                    return;
+                }
+
+                // Downward swipe: decide based on touch area
+                var target = gesture.panel.touchTarget;
+                var inMessages = target && (target === messagesContainer || messagesContainer.contains(target));
+                var inHeader = target && (target.closest('.abao-header') || target.closest('.abao-drag-bar'));
+                var inShortcuts = target && target.closest('.abao-shortcuts');
+
+                if (inHeader) {
+                    gesture.panel.commitment = 'PANEL_DRAGGING';
+                } else if (inMessages) {
+                    if (messagesContainer.scrollTop <= GESTURE.SCROLL_TOP_TOLERANCE) {
+                        gesture.panel.commitment = 'PANEL_DRAGGING';
+                    } else {
+                        gesture.panel.commitment = 'SCROLLING';
+                    }
+                } else if (inShortcuts) {
+                    gesture.panel.commitment = 'PANEL_DRAGGING';
+                } else {
+                    // Other areas (input area etc.) — just panel drag
+                    gesture.panel.commitment = 'PANEL_DRAGGING';
+                }
+
+                if (gesture.panel.commitment === 'PANEL_DRAGGING') {
+                    panel.style.transition = 'none';
+                }
+            }
+
+            if (gesture.panel.commitment === 'PANEL_DRAGGING') {
+                // Prevent native scroll
+                e.preventDefault();
+                var clampedDelta = Math.max(0, deltaY);
+                panel.style.transform = 'translateY(' + clampedDelta + 'px)';
+            }
+        }, { passive: false }); // passive: false to allow preventDefault
+
+        panel.addEventListener('touchend', function(e) {
+            if (!gesture.panel.active) return;
+            gesture.panel.active = false;
+
+            if (gesture.panel.commitment !== 'PANEL_DRAGGING') return;
+
+            var panelHeight = panel.offsetHeight;
+            var velocity = computeVelocity(gesture.panel.history); // positive = downward
+            var lastTouch = gesture.panel.history[gesture.panel.history.length - 1];
+            var distance = lastTouch ? (lastTouch.y - gesture.panel.startY) : 0;
+            var distanceRatio = distance / panelHeight;
+
+            if (velocity > GESTURE.VELOCITY_THRESHOLD) {
+                // Fast downward swipe → close
+                gestureClose();
+            } else if (velocity < -GESTURE.VELOCITY_THRESHOLD) {
+                // Fast upward swipe → snap back (with overshoot)
+                gestureSnapBack();
+            } else if (distanceRatio > GESTURE.DISTANCE_RATIO) {
+                // Slow drag but far enough → close
+                gestureClose();
+            } else {
+                // Not enough → snap back
+                gestureSnapBack();
+            }
+        }, { passive: true });
+
+        panel.addEventListener('touchcancel', function() {
+            if (gesture.panel.active && gesture.panel.commitment === 'PANEL_DRAGGING') {
+                gesture.panel.active = false;
+                gestureSnapBack();
+            }
+        }, { passive: true });
+    }
+
+    function gestureClose() {
+        gesture.animating = true;
+        panel.style.transition = 'transform ' + GESTURE.CLOSE_DURATION + 'ms cubic-bezier(0.4, 0, 1, 1), opacity ' + GESTURE.CLOSE_DURATION + 'ms ease';
+        panel.style.transform = 'translateY(100%)';
+        panel.style.opacity = '0';
+        if (overlay) overlay.classList.remove('open');
+        document.getElementById('header-avatar')?.classList.remove('abao-active');
+        setTimeout(function() {
+            isOpen = false;
+            panel.classList.remove('open');
+            panel.style.transition = '';
+            panel.style.transform = '';
+            panel.style.opacity = '';
+            panel.style.height = '';
+            gesture.animating = false;
+        }, GESTURE.CLOSE_DURATION);
+    }
+
+    function gestureSnapBack() {
+        gesture.animating = true;
+        panel.style.transition = 'transform ' + GESTURE.SNAP_BACK_DURATION + 'ms ' + GESTURE.SNAP_BACK_EASING;
+        panel.style.transform = 'translateY(0)';
+        setTimeout(function() {
+            panel.style.transition = '';
+            panel.style.transform = '';
+            gesture.animating = false;
+        }, GESTURE.SNAP_BACK_DURATION);
+    }
+
     // ─── Open/Close ───
     function open() {
-        if (!panel) return;
+        if (!panel || gesture.animating) return;
         isOpen = true;
+        panel.classList.remove('closing', 'gesture-dragging');
+        panel.style.transform = '';
+        panel.style.opacity = '';
         panel.classList.add('open');
         if (overlay) overlay.classList.add('open');
         document.getElementById('header-avatar')?.classList.add('abao-active');
-        if (inputEl) inputEl.focus();
+
+        // Mobile: don't auto-focus to avoid keyboard pushing panel up
+        if (!_isMobile && inputEl) inputEl.focus();
 
         // Load conversation history if none loaded
         if (messagesContainer && messagesContainer.children.length === 0) {
@@ -214,27 +509,68 @@ var Abao = (function() {
     }
 
     function close() {
-        if (!panel) return;
+        if (!panel || gesture.animating) return;
         isOpen = false;
-        panel.classList.remove('open');
+        // Mobile: closing animation (CSS handles .closing class)
+        panel.classList.add('closing');
+        panel.classList.remove('open', 'gesture-dragging');
         if (overlay) overlay.classList.remove('open');
         document.getElementById('header-avatar')?.classList.remove('abao-active');
-        // Reset panel height (may have been changed by keyboard)
-        panel.style.height = '';
+        // Reset panel height and clean up closing class after animation
+        setTimeout(function() {
+            panel.classList.remove('closing');
+            panel.style.height = '';
+            panel.style.transform = '';
+            panel.style.opacity = '';
+        }, 450);
     }
 
     function toggle() {
+        if (gesture.animating) return;
         if (isOpen) close();
         else open();
     }
 
     // ─── Messages ───
+    var _isMobile = window.matchMedia('(max-width: 768px)').matches;
+
+    function createUserAvatarContent() {
+        var avatarValue = localStorage.getItem('userAvatar') || '';
+        // Custom uploaded image
+        if (avatarValue && avatarValue.startsWith('data:image/')) {
+            return '<img src="' + avatarValue + '">';
+        }
+        // Preset image
+        var presets = { 'preset:cat': 'assets/images/preset-cat.png', 'preset:panda': 'assets/images/preset-panda.png' };
+        if (presets[avatarValue]) {
+            return '<img src="' + presets[avatarValue] + '">';
+        }
+        // Initial letter
+        return window._userInitial || 'B';
+    }
+
+    function wrapWithAvatar(role, msgEl) {
+        if (!_isMobile) return msgEl;
+        var row = document.createElement('div');
+        row.className = 'abao-msg-row ' + role;
+        var avatar = document.createElement('div');
+        avatar.className = 'abao-msg-avatar';
+        if (role === 'assistant') {
+            avatar.textContent = '🐾';
+        } else {
+            avatar.innerHTML = createUserAvatarContent();
+        }
+        row.appendChild(avatar);
+        row.appendChild(msgEl);
+        return row;
+    }
+
     function addMessage(role, text) {
         if (!messagesContainer) return;
         var msg = document.createElement('div');
         msg.className = 'abao-msg ' + role;
         msg.textContent = text;
-        messagesContainer.appendChild(msg);
+        messagesContainer.appendChild(wrapWithAvatar(role, msg));
         if (autoScroll) scrollToBottom();
     }
 
@@ -245,7 +581,7 @@ var Abao = (function() {
         msg.style.opacity = '0.7';
         msg.style.fontSize = '13px';
         msg.textContent = text;
-        messagesContainer.appendChild(msg);
+        messagesContainer.appendChild(wrapWithAvatar('assistant', msg));
         if (autoScroll) scrollToBottom();
     }
 
@@ -264,7 +600,62 @@ var Abao = (function() {
                     '</div>';
                 messagesContainer.appendChild(card);
             }
+            // Show reminder card for create_reminder
+            if (tc.tool === 'create_reminder' && tc.result.text) {
+                var rcard = document.createElement('div');
+                rcard.className = 'abao-task-card abao-reminder-card';
+                var cancelBtn = '<button class="abao-reminder-cancel" data-id="' + escapeHtml(tc.result.id) + '">取消提醒</button>';
+                rcard.innerHTML = '<div class="abao-task-card-title">🔔 ' + escapeHtml(tc.result.text) + '</div>' +
+                    '<div class="abao-task-card-meta">' +
+                    (tc.result.display_time || tc.result.remind_at) +
+                    '</div>' +
+                    '<div class="abao-reminder-actions">' + cancelBtn + '</div>';
+                rcard.querySelector('.abao-reminder-cancel').addEventListener('click', function() {
+                    var rid = this.getAttribute('data-id');
+                    API.cancelReminder(rid).then(function(res) {
+                        if (res && res.success) {
+                            rcard.style.opacity = '0.5';
+                            rcard.querySelector('.abao-reminder-cancel').textContent = '已取消';
+                            rcard.querySelector('.abao-reminder-cancel').disabled = true;
+                        }
+                    });
+                });
+                messagesContainer.appendChild(rcard);
+                // Prompt push permission if not yet subscribed
+                maybePromptPush();
+            }
         }
+    }
+
+    function maybePromptPush() {
+        if (typeof Notifications === 'undefined' || !Notifications.isPushSupported) return;
+        if (!Notifications.isPushSupported()) return;
+        if (Notifications.isPushGranted()) return; // already subscribed
+        if (sessionStorage.getItem('pushPromptDismissed')) return;
+
+        // Show a push permission prompt card
+        var card = document.createElement('div');
+        card.className = 'abao-task-card abao-push-prompt';
+        card.innerHTML = '<div class="abao-task-card-title">📲 开启推送通知</div>' +
+            '<div class="abao-task-card-meta">开启后，提醒到点时即使 App 没打开也能收到通知</div>' +
+            '<div class="abao-reminder-actions">' +
+            '<button class="abao-push-enable-btn">开启推送</button>' +
+            '<button class="abao-push-dismiss-btn">暂不开启</button>' +
+            '</div>';
+        card.querySelector('.abao-push-enable-btn').addEventListener('click', function() {
+            Notifications.requestAndSubscribe().then(function(ok) {
+                if (ok) {
+                    card.innerHTML = '<div class="abao-task-card-title">✅ 推送通知已开启</div>';
+                    setTimeout(function() { card.style.opacity = '0.5'; }, 2000);
+                }
+            });
+        });
+        card.querySelector('.abao-push-dismiss-btn').addEventListener('click', function() {
+            card.style.display = 'none';
+            sessionStorage.setItem('pushPromptDismissed', '1');
+        });
+        messagesContainer.appendChild(card);
+        if (autoScroll) scrollToBottom();
     }
 
     function clearMessages() {
@@ -279,7 +670,7 @@ var Abao = (function() {
             '<div class="abao-thinking-dot"></div>' +
             '<div class="abao-thinking-dot"></div>' +
             '<span class="abao-thinking-text"></span>';
-        messagesContainer.appendChild(thinkingEl);
+        messagesContainer.appendChild(wrapWithAvatar('assistant', thinkingEl));
         if (autoScroll) scrollToBottom();
 
         // Progressive thinking text
@@ -299,8 +690,14 @@ var Abao = (function() {
     }
 
     function hideThinking() {
-        if (thinkingEl && thinkingEl.parentNode) {
-            thinkingEl.parentNode.removeChild(thinkingEl);
+        if (thinkingEl) {
+            // On mobile, thinkingEl is wrapped in .abao-msg-row; remove the wrapper
+            var toRemove = thinkingEl.parentNode && thinkingEl.parentNode.classList &&
+                thinkingEl.parentNode.classList.contains('abao-msg-row')
+                ? thinkingEl.parentNode : thinkingEl;
+            if (toRemove && toRemove.parentNode) {
+                toRemove.parentNode.removeChild(toRemove);
+            }
         }
         thinkingEl = null;
         if (thinkingTimer) {
@@ -376,14 +773,14 @@ var Abao = (function() {
         } finally {
             isSending = false;
             if (sendBtn) sendBtn.disabled = false;
-            if (inputEl) inputEl.focus();
+            if (!_isMobile && inputEl) inputEl.focus();
         }
     }
 
     // ─── Refresh tasks if tool calls modified data ───
     function refreshTasksIfNeeded(toolCalls) {
         if (!toolCalls) return;
-        var modifyingTools = ['create_todo', 'update_todo', 'delete_todo', 'restore_todo', 'batch_update_todos'];
+        var modifyingTools = ['create_todo', 'update_todo', 'delete_todo', 'restore_todo', 'batch_update_todos', 'create_reminder'];
         for (var i = 0; i < toolCalls.length; i++) {
             if (modifyingTools.indexOf(toolCalls[i].tool) >= 0) {
                 // Trigger task list refresh if the function exists

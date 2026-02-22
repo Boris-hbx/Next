@@ -320,6 +320,15 @@ pub async fn delete_friend(
 ) -> (StatusCode, Json<SimpleResponse>) {
     let db = state.db.lock().unwrap();
 
+    // Get the other user's id before deleting
+    let other_user_id: Option<String> = db
+        .query_row(
+            "SELECT CASE WHEN requester_id = ?1 THEN addressee_id ELSE requester_id END FROM friendships WHERE id = ?2 AND (requester_id = ?1 OR addressee_id = ?1)",
+            rusqlite::params![user_id.0, id],
+            |row| row.get(0),
+        )
+        .ok();
+
     let rows = db
         .execute(
             "DELETE FROM friendships WHERE id = ?1 AND (requester_id = ?2 OR addressee_id = ?2)",
@@ -335,6 +344,27 @@ pub async fn delete_friend(
                 message: Some("好友关系不存在".into()),
             }),
         );
+    }
+
+    // Cascade: clean up collaboration and contacts
+    if let Some(ref other_id) = other_user_id {
+        // Mark todo collaborations as 'left'
+        db.execute(
+            "UPDATE todo_collaborators SET status = 'left' WHERE (user_id = ?1 AND todo_id IN (SELECT id FROM todos WHERE user_id = ?2)) OR (user_id = ?2 AND todo_id IN (SELECT id FROM todos WHERE user_id = ?1))",
+            rusqlite::params![user_id.0, other_id],
+        ).ok();
+
+        // Mark routine collaborations as 'left'
+        db.execute(
+            "UPDATE routine_collaborators SET status = 'left' WHERE (user_id = ?1 AND routine_id IN (SELECT id FROM routines WHERE user_id = ?2)) OR (user_id = ?2 AND routine_id IN (SELECT id FROM routines WHERE user_id = ?1))",
+            rusqlite::params![user_id.0, other_id],
+        ).ok();
+
+        // Remove linked contacts for both users
+        db.execute(
+            "DELETE FROM contacts WHERE friendship_id = ?1",
+            rusqlite::params![id],
+        ).ok();
     }
 
     (

@@ -19,7 +19,10 @@
             if (avatarTextEl && name) {
                 avatarTextEl.textContent = window._userInitial;
             }
-            // Apply saved avatar
+            // Sync server avatar to localStorage, then apply
+            if (data.user.avatar) {
+                localStorage.setItem('userAvatar', data.user.avatar);
+            }
             if (typeof applyAvatar === 'function') applyAvatar();
         }
     } catch(e) {
@@ -104,6 +107,10 @@ function switchPage(page) {
     document.getElementById('review-view').style.display = page === 'review' ? '' : 'none';
     document.getElementById('english-view').style.display = page === 'english' ? '' : 'none';
     document.getElementById('settings-view').style.display = page === 'settings' ? '' : 'none';
+
+    // Mobile FAB: show only on todo page
+    var fab = document.getElementById('mobile-fab');
+    if (fab) fab.classList.toggle('hidden', page !== 'todo');
 
     // 通过 body class 控制收件箱和设置页面
     document.body.classList.toggle('page-inbox', page === 'inbox');

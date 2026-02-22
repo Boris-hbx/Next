@@ -71,6 +71,25 @@ pub fn build_system_prompt(db: &Connection, user_id: &str) -> String {
 - 用户说"创建英语场景/学英语/练口语" → 调用 create_english_scenario
 - 用户问"有哪些英语场景" → 调用 query_english_scenarios
 - 创建任务时指定协作者 → 在 create_todo 中传入 collaborator 参数
+- 用户说"提醒我/X点提醒/到时候叫我" → 调用 create_reminder
+- 用户问"有哪些提醒/我的提醒" → 调用 query_reminders
+- 用户说"取消提醒/不用提醒了" → 调用 cancel_reminder
+- 用户说"推迟/晚点再提醒/过会儿再说" → 调用 snooze_reminder
+
+## 提醒时间解析
+- "3点" → 今天15:00；如果已过30分钟以内，明确告知并问"现在提醒还是设到明天？"；如果过了很久，默认明天同一时间并告知
+- "明天上午10点" → 明天10:00
+- "半小时后" → 当前时间 + 30分钟
+- "下周一9点" → 下周一09:00
+- 解析前先调 get_current_datetime 确认当前时间
+- remind_at 必须是带时区偏移的 ISO 8601，如 "2026-02-21T15:00:00+08:00"
+- 创建成功后，回复中必须说出绝对时间，如"好，今天下午3:00提醒你开会"
+
+## "提醒"与"任务"的区分
+- "提醒我/X点提醒/到时候叫我" → 只创建 reminder
+- "记一下/加个任务" → 只创建 todo
+- 如果用户说"3点开会，提醒我"，先查是否有"开会"任务，有则关联；没有则只创建 reminder
+- 不要反问"需要创建提醒吗？"——执行优先
 
 ## 绝不做的事
 - 不做效率说教、不推荐方法论
@@ -238,6 +257,49 @@ fn build_task_context(db: &Connection, user_id: &str) -> String {
                     ctx.push_str(&format!(
                         "- [{}] {} (来自:{}, 进度:{}%, ID:{})\n",
                         check, text, owner, progress, id
+                    ));
+                }
+            }
+        }
+    }
+
+    // Pending reminders
+    let pending_reminders: i64 = db
+        .query_row(
+            "SELECT COUNT(*) FROM reminders WHERE user_id=?1 AND status='pending'",
+            [user_id],
+            |r| r.get(0),
+        )
+        .unwrap_or(0);
+
+    if pending_reminders > 0 {
+        ctx.push_str(&format!("\n## 待触发提醒 ({}个)\n", pending_reminders));
+        if let Ok(mut stmt) = db.prepare(
+            "SELECT id, text, remind_at, related_todo_id FROM reminders WHERE user_id=?1 AND status='pending' ORDER BY remind_at ASC LIMIT 10",
+        ) {
+            if let Ok(rows) = stmt.query_map([user_id], |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, Option<String>>(3)?,
+                ))
+            }) {
+                for r in rows.flatten() {
+                    let (id, text, remind_at, related_todo) = r;
+                    let display_time = chrono::DateTime::parse_from_rfc3339(&remind_at)
+                        .map(|dt| {
+                            dt.with_timezone(&chrono::FixedOffset::east_opt(8 * 3600).unwrap())
+                                .format("%m月%d日 %H:%M")
+                                .to_string()
+                        })
+                        .unwrap_or_else(|_| remind_at);
+                    let related = related_todo
+                        .map(|t| format!(", 关联任务:{}", t))
+                        .unwrap_or_default();
+                    ctx.push_str(&format!(
+                        "- {} {} (ID:{}{})\n",
+                        display_time, text, id, related
                     ));
                 }
             }

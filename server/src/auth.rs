@@ -50,6 +50,13 @@ pub struct UserInfo {
     pub id: String,
     pub username: String,
     pub display_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub avatar: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateAvatarRequest {
+    pub avatar: String,
 }
 
 // ─── Session middleware: extract UserId from cookie ───
@@ -244,6 +251,7 @@ pub async fn register(
                     id: user_id,
                     username: req.username,
                     display_name: Some(display_name),
+                    avatar: None,
                 }),
                 message: Some("注册成功".into()),
             }),
@@ -275,7 +283,7 @@ pub async fn login(
 
     // Find user
     let user_row = db.query_row(
-        "SELECT id, username, password_hash, display_name FROM users WHERE username = ?1",
+        "SELECT id, username, password_hash, display_name, COALESCE(avatar,'') FROM users WHERE username = ?1",
         [&req.username],
         |row: &rusqlite::Row| {
             Ok((
@@ -283,11 +291,12 @@ pub async fn login(
                 row.get::<_, String>(1)?,
                 row.get::<_, String>(2)?,
                 row.get::<_, Option<String>>(3)?,
+                row.get::<_, String>(4)?,
             ))
         },
     );
 
-    let (user_id, username, password_hash, display_name) = match user_row {
+    let (user_id, username, password_hash, display_name, avatar) = match user_row {
         Ok(r) => r,
         Err(_) => {
             return (
@@ -348,6 +357,7 @@ pub async fn login(
                     id: user_id,
                     username,
                     display_name,
+                    avatar: if avatar.is_empty() { None } else { Some(avatar) },
                 }),
                 message: Some("登录成功".into()),
             }),
@@ -390,13 +400,15 @@ pub async fn me(
     };
 
     let result = db.query_row(
-        "SELECT id, username, display_name FROM users WHERE id = ?1",
+        "SELECT id, username, display_name, COALESCE(avatar,'') FROM users WHERE id = ?1",
         [&user_id.0],
         |row: &rusqlite::Row| {
+            let av: String = row.get(3)?;
             Ok(UserInfo {
                 id: row.get(0)?,
                 username: row.get(1)?,
                 display_name: row.get(2)?,
+                avatar: if av.is_empty() { None } else { Some(av) },
             })
         },
     );
@@ -511,6 +523,56 @@ pub async fn change_password(
             Json(serde_json::json!({
                 "success": false,
                 "message": "密码更新失败"
+            })),
+        ),
+    }
+}
+
+pub async fn update_avatar(
+    State(state): State<AppState>,
+    user_id: UserId,
+    Json(req): Json<UpdateAvatarRequest>,
+) -> impl IntoResponse {
+    // Limit avatar data size (256KB max for base64 images)
+    if req.avatar.len() > 256 * 1024 {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({
+                "success": false,
+                "message": "头像数据太大"
+            })),
+        );
+    }
+
+    let db = match state.db.lock() {
+        Ok(db) => db,
+        Err(_) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({
+                    "success": false,
+                    "message": "服务器错误"
+                })),
+            );
+        }
+    };
+
+    let now = chrono::Utc::now().to_rfc3339();
+    match db.execute(
+        "UPDATE users SET avatar = ?1, updated_at = ?2 WHERE id = ?3",
+        rusqlite::params![req.avatar, now, user_id.0],
+    ) {
+        Ok(_) => (
+            StatusCode::OK,
+            Json(serde_json::json!({
+                "success": true
+            })),
+        ),
+        Err(_) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({
+                "success": false,
+                "message": "保存头像失败"
             })),
         ),
     }

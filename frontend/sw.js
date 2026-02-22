@@ -1,4 +1,4 @@
-const CACHE_NAME = 'next-v6';
+const CACHE_NAME = 'next-v7';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -19,6 +19,7 @@ const STATIC_ASSETS = [
     '/assets/js/features.js',
     '/assets/js/abao.js',
     '/assets/js/settings.js',
+    '/assets/js/notifications.js',
 ];
 
 // Install: cache static assets
@@ -39,6 +40,79 @@ self.addEventListener('activate', event => {
                     .map(key => caches.delete(key))
             )
         ).then(() => self.clients.claim())
+    );
+});
+
+// Push: show notification when push arrives
+self.addEventListener('push', event => {
+    let data = { title: '提醒', body: '', type: 'reminder' };
+    try {
+        if (event.data) data = Object.assign(data, event.data.json());
+    } catch(e) {}
+
+    const options = {
+        body: data.body || '',
+        icon: '/assets/icons/icon-192.png',
+        badge: '/assets/icons/icon-192.png',
+        tag: 'reminder-' + Date.now(),
+        data: data,
+        requireInteraction: true,
+        actions: [
+            { action: 'acknowledge', title: '知道了' },
+            { action: 'snooze', title: '5分钟后' }
+        ]
+    };
+
+    event.waitUntil(
+        self.registration.showNotification(data.title, options)
+            .then(() => {
+                // Update app badge
+                if ('setAppBadge' in self.navigator) {
+                    return self.registration.getNotifications()
+                        .then(notifs => self.navigator.setAppBadge(notifs.length));
+                }
+            })
+    );
+});
+
+// Notification click handler
+self.addEventListener('notificationclick', event => {
+    const notification = event.notification;
+    const action = event.action;
+    notification.close();
+
+    if (action === 'snooze') {
+        // Snooze via API — try to find reminder_id from data
+        event.waitUntil(
+            fetch('/api/reminders/' + (notification.data && notification.data.reminder_id || 'unknown') + '/snooze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ minutes: 5 })
+            }).catch(() => {})
+        );
+        return;
+    }
+
+    // Default click or 'acknowledge' — open the app
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true })
+            .then(windowClients => {
+                // Focus existing window if any
+                for (const client of windowClients) {
+                    if (client.url.includes('/') && 'focus' in client) {
+                        return client.focus();
+                    }
+                }
+                // Open new window
+                return clients.openWindow('/');
+            })
+            .then(() => {
+                // Clear badge
+                if ('clearAppBadge' in self.navigator) {
+                    return self.navigator.clearAppBadge();
+                }
+            })
     );
 });
 

@@ -1,6 +1,7 @@
 {
   "name": "Next - Focus on the Right Thing",
   "short_name": "Next",
+  "id": "/",
   "description": "Focus on the right thing - Personal productivity tool",
   "start_url": "/",
   "display": "standalone",

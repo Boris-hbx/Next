@@ -91,6 +91,32 @@ function openTaskModal(mode, item, tab, quadrant) {
     document.getElementById('modal-meta-section').style.display = mode === 'create' ? 'none' : 'block';
     document.getElementById('modal-changelog-section').style.display = mode === 'create' ? 'none' : 'block';
 
+    // Reminder row
+    var reminderRow = document.getElementById('modal-reminder-row');
+    var reminderPicker = document.getElementById('modal-reminder-picker');
+    if (reminderPicker) reminderPicker.style.display = 'none';
+    if (reminderRow && item) {
+        reminderRow.style.display = 'flex';
+        var reminderText = document.getElementById('modal-reminder-text');
+        var reminderBtn = document.getElementById('modal-set-reminder-btn');
+        if (item.next_reminder) {
+            var r = item.next_reminder;
+            var timeStr = r.remind_at;
+            try {
+                var d = new Date(r.remind_at);
+                timeStr = d.toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            } catch(e) {}
+            var statusLabel = r.status === 'triggered' ? ' (已触发)' : '';
+            reminderText.textContent = timeStr + statusLabel;
+            reminderBtn.textContent = '修改';
+        } else {
+            reminderText.textContent = '无提醒';
+            reminderBtn.textContent = '设置提醒';
+        }
+    } else if (reminderRow) {
+        reminderRow.style.display = 'none';
+    }
+
     setModalMode(mode);
 
     if (typeof syncDatePicker === 'function') syncDatePicker();
@@ -436,7 +462,7 @@ function renderModalCollaborators(collabs) {
     if (\!section) return;
     var html = "";
     if (collabs.length === 0) {
-        html = "<div class="collab-empty">点击下方按钮添加协作者</div><button class="collab-add-btn" onclick="showAddCollaboratorDialog()">+ 添加协作者</button>";
+        html = "<div class=\"collab-empty\">点击下方按钮添加协作者</div><button class=\"collab-add-btn\" onclick=\"showAddCollaboratorDialog()\">+ 添加协作者</button>";
     } else {
         collabs.forEach(function(c) {
             var rl = c.role === "owner" ? "所有者" : "协作者";
@@ -460,9 +486,9 @@ function showAddCollaboratorDialog() {
         ov.className = "collab-picker-overlay";
         var lh = "";
         avail.forEach(function(f) {
-            lh += "<div class="collab-picker-item" data-fid="" + f.id + "">" + escapeHtml(f.display_name || f.username) + "</div>";
+            lh += "<div class=\"collab-picker-item\" data-fid=\"" + f.id + "\">" + escapeHtml(f.display_name || f.username) + "</div>";
         });
-        ov.innerHTML = "<div class="collab-picker-dialog"><div class="collab-picker-title">选择协作者</div>" + lh + "<button class="collab-picker-close">取消</button></div>";
+        ov.innerHTML = "<div class=\"collab-picker-dialog\"><div class=\"collab-picker-title\">选择协作者</div>" + lh + "<button class=\"collab-picker-close\">取消</button></div>";
         document.body.appendChild(ov);
         ov.addEventListener("click", function(e) {
             if (e.target === ov || e.target.classList.contains("collab-picker-close")) { ov.remove(); return; }
@@ -492,3 +518,79 @@ function removeCollabFromModal(userId) {
         } else { showToast(data.message || "失败", "error"); }
     });
 }
+
+// ========== 任务详情 - 设置提醒 ==========
+function openSetReminderUI() {
+    var picker = document.getElementById('modal-reminder-picker');
+    if (!picker) return;
+    picker.style.display = 'block';
+    // Pre-fill with a reasonable default: next hour
+    var input = document.getElementById('reminder-datetime-input');
+    var now = new Date();
+    now.setHours(now.getHours() + 1, 0, 0, 0);
+    var local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+    input.value = local.toISOString().slice(0, 16);
+    document.getElementById('reminder-repeat-select').value = '';
+}
+
+function cancelReminderPicker() {
+    var picker = document.getElementById('modal-reminder-picker');
+    if (picker) picker.style.display = 'none';
+}
+
+async function confirmSetReminder() {
+    if (!modalTaskId) return;
+    var input = document.getElementById('reminder-datetime-input');
+    var repeatSelect = document.getElementById('reminder-repeat-select');
+    if (!input.value) {
+        showToast('请选择提醒时间', 'error');
+        return;
+    }
+    // Convert local datetime to ISO with timezone offset
+    var dt = new Date(input.value);
+    if (dt <= new Date()) {
+        showToast('提醒时间必须在未来', 'error');
+        return;
+    }
+    var tzOffset = -dt.getTimezoneOffset();
+    var sign = tzOffset >= 0 ? '+' : '-';
+    var absOff = Math.abs(tzOffset);
+    var offH = String(Math.floor(absOff / 60)).padStart(2, '0');
+    var offM = String(absOff % 60).padStart(2, '0');
+    var isoStr = dt.getFullYear() + '-' +
+        String(dt.getMonth() + 1).padStart(2, '0') + '-' +
+        String(dt.getDate()).padStart(2, '0') + 'T' +
+        String(dt.getHours()).padStart(2, '0') + ':' +
+        String(dt.getMinutes()).padStart(2, '0') + ':00' +
+        sign + offH + ':' + offM;
+
+    var data = {
+        text: modalTaskItem ? modalTaskItem.text : '任务提醒',
+        remind_at: isoStr,
+        related_todo_id: modalTaskId,
+    };
+    var repeat = repeatSelect.value;
+    if (repeat) data.repeat = repeat;
+
+    try {
+        var result = await API.createReminder(data);
+        if (result && result.success) {
+            cancelReminderPicker();
+            showToast('提醒已设置', 'success');
+            // Update the reminder display
+            var reminderText = document.getElementById('modal-reminder-text');
+            if (reminderText) {
+                reminderText.textContent = dt.toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            }
+            var reminderBtn = document.getElementById('modal-set-reminder-btn');
+            if (reminderBtn) reminderBtn.textContent = '修改';
+            // Refresh tasks to show reminder badge
+            if (typeof loadTodos === 'function') loadTodos();
+        } else {
+            showToast(result.message || '设置失败', 'error');
+        }
+    } catch(e) {
+        showToast('设置提醒失败', 'error');
+    }
+}
+
