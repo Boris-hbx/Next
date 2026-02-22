@@ -19,7 +19,7 @@ FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y ca-certificates tzdata && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
-RUN groupadd -r nextapp && useradd -r -g nextapp -d /app -s /sbin/nologin nextapp
+RUN groupadd -r -g 999 nextapp && useradd -r -u 999 -g nextapp -d /app -s /sbin/nologin nextapp
 
 WORKDIR /app
 
