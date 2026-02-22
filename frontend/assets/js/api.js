@@ -368,6 +368,11 @@ var API = (function() {
             return await request('POST', '/collaborate/confirmations/' + encodeURIComponent(id) + '/withdraw');
         },
 
+        // ===== Moment API =====
+        getMoment: async function() {
+            return await request('GET', '/moment');
+        },
+
         // 环境检测 (always web now)
         isTauri: function() { return false; }
     };

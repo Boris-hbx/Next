@@ -1,4 +1,4 @@
-const CACHE_NAME = 'next-v8';
+const CACHE_NAME = 'next-v13';
 const STATIC_ASSETS = [
     '/',
     '/index.html',

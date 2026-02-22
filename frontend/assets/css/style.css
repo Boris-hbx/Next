@@ -214,7 +214,28 @@ body {
 .header-left {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+}
+
+.moment-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.moment-text {
+    font-size: 13px;
+    color: rgba(255,255,255,0.85);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.moment-text.visible {
+    opacity: 1;
 }
 
 .header-menu-btn {

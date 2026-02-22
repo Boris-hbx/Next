@@ -195,4 +195,50 @@ impl ClaudeClient {
 
         Err("操作太复杂，请简化请求".into())
     }
+
+    /// Simple one-shot generation — no tools, no conversation history.
+    /// Used for lightweight text generation like moment header.
+    pub async fn simple_generate(&self, system: &str, user_message: &str, max_tokens: u32) -> Result<String, String> {
+        let body = json!({
+            "model": MODEL,
+            "max_tokens": max_tokens,
+            "system": system,
+            "messages": [{"role": "user", "content": user_message}],
+        });
+
+        let resp = self
+            .http
+            .post(CLAUDE_API_URL)
+            .header("x-api-key", &self.api_key)
+            .header("anthropic-version", "2023-06-01")
+            .header("content-type", "application/json")
+            .json(&body)
+            .timeout(std::time::Duration::from_secs(10))
+            .send()
+            .await
+            .map_err(|e| format!("Claude API request failed: {}", e))?;
+
+        if !resp.status().is_success() {
+            let text = resp.text().await.unwrap_or_default();
+            return Err(format!("Claude API error: {}", text));
+        }
+
+        let resp_json: Value = resp
+            .json()
+            .await
+            .map_err(|e| format!("Failed to parse Claude response: {}", e))?;
+
+        // Extract text from first content block
+        if let Some(content) = resp_json["content"].as_array() {
+            for block in content {
+                if block["type"].as_str() == Some("text") {
+                    if let Some(text) = block["text"].as_str() {
+                        return Ok(text.trim().to_string());
+                    }
+                }
+            }
+        }
+
+        Err("No text in Claude response".into())
+    }
 }

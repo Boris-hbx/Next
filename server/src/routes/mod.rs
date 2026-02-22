@@ -12,3 +12,4 @@ pub mod reminders;
 pub mod contacts;
 pub mod collaborate;
 pub mod routine_collab;
+pub mod moment;

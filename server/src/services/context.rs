@@ -1,3 +1,4 @@
+use chrono::Timelike;
 use rusqlite::Connection;
 
 /// Ensure collaboration tables exist for context queries
@@ -324,6 +325,142 @@ fn build_task_context(db: &Connection, user_id: &str) -> String {
     }
 
     ctx
+}
+
+// ─── Moment (此刻) context ───
+
+pub struct MomentContext {
+    pub display_name: String,
+    pub hour: u32,
+    pub today_total: i64,
+    pub today_done: i64,
+    pub urgent_count: i64,
+    pub overdue_count: i64,
+    pub next_due: Option<String>,
+}
+
+pub fn build_moment_context(db: &Connection, user_id: &str) -> MomentContext {
+    let now = chrono::Local::now();
+    let today = now.format("%Y-%m-%d").to_string();
+
+    let display_name: String = db
+        .query_row(
+            "SELECT COALESCE(display_name, username) FROM users WHERE id=?1",
+            [user_id],
+            |r| r.get(0),
+        )
+        .unwrap_or_else(|_| "".into());
+
+    let today_total: i64 = db
+        .query_row(
+            "SELECT COUNT(*) FROM todos WHERE user_id=?1 AND tab='today' AND deleted=0",
+            [user_id],
+            |r| r.get(0),
+        )
+        .unwrap_or(0);
+
+    let today_done: i64 = db
+        .query_row(
+            "SELECT COUNT(*) FROM todos WHERE user_id=?1 AND tab='today' AND deleted=0 AND completed=1",
+            [user_id],
+            |r| r.get(0),
+        )
+        .unwrap_or(0);
+
+    let urgent_count: i64 = db
+        .query_row(
+            "SELECT COUNT(*) FROM todos WHERE user_id=?1 AND deleted=0 AND completed=0 AND quadrant='important-urgent'",
+            [user_id],
+            |r| r.get(0),
+        )
+        .unwrap_or(0);
+
+    let overdue_count: i64 = db
+        .query_row(
+            "SELECT COUNT(*) FROM todos WHERE user_id=?1 AND deleted=0 AND completed=0 AND due_date IS NOT NULL AND due_date < ?2",
+            rusqlite::params![user_id, today],
+            |r| r.get(0),
+        )
+        .unwrap_or(0);
+
+    let next_due: Option<String> = db
+        .query_row(
+            "SELECT text FROM todos WHERE user_id=?1 AND deleted=0 AND completed=0 AND due_date IS NOT NULL AND due_date >= ?2 ORDER BY due_date ASC LIMIT 1",
+            rusqlite::params![user_id, today],
+            |r| r.get(0),
+        )
+        .ok();
+
+    MomentContext {
+        display_name,
+        hour: now.hour(),
+        today_total,
+        today_done,
+        urgent_count,
+        overdue_count,
+        next_due,
+    }
+}
+
+pub fn build_moment_system_prompt() -> &'static str {
+    r#"你是阿宝，嵌在"Next"任务管理应用中。
+
+现在你需要生成一句"此刻"文案——显示在手机顶栏的一句话，
+像一个了解你日程的老朋友随口说的一句。
+
+## 规则（严格遵守）
+- 最多10个汉字（含标点），绝对不能超过10个字
+- 不用感叹号，不用"加油"、"你真棒"、"辛苦了"
+- 不用 emoji
+- 口语化、自然、松弛
+- 一句话，不换行
+- 不要叫用户名字，太占字数
+
+## 语气指南
+- 有紧急的事 → "有两件急的"
+- 有逾期的事 → "有件事过期了"
+- 全做完了 → "都清了，歇会儿"
+- 没什么事 → "今天挺闲的"
+- 深夜（23:00-5:00）→ "夜深了，明天说"
+- 早晨（6:00-9:00）→ "早，今天3件事"
+
+## 反例（绝对不要）
+- "今天也要元气满满哦！"
+- "加油，你可以的！"
+- "辛苦了，注意休息～"
+
+只输出那一句话，不要任何解释或前缀。"#
+}
+
+pub fn build_moment_user_message(ctx: &MomentContext) -> String {
+    let time_period = match ctx.hour {
+        0..=5 => "深夜",
+        6..=9 => "早晨",
+        10..=12 => "上午",
+        13..=17 => "下午",
+        18..=22 => "晚上",
+        _ => "深夜",
+    };
+
+    let today_pending = ctx.today_total - ctx.today_done;
+    let next_due_info = ctx
+        .next_due
+        .as_ref()
+        .map(|t| format!("，最近要做的：{}", t))
+        .unwrap_or_default();
+
+    format!(
+        "用户：{}，现在是{}（{}点）。\n今天{}件任务，已完成{}件，还剩{}件。\n紧急任务{}件，逾期{}件{}。",
+        ctx.display_name,
+        time_period,
+        ctx.hour,
+        ctx.today_total,
+        ctx.today_done,
+        today_pending,
+        ctx.urgent_count,
+        ctx.overdue_count,
+        next_due_info,
+    )
 }
 
 fn quadrant_label(q: &str) -> &str {

@@ -451,7 +451,7 @@ document.querySelectorAll('.quadrant-cell').forEach(function(opt) {
 var _modalCollaborators = [];
 
 function loadModalCollaborators(todoId) {
-    if (\!todoId || typeof _collabAPI === "undefined") return;
+    if (!todoId || typeof _collabAPI === "undefined") return;
     _collabAPI.listCollaborators(todoId).then(function(data) {
         if (data.success) { _modalCollaborators = data.items || []; renderModalCollaborators(_modalCollaborators); }
     }).catch(function() { renderModalCollaborators([]); });
@@ -459,7 +459,7 @@ function loadModalCollaborators(todoId) {
 
 function renderModalCollaborators(collabs) {
     var section = document.getElementById("modal-collab-section");
-    if (\!section) return;
+    if (!section) return;
     var html = "";
     if (collabs.length === 0) {
         html = "<div class=\"collab-empty\">点击下方按钮添加协作者</div><button class=\"collab-add-btn\" onclick=\"showAddCollaboratorDialog()\">+ 添加协作者</button>";
@@ -476,9 +476,9 @@ function renderModalCollaborators(collabs) {
     section.innerHTML = html;
 }
 function showAddCollaboratorDialog() {
-    if (\!modalTaskId) { showToast("请先保存任务", "error"); return; }
+    if (!modalTaskId) { showToast("请先保存任务", "error"); return; }
     API.getFriends().then(function(data) {
-        if (\!data.success || \!data.items || data.items.length === 0) { showToast("暂无好友", "info"); return; }
+        if (!data.success || !data.items || data.items.length === 0) { showToast("暂无好友", "info"); return; }
         var existing = _modalCollaborators.map(function(c) { return c.user_id; });
         var avail = data.items.filter(function(f) { return existing.indexOf(f.id) === -1; });
         if (avail.length === 0) { showToast("所有好友已是协作者", "info"); return; }

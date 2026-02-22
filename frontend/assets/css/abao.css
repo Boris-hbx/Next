@@ -687,15 +687,30 @@
         object-fit: cover; border-radius: 50%;
     }
 
-    /* 气泡调整 */
+    /* 气泡调整 — 移动端面板始终为深色背景，需显式设浅色文字 */
     .abao-msg-row .abao-msg {
         max-width: none;
+        color: rgba(255, 255, 255, 0.9);
     }
     .abao-msg-row.user .abao-msg {
         background: linear-gradient(135deg, rgba(102,126,234,0.7), rgba(118,75,162,0.7));
+        color: #fff;
     }
     .abao-msg-row.assistant .abao-msg {
         background: rgba(255,255,255,0.08);
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    /* 任务卡片（移动端深色背景下） */
+    .abao-task-card {
+        background: rgba(255,255,255,0.06);
+        border-color: rgba(255,255,255,0.1);
+    }
+    .abao-task-card-title {
+        color: rgba(255, 255, 255, 0.9);
+    }
+    .abao-task-card-meta {
+        color: rgba(255, 255, 255, 0.5);
     }
 
     /* 回到底部按钮 - 移动端小胶囊 */
@@ -734,6 +749,7 @@
         font-size: 16px;
         background: rgba(255,255,255,0.08);
         border-color: rgba(255,255,255,0.12);
+        color: rgba(255, 255, 255, 0.9);
     }
 
     .abao-shortcuts {

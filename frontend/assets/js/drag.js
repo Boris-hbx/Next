@@ -184,8 +184,8 @@ var DragManager = (function() {
     function onMouseDown(e) {
         if (e.button !== 0) return;
 
-        // Only initiate drag from drag handle, not from clicks on content
-        if (!e.target.closest('.drag-handle')) return;
+        // Don't initiate drag from interactive elements (buttons, checkboxes, inputs)
+        if (e.target.closest('button, .task-checkbox, .task-delete, .progress-ring, input')) return;
 
         var taskItem = e.target.closest('.task-item');
         if (!taskItem || taskItem.classList.contains('completed')) return;

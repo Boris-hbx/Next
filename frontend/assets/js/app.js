@@ -167,3 +167,73 @@ function toggleSidebarSection(sectionId) {
         section.classList.toggle('expanded');
     }
 }
+
+// ========== 此刻 (Moment) — 顶栏一句话 ==========
+var Moment = (function() {
+    var _lastLoadTime = 0;
+    var _refreshTimer = null;
+
+    function getTimeIcon() {
+        var h = new Date().getHours();
+        if (h >= 6 && h < 12) return '\u2600\uFE0F';   // ☀️
+        if (h >= 12 && h < 18) return '\u26C5';          // ⛅
+        if (h >= 18 && h < 22) return '\uD83C\uDF19';    // 🌙
+        return '\uD83C\uDF1F';                            // 🌟
+    }
+
+    function setIcon() {
+        var el = document.getElementById('moment-icon');
+        if (el) el.textContent = getTimeIcon();
+    }
+
+    async function load() {
+        setIcon();
+        var textEl = document.getElementById('moment-text');
+        if (!textEl) return;
+
+        try {
+            var data = await API.getMoment();
+            if (data.success && data.text) {
+                textEl.textContent = data.text;
+                textEl.classList.add('visible');
+                _lastLoadTime = Date.now();
+            }
+        } catch(e) {
+            // Fallback: show time-based greeting
+            var h = new Date().getHours();
+            var greeting = h < 6 ? '夜深了，早点休息' :
+                           h < 10 ? '早上好' :
+                           h < 13 ? '上午好' :
+                           h < 18 ? '下午好' :
+                           h < 23 ? '晚上好' : '夜深了，早点休息';
+            textEl.textContent = greeting;
+            textEl.classList.add('visible');
+        }
+    }
+
+    function startAutoRefresh() {
+        if (_refreshTimer) clearInterval(_refreshTimer);
+        _refreshTimer = setInterval(function() {
+            load();
+        }, 15 * 60 * 1000); // 15 minutes
+
+        // Refresh when page becomes visible again (after being in background)
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden && Date.now() - _lastLoadTime > 15 * 60 * 1000) {
+                load();
+            }
+        });
+    }
+
+    function refreshIfStale() {
+        if (Date.now() - _lastLoadTime > 5 * 60 * 1000) {
+            load();
+        }
+    }
+
+    return {
+        load: load,
+        startAutoRefresh: startAutoRefresh,
+        refreshIfStale: refreshIfStale,
+    };
+})();

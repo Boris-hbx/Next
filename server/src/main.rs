@@ -30,6 +30,7 @@ async fn main() {
 
     let state = AppState {
         db: Arc::new(Mutex::new(conn)),
+        moment_cache: Arc::new(Mutex::new(std::collections::HashMap::new())),
     };
 
     // Spawn reminder poller (checks every 30s for due reminders)
@@ -175,7 +176,8 @@ async fn main() {
         .nest("/push", push_routes)
         .nest("/share", share_routes)
         .nest("/contacts", contacts_routes)
-        .nest("/collaborate", collaborate_routes);
+        .nest("/collaborate", collaborate_routes)
+        .route("/moment", get(routes::moment::get_moment));
 
     // Frontend static files
     let frontend_dir = std::env::var("FRONTEND_DIR").unwrap_or_else(|_| "../frontend".to_string());

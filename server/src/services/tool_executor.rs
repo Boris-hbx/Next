@@ -306,11 +306,15 @@ fn tool_create_todo(db: &Connection, user_id: &str, input: &Value) -> Value {
         return json!({"error": "text is required"});
     }
     let id = uuid::Uuid::new_v4().to_string()[..8].to_string();
-    let tab = input["tab"].as_str().unwrap_or("today");
+    let due_date = input["due_date"].as_str();
+    // When due_date is provided, auto-compute tab from date; otherwise use Claude's choice
+    let tab = match due_date {
+        Some(d) => compute_tab_for_date(d),
+        None => input["tab"].as_str().unwrap_or("today"),
+    };
     let quadrant = input["quadrant"]
         .as_str()
         .unwrap_or("not-important-not-urgent");
-    let due_date = input["due_date"].as_str();
     let assignee = input["assignee"].as_str().unwrap_or("");
     let tags: Vec<String> = input["tags"]
         .as_array()
@@ -822,6 +826,34 @@ fn tool_query_english_scenarios(db: &Connection, user_id: &str, input: &Value) -
 /// - Same day → "today"
 /// - Same week (Mon-Sun) → "week"
 /// - Everything else → "month"
+/// Compute tab from a YYYY-MM-DD date string
+pub fn compute_tab_for_date(date_str: &str) -> &'static str {
+    use chrono::{Datelike, NaiveDate};
+
+    let date = match NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
+        Ok(d) => d,
+        Err(_) => return "today",
+    };
+
+    let shanghai = chrono::FixedOffset::east_opt(8 * 3600).unwrap();
+    let now_local = chrono::Utc::now().with_timezone(&shanghai);
+    let today = now_local.date_naive();
+
+    if date == today {
+        return "today";
+    }
+
+    let today_weekday = today.weekday().num_days_from_monday();
+    let week_start = today - chrono::Duration::days(today_weekday as i64);
+    let week_end = week_start + chrono::Duration::days(6);
+
+    if date >= week_start && date <= week_end {
+        return "week";
+    }
+
+    "month"
+}
+
 pub fn compute_tab_for_time(remind_at: &str) -> &'static str {
     use chrono::Datelike;
 

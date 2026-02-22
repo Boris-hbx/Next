@@ -47,6 +47,7 @@ function loadItems() {
             updateCounts();
             renderItems();
             loadPendingConfirmations();
+            if (typeof Moment !== 'undefined') Moment.refreshIfStale();
         })
         .catch(err => {
             console.error('[loadItems] error:', err);
