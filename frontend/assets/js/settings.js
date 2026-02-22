@@ -181,3 +181,166 @@ function highlightSelectedPreset() {
         el.classList.toggle('selected', el.dataset.avatar === value);
     });
 }
+
+// ========== 联系人管理 (Contacts) ==========
+
+var Contacts = (function() {
+    var contacts = [];
+    var sectionInserted = false;
+
+    // Ensure the contacts section exists in the DOM
+    function ensureSection() {
+        if (sectionInserted) return;
+        var friendsSection = document.getElementById('add-friend-btn');
+        if (!friendsSection) return;
+        var parentSection = friendsSection.closest('.settings-section');
+        if (!parentSection) return;
+
+        var section = document.createElement('div');
+        section.className = 'settings-section';
+        section.id = 'contacts-section';
+        section.innerHTML =
+            '<h4>联系人</h4>' +
+            '<div id="contacts-list"><div class="friends-empty">暂无联系人</div></div>' +
+            '<button class="btn btn-primary settings-add-friend-btn" id="add-contact-btn" onclick="Contacts.addSelfContact()">+ 添加联系人</button>';
+
+        parentSection.parentNode.insertBefore(section, parentSection.nextSibling);
+        sectionInserted = true;
+    }
+
+    async function loadContacts() {
+        ensureSection();
+        try {
+            var resp = await API.getContacts();
+            if (resp.success) {
+                contacts = resp.items || [];
+                renderContacts(contacts);
+            }
+        } catch (e) {
+            console.error('[Contacts] load failed:', e);
+        }
+    }
+
+    function renderContacts(items) {
+        var container = document.getElementById('contacts-list');
+        if (!container) return;
+
+        if (items.length === 0) {
+            container.innerHTML = '<div class="friends-empty">暂无联系人</div>';
+            return;
+        }
+
+        // Split into linked (friends) and self-managed
+        var linked = items.filter(function(c) { return c.friendship_id; });
+        var selfManaged = items.filter(function(c) { return !c.friendship_id; });
+
+        var html = '';
+
+        if (linked.length > 0) {
+            html += '<div class="contacts-group-label">可协作好友</div>';
+            html += linked.map(function(c) {
+                var displayName = c.linked_display_name || c.linked_username || c.name;
+                var initial = displayName.charAt(0).toUpperCase();
+                return '<div class="friend-item contact-item">' +
+                    '<div class="friend-avatar" style="background:linear-gradient(135deg,#43e97b 0%,#38f9d7 100%)">' + escapeContactHtml(initial) + '</div>' +
+                    '<div class="friend-info">' +
+                        '<span class="friend-name">' + escapeContactHtml(displayName) + '</span>' +
+                        (c.linked_username ? '<span class="friend-username">@' + escapeContactHtml(c.linked_username) + '</span>' : '') +
+                        (c.note ? '<span class="contact-note">' + escapeContactHtml(c.note) + '</span>' : '') +
+                    '</div>' +
+                    '<button class="contact-edit-btn" onclick="Contacts.editContactNote(\'' + c.id + '\')" title="编辑备注">✎</button>' +
+                '</div>';
+            }).join('');
+        }
+
+        if (selfManaged.length > 0) {
+            html += '<div class="contacts-group-label">自管理联系人</div>';
+            html += selfManaged.map(function(c) {
+                var initial = c.name.charAt(0).toUpperCase();
+                return '<div class="friend-item contact-item">' +
+                    '<div class="friend-avatar" style="background:linear-gradient(135deg,#f7971e 0%,#ffd200 100%)">' + escapeContactHtml(initial) + '</div>' +
+                    '<div class="friend-info">' +
+                        '<span class="friend-name">' + escapeContactHtml(c.name) + '</span>' +
+                        (c.note ? '<span class="contact-note">' + escapeContactHtml(c.note) + '</span>' : '') +
+                    '</div>' +
+                    '<button class="contact-edit-btn" onclick="Contacts.editContactNote(\'' + c.id + '\')" title="编辑备注">✎</button>' +
+                    '<button class="friend-remove-btn" onclick="Contacts.deleteSelfContact(\'' + c.id + '\')" title="删除联系人">&times;</button>' +
+                '</div>';
+            }).join('');
+        }
+
+        container.innerHTML = html;
+    }
+
+    function addSelfContact() {
+        var name = prompt('联系人名称:');
+        if (!name || !name.trim()) return;
+        var note = prompt('备注 (可选):') || '';
+
+        API.createContact(name.trim(), note).then(function(resp) {
+            if (resp.success) {
+                showToast('联系人已添加', 'success');
+                loadContacts();
+            } else {
+                showToast(resp.message || '添加失败', 'error');
+            }
+        }).catch(function() {
+            showToast('添加失败', 'error');
+        });
+    }
+
+    function editContactNote(id) {
+        var contact = contacts.find(function(c) { return c.id === id; });
+        if (!contact) return;
+
+        var newNote = prompt('编辑备注:', contact.note || '');
+        if (newNote === null) return; // cancelled
+
+        API.updateContact(id, { note: newNote }).then(function(resp) {
+            if (resp.success) {
+                showToast('备注已更新', 'success');
+                loadContacts();
+            } else {
+                showToast(resp.message || '更新失败', 'error');
+            }
+        }).catch(function() {
+            showToast('更新失败', 'error');
+        });
+    }
+
+    function deleteSelfContact(id) {
+        if (!confirm('确定删除此联系人吗？')) return;
+
+        API.deleteContact(id).then(function(resp) {
+            if (resp.success) {
+                showToast('联系人已删除', 'success');
+                contacts = contacts.filter(function(c) { return c.id !== id; });
+                renderContacts(contacts);
+            } else {
+                showToast(resp.message || '删除失败', 'error');
+            }
+        }).catch(function() {
+            showToast('删除失败', 'error');
+        });
+    }
+
+    function escapeContactHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str || '';
+        return div.innerHTML;
+    }
+
+    return {
+        loadContacts: loadContacts,
+        addSelfContact: addSelfContact,
+        editContactNote: editContactNote,
+        deleteSelfContact: deleteSelfContact
+    };
+})();
+
+// Hook into settings loading: also load contacts when settings are shown
+var _origLoadSettingsData = loadSettingsData;
+loadSettingsData = async function() {
+    await _origLoadSettingsData();
+    Contacts.loadContacts();
+};
