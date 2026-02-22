@@ -12,6 +12,7 @@
 
 | 要做什么 | 读哪个文档 |
 |---------|-----------|
+| 系统设计、产品理念、核心概念、数据流 | `docs/ref/SYSTEM-DESIGN.md` |
 | 系统架构、组件如何协作、设计决策 | `docs/ref/ARCHITECTURE.md` |
 | REST API 端点、数据结构 | `docs/ref/API.md` |
 | Rust 后端、添加路由/模型 | `docs/ref/BACKEND.md` |
@@ -53,7 +54,7 @@ Next/
 
 前端资源通过 `?v=` 查询参数做缓存控制。**每次修改前端文件（CSS/JS/HTML）并部署时，必须递增版本号**，否则浏览器会使用缓存的旧文件。
 
-- 版本号格式: `YYYYMMDD` + 字母后缀，如 `20260221g`
+- 版本号格式: `YYYYMMDD` + 字母后缀，如 `20260221i`
 - 位置: `frontend/index.html` 中所有 `<link>` 和 `<script>` 标签的 `?v=` 参数
 - 递增规则: 同一天内递增字母后缀 (a→b→c)，跨天则更新日期并重置为 a
 - 操作: 用 `replace_all` 全局替换旧版本号为新版本号
@@ -85,7 +86,7 @@ Next/
 > 状态: 草稿 | 实施中 | 已完成 | 已废弃
 ```
 
-新建 spec 时查看 `docs/specs/` 下最大序号 +1（当前最大: 036）。
+新建 spec 时查看 `docs/specs/` 下最大序号 +1（当前最大: 043）。
 
 ## 项目所有者
 Boris Huai
