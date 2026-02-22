@@ -84,11 +84,17 @@ function renderRoutines() {
     routines.forEach(function(r) {
         var checkedClass = r.completed_today ? 'checked' : '';
         var completedClass = r.completed_today ? 'completed' : '';
+        var isCollab = r.is_collaborative;
+        var collabIndicator = '';
+        if (isCollab) {
+            var ownerLabel = r.owner_name ? '与 ' + escapeHtml(r.owner_name) + ' 一起' : '协作';
+            collabIndicator = '<span class="routine-collab-chip" style="font-size:10px;color:var(--primary-color,#5b6abf);margin-left:4px;opacity:0.8;">' + ownerLabel + '</span>';
+        }
         html += '<div class="routine-item ' + completedClass + '" data-id="' + r.id + '">' +
             '<div class="routine-checkbox ' + checkedClass + '" onclick="toggleRoutine(\'' + r.id + '\')">' +
                 (r.completed_today ? '✓' : '') +
             '</div>' +
-            '<span class="routine-text">' + escapeHtml(r.text) + '</span>' +
+            '<span class="routine-text">' + escapeHtml(r.text) + collabIndicator + '</span>' +
             '<button class="routine-delete" onclick="deleteRoutine(\'' + r.id + '\')">&times;</button>' +
         '</div>';
     });
