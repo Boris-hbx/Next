@@ -14,6 +14,9 @@ pub fn init_db(db_path: &str) -> Connection {
     conn.execute_batch("PRAGMA foreign_keys=ON;").unwrap();
 
     create_tables(&conn);
+
+    // Add is_collaborative column (SPEC-041) - ignore error if already exists
+    conn.execute("ALTER TABLE todos ADD COLUMN is_collaborative INTEGER DEFAULT 0", []).ok();
     conn
 }
 
@@ -180,6 +183,45 @@ fn create_tables(conn: &Connection) {
             created_at TEXT NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_shared_recipient ON shared_items(recipient_id, status);
+
+        -- Todo collaborators (SPEC-041)
+        CREATE TABLE IF NOT EXISTS todo_collaborators (
+            id TEXT PRIMARY KEY,
+            todo_id TEXT NOT NULL REFERENCES todos(id) ON DELETE CASCADE,
+            user_id TEXT NOT NULL REFERENCES users(id),
+            role TEXT NOT NULL DEFAULT 'collaborator',
+            tab TEXT NOT NULL DEFAULT 'today',
+            quadrant TEXT NOT NULL DEFAULT 'not-important-not-urgent',
+            sort_order REAL DEFAULT 0.0,
+            status TEXT NOT NULL DEFAULT 'active',
+            created_at TEXT NOT NULL,
+            UNIQUE(todo_id, user_id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_todo_collabs_user ON todo_collaborators(user_id, status);
+        CREATE INDEX IF NOT EXISTS idx_todo_collabs_todo ON todo_collaborators(todo_id, status);
+
+        -- Pending confirmations (SPEC-041)
+        CREATE TABLE IF NOT EXISTS pending_confirmations (
+            id TEXT PRIMARY KEY,
+            item_type TEXT NOT NULL DEFAULT 'todo',
+            item_id TEXT NOT NULL,
+            action TEXT NOT NULL,
+            initiated_by TEXT NOT NULL REFERENCES users(id),
+            initiated_at TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending',
+            resolved_at TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_pending_conf_status ON pending_confirmations(status, initiated_at);
+
+        -- Confirmation responses (SPEC-041)
+        CREATE TABLE IF NOT EXISTS confirmation_responses (
+            id TEXT PRIMARY KEY,
+            confirmation_id TEXT NOT NULL REFERENCES pending_confirmations(id) ON DELETE CASCADE,
+            user_id TEXT NOT NULL REFERENCES users(id),
+            response TEXT NOT NULL,
+            responded_at TEXT NOT NULL,
+            UNIQUE(confirmation_id, user_id)
+        );
         ",
     )
     .expect("Failed to create tables");

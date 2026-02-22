@@ -119,6 +119,15 @@ async fn main() {
         .route("/{id}/accept", post(routes::friends::accept_shared))
         .route("/{id}/dismiss", post(routes::friends::dismiss_shared));
 
+
+    // Collaborate routes (SPEC-041)
+    let collaborate_routes = Router::new()
+        .route("/todos/{id}", post(routes::collaborate::set_collaborator).delete(routes::collaborate::remove_collaborator))
+        .route("/todos/{id}/collaborators", get(routes::collaborate::list_collaborators))
+        .route("/confirmations/pending", get(routes::collaborate::list_pending_confirmations))
+        .route("/confirmations/{id}/respond", post(routes::collaborate::respond_confirmation))
+        .route("/confirmations/{id}/withdraw", post(routes::collaborate::withdraw_confirmation));
+
     // Health check
     let start_time = std::time::Instant::now();
 
@@ -133,7 +142,8 @@ async fn main() {
         .nest("/conversations", conversation_routes)
         .nest("/english", english_routes)
         .nest("/friends", friends_routes)
-        .nest("/share", share_routes);
+        .nest("/share", share_routes)
+        .nest("/collaborate", collaborate_routes);
 
     // Frontend static files
     let frontend_dir = std::env::var("FRONTEND_DIR").unwrap_or_else(|_| "../frontend".to_string());
