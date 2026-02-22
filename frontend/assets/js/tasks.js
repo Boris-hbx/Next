@@ -180,9 +180,9 @@ function renderFlatList() {
                 : '';
             var flatReminderHtml = getReminderBadgeHtml(item);
             var flatTriggeredClass = (item.next_reminder && item.next_reminder.status === 'triggered') ? ' task-item-triggered' : '';
-            html += '<div class="flat-task-item' + flatTriggeredClass + '" data-id="' + item.id + '">' +
+            html += '<div class="flat-task-item' + flatTriggeredClass + '" data-id="' + item.id + '" onclick="showTaskCard(\'' + item.id + '\')">' +
                 '<div class="task-checkbox" onclick="event.stopPropagation(); toggleComplete(\'' + item.id + '\')"></div>' +
-                '<div class="flat-task-content" onclick="showTaskCard(\'' + item.id + '\')">' +
+                '<div class="flat-task-content">' +
                     '<div class="task-text">' + escapeHtml(item.text) + '</div>' +
                     ((dueDateHtml || flatReminderHtml) ? '<div class="flat-task-meta">' + flatReminderHtml + dueDateHtml + '</div>' : '') +
                 '</div>' +

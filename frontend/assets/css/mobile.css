@@ -585,11 +585,12 @@
         display: flex;
         align-items: center;
         padding: 12px 10px;
-        background: var(--bg-card, rgba(255,255,255,0.04));
+        background: var(--bg-card, rgba(255,255,255,0.95));
         border-radius: 10px;
         margin-bottom: 6px;
         gap: 10px;
         min-height: 44px;
+        cursor: pointer;
         -webkit-tap-highlight-color: transparent;
     }
 
@@ -608,7 +609,7 @@
 
     .flat-task-content .task-text {
         font-size: 14px;
-        color: var(--text-color, #e6edf3);
+        color: var(--text-primary);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;

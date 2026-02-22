@@ -15,7 +15,7 @@
 }
 
 .english-header h2 {
-    color: var(--text-color, #e6edf3);
+    color: var(--text-primary);
     font-size: 1.3rem;
     margin: 0;
 }
@@ -48,7 +48,7 @@
 }
 
 .english-empty-state h3 {
-    color: var(--text-color, #e6edf3);
+    color: var(--text-primary);
     margin-bottom: 8px;
 }
 
@@ -104,7 +104,7 @@
 
 .english-card-title {
     font-weight: 600;
-    color: var(--text-color, #e6edf3);
+    color: var(--text-primary);
     font-size: 0.95rem;
     margin-bottom: 2px;
 }
@@ -182,7 +182,7 @@
 .english-detail-title {
     font-size: 1.2rem;
     font-weight: 600;
-    color: var(--text-color, #e6edf3);
+    color: var(--text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -206,7 +206,7 @@
 
 .english-detail-actions .btn-icon:hover {
     border-color: var(--primary-color, #667eea);
-    color: var(--text-color, #e6edf3);
+    color: var(--text-primary);
 }
 
 /* Content area */
@@ -216,7 +216,7 @@
     border-radius: 12px;
     padding: 24px;
     line-height: 1.8;
-    color: var(--text-color, #e6edf3);
+    color: var(--text-primary);
 }
 
 .english-content h2 {
@@ -232,7 +232,7 @@
 .english-content h3 {
     font-size: 1.05rem;
     margin: 20px 0 8px;
-    color: var(--text-color, #e6edf3);
+    color: var(--text-primary);
 }
 
 .english-content h4 {
@@ -317,7 +317,7 @@
 
 .english-modal h3 {
     margin: 0 0 16px;
-    color: var(--text-color, #e6edf3);
+    color: var(--text-primary);
     font-size: 1.1rem;
 }
 
@@ -339,7 +339,7 @@
     background: var(--input-bg, #0d1117);
     border: 1px solid var(--border-color, #30363d);
     border-radius: 8px;
-    color: var(--text-color, #e6edf3);
+    color: var(--text-primary);
     font-size: 0.95rem;
     box-sizing: border-box;
 }
@@ -366,7 +366,7 @@
 
 .english-modal-actions .btn-secondary {
     background: var(--hover-bg, #21262d);
-    color: var(--text-color, #e6edf3);
+    color: var(--text-primary);
     border: 1px solid var(--border-color, #30363d);
 }
 
