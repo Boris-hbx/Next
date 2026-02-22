@@ -119,6 +119,11 @@ async fn main() {
         .route("/{id}/accept", post(routes::friends::accept_shared))
         .route("/{id}/dismiss", post(routes::friends::dismiss_shared));
 
+    // Contacts routes
+    let contacts_routes = Router::new()
+        .route("/", get(routes::contacts::list_contacts).post(routes::contacts::create_contact))
+        .route("/{id}", put(routes::contacts::update_contact).delete(routes::contacts::delete_contact));
+
     // Health check
     let start_time = std::time::Instant::now();
 
@@ -133,7 +138,8 @@ async fn main() {
         .nest("/conversations", conversation_routes)
         .nest("/english", english_routes)
         .nest("/friends", friends_routes)
-        .nest("/share", share_routes);
+        .nest("/share", share_routes)
+        .nest("/contacts", contacts_routes);
 
     // Frontend static files
     let frontend_dir = std::env::var("FRONTEND_DIR").unwrap_or_else(|_| "../frontend".to_string());

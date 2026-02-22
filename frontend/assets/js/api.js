@@ -260,6 +260,26 @@ var API = (function() {
             return await request('POST', '/share/' + encodeURIComponent(id) + '/dismiss');
         },
 
+        // ===== Contacts APIs =====
+        getContacts: async function() {
+            return await request('GET', '/contacts');
+        },
+
+        createContact: async function(name, note) {
+            return await request('POST', '/contacts', {
+                name: name,
+                note: note || undefined
+            });
+        },
+
+        updateContact: async function(id, data) {
+            return await request('PUT', '/contacts/' + encodeURIComponent(id), data);
+        },
+
+        deleteContact: async function(id) {
+            return await request('DELETE', '/contacts/' + encodeURIComponent(id));
+        },
+
         // 环境检测 (always web now)
         isTauri: function() { return false; }
     };

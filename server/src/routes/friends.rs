@@ -232,6 +232,44 @@ pub async fn accept_friend(
         );
     }
 
+    // Auto-create contacts for both users
+    if let Ok((requester_id, addressee_id)) = db.query_row(
+        "SELECT requester_id, addressee_id FROM friendships WHERE id = ?1",
+        [&id],
+        |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)),
+    ) {
+        // Get display names for both users
+        let requester_name: String = db
+            .query_row(
+                "SELECT COALESCE(display_name, username) FROM users WHERE id = ?1",
+                [&requester_id],
+                |row| row.get(0),
+            )
+            .unwrap_or_else(|_| "Unknown".to_string());
+
+        let addressee_name: String = db
+            .query_row(
+                "SELECT COALESCE(display_name, username) FROM users WHERE id = ?1",
+                [&addressee_id],
+                |row| row.get(0),
+            )
+            .unwrap_or_else(|_| "Unknown".to_string());
+
+        // Create contact for addressee -> requester
+        let contact_id1 = uuid::Uuid::new_v4().to_string()[..8].to_string();
+        db.execute(
+            "INSERT OR IGNORE INTO contacts (id, user_id, name, linked_user_id, friendship_id, note, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, '', ?6, ?7)",
+            rusqlite::params![contact_id1, addressee_id, requester_name, requester_id, id, now, now],
+        ).ok();
+
+        // Create contact for requester -> addressee
+        let contact_id2 = uuid::Uuid::new_v4().to_string()[..8].to_string();
+        db.execute(
+            "INSERT OR IGNORE INTO contacts (id, user_id, name, linked_user_id, friendship_id, note, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, '', ?6, ?7)",
+            rusqlite::params![contact_id2, requester_id, addressee_name, addressee_id, id, now, now],
+        ).ok();
+    }
+
     (
         StatusCode::OK,
         Json(SimpleResponse {

@@ -180,6 +180,20 @@ fn create_tables(conn: &Connection) {
             created_at TEXT NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_shared_recipient ON shared_items(recipient_id, status);
+
+        -- Contacts (address book)
+        CREATE TABLE IF NOT EXISTS contacts (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL REFERENCES users(id),
+            name TEXT NOT NULL,
+            linked_user_id TEXT REFERENCES users(id),
+            friendship_id TEXT REFERENCES friendships(id),
+            note TEXT DEFAULT '',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE(user_id, linked_user_id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_contacts_user ON contacts(user_id);
         ",
     )
     .expect("Failed to create tables");
