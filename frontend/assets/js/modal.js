@@ -13,21 +13,12 @@ function showAddModalForQuadrant(quadrant) {
 }
 
 function showTaskCard(taskId, element) {
-    try {
-        var item = allItems.find(function(i) { return i.id === taskId; });
-        if (!item) {
-            console.error('[showTaskCard] item not found for id:', taskId, 'allItems count:', allItems.length);
-            return;
-        }
-        openTaskModal('view', item);
-    } catch(e) {
-        console.error('[showTaskCard] error:', e);
-        alert('showTaskCard error: ' + e.message);
-    }
+    var item = allItems.find(function(i) { return i.id === taskId; });
+    if (!item) return;
+    openTaskModal('view', item);
 }
 
 function openTaskModal(mode, item, tab, quadrant) {
-  try {
     modalMode = mode;
     modalTaskId = item ? item.id : null;
     modalTaskItem = item;
@@ -146,10 +137,6 @@ function openTaskModal(mode, item, tab, quadrant) {
     if (mode === 'create' || mode === 'edit') {
         setTimeout(function() { titleInput.focus(); }, 100);
     }
-  } catch(e) {
-    console.error('[openTaskModal] error:', e);
-    alert('openTaskModal error: ' + e.message);
-  }
 }
 
 function toggleChangelog() {
