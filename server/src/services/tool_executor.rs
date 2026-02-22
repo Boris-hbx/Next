@@ -1,6 +1,65 @@
 use rusqlite::Connection;
 use serde_json::{json, Value};
 
+/// Ensure collaboration tables exist (idempotent)
+fn ensure_collab_tables(db: &Connection) {
+    db.execute_batch(
+        "
+        CREATE TABLE IF NOT EXISTS todo_collaborators (
+            id TEXT PRIMARY KEY,
+            todo_id TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            tab TEXT NOT NULL DEFAULT 'today',
+            quadrant TEXT NOT NULL DEFAULT 'not-important-not-urgent',
+            status TEXT NOT NULL DEFAULT 'active',
+            created_at TEXT NOT NULL,
+            UNIQUE(todo_id, user_id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_todo_collab_user ON todo_collaborators(user_id, status);
+        CREATE INDEX IF NOT EXISTS idx_todo_collab_todo ON todo_collaborators(todo_id);
+        CREATE TABLE IF NOT EXISTS pending_confirmations (
+            id TEXT PRIMARY KEY,
+            item_type TEXT NOT NULL,
+            item_id TEXT NOT NULL,
+            action TEXT NOT NULL,
+            initiated_by TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending',
+            created_at TEXT NOT NULL,
+            resolved_at TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_pending_conf_status ON pending_confirmations(status);
+        ",
+    )
+    .ok();
+
+    let has_todo_collab: bool = db
+        .prepare("SELECT is_collaborative FROM todos LIMIT 0")
+        .is_ok();
+    if !has_todo_collab {
+        db.execute_batch("ALTER TABLE todos ADD COLUMN is_collaborative INTEGER DEFAULT 0;")
+            .ok();
+    }
+}
+
+fn check_friendship(db: &Connection, user_id: &str, friend_id: &str) -> bool {
+    db.query_row(
+        "SELECT COUNT(*) > 0 FROM friendships WHERE status = 'accepted'
+         AND ((requester_id = ?1 AND addressee_id = ?2) OR (requester_id = ?2 AND addressee_id = ?1))",
+        rusqlite::params![user_id, friend_id],
+        |r| r.get(0),
+    )
+    .unwrap_or(false)
+}
+
+fn get_user_display_name(db: &Connection, uid: &str) -> Option<String> {
+    db.query_row(
+        "SELECT COALESCE(display_name, username) FROM users WHERE id = ?1",
+        [uid],
+        |r| r.get(0),
+    )
+    .ok()
+}
+
 /// Execute a tool call and return the result as JSON
 pub fn execute_tool(db: &Connection, user_id: &str, tool_name: &str, input: &Value) -> Value {
     match tool_name {
@@ -34,7 +93,8 @@ pub fn tool_definitions() -> Vec<Value> {
                     "quadrant": {"type": "string", "enum": ["important-urgent", "important-not-urgent", "not-important-urgent", "not-important-not-urgent"], "description": "优先级象限"},
                     "due_date": {"type": "string", "description": "截止日期 YYYY-MM-DD"},
                     "assignee": {"type": "string", "description": "负责人"},
-                    "tags": {"type": "array", "items": {"type": "string"}, "description": "标签"}
+                    "tags": {"type": "array", "items": {"type": "string"}, "description": "标签"},
+                    "collaborator": {"type": "string", "description": "协作者用户ID（需为好友）"}
                 },
                 "required": ["text"]
             }
@@ -80,7 +140,7 @@ pub fn tool_definitions() -> Vec<Value> {
         }),
         json!({
             "name": "query_todos",
-            "description": "查询任务列表，支持多种过滤条件",
+            "description": "查询任务列表，支持多种过滤条件。也会返回协作任务。",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -189,6 +249,7 @@ pub fn tool_definitions() -> Vec<Value> {
 // ─── Tool implementations ───
 
 fn tool_create_todo(db: &Connection, user_id: &str, input: &Value) -> Value {
+    ensure_collab_tables(db);
     let text = input["text"].as_str().unwrap_or("").to_string();
     if text.is_empty() {
         return json!({"error": "text is required"});
@@ -204,34 +265,72 @@ fn tool_create_todo(db: &Connection, user_id: &str, input: &Value) -> Value {
         .as_array()
         .map(|a| a.iter().filter_map(|v| v.as_str().map(String::from)).collect())
         .unwrap_or_default();
+    let collaborator = input["collaborator"].as_str();
     let now = chrono::Utc::now().to_rfc3339();
 
+    if let Some(collab_id) = collaborator {
+        if !check_friendship(db, user_id, collab_id) {
+            return json!({"error": "协作者不是你的好友"});
+        }
+    }
+
+    let is_collab = if collaborator.is_some() { 1 } else { 0 };
+
     let result = db.execute(
-        "INSERT INTO todos (id, user_id, text, content, tab, quadrant, progress, completed, due_date, assignee, tags, sort_order, created_at, updated_at) VALUES (?1, ?2, ?3, '', ?4, ?5, 0, 0, ?6, ?7, ?8, 0.0, ?9, ?10)",
-        rusqlite::params![id, user_id, text, tab, quadrant, due_date, assignee, serde_json::to_string(&tags).unwrap_or_else(|_| "[]".into()), now, now],
+        "INSERT INTO todos (id, user_id, text, content, tab, quadrant, progress, completed, due_date, assignee, tags, sort_order, created_at, updated_at, is_collaborative) VALUES (?1, ?2, ?3, '', ?4, ?5, 0, 0, ?6, ?7, ?8, 0.0, ?9, ?10, ?11)",
+        rusqlite::params![id, user_id, text, tab, quadrant, due_date, assignee, serde_json::to_string(&tags).unwrap_or_else(|_| "[]".into()), now, now, is_collab],
     );
 
+    if let Some(collab_id) = collaborator {
+        if result.is_ok() {
+            let tc_id = uuid::Uuid::new_v4().to_string()[..8].to_string();
+            db.execute(
+                "INSERT INTO todo_collaborators (id, todo_id, user_id, tab, quadrant, status, created_at) VALUES (?1, ?2, ?3, ?4, ?5, 'active', ?6)",
+                rusqlite::params![tc_id, id, collab_id, tab, quadrant, now],
+            ).ok();
+        }
+    }
+
     match result {
-        Ok(_) => json!({"success": true, "id": id, "text": text, "tab": tab, "quadrant": quadrant}),
+        Ok(_) => {
+            let mut resp = json!({"success": true, "id": id, "text": text, "tab": tab, "quadrant": quadrant});
+            if let Some(cid) = collaborator {
+                resp["collaborative"] = json!(true);
+                resp["collaborator_name"] = json!(get_user_display_name(db, cid));
+            }
+            resp
+        }
         Err(e) => json!({"error": format!("Failed to create todo: {}", e)}),
     }
 }
 
 fn tool_update_todo(db: &Connection, user_id: &str, input: &Value) -> Value {
+    ensure_collab_tables(db);
     let id = match input["id"].as_str() {
         Some(id) => id,
         None => return json!({"error": "id is required"}),
     };
 
-    // Verify ownership
-    let exists: bool = db
+    let is_owner: bool = db
         .query_row(
             "SELECT COUNT(*) > 0 FROM todos WHERE id=?1 AND user_id=?2",
             rusqlite::params![id, user_id],
             |r| r.get(0),
         )
         .unwrap_or(false);
-    if !exists {
+
+    let is_collaborator: bool = if !is_owner {
+        db.query_row(
+            "SELECT COUNT(*) > 0 FROM todo_collaborators WHERE todo_id=?1 AND user_id=?2 AND status='active'",
+            rusqlite::params![id, user_id],
+            |r| r.get(0),
+        )
+        .unwrap_or(false)
+    } else {
+        false
+    };
+
+    if !is_owner && !is_collaborator {
         return json!({"error": "Task not found"});
     }
 
@@ -239,26 +338,33 @@ fn tool_update_todo(db: &Connection, user_id: &str, input: &Value) -> Value {
     let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
     let mut idx = 1;
 
-    macro_rules! maybe_set {
-        ($field:expr, $key:expr) => {
-            if let Some(v) = input[$key].as_str() {
-                sets.push(format!("{}=?{}", $field, idx));
-                params.push(Box::new(v.to_string()));
-                idx += 1;
-            }
-        };
+    if is_owner {
+        if let Some(v) = input["text"].as_str() {
+            sets.push(format!("text=?{}", idx));
+            params.push(Box::new(v.to_string()));
+            idx += 1;
+        }
+        if let Some(v) = input["tab"].as_str() {
+            sets.push(format!("tab=?{}", idx));
+            params.push(Box::new(v.to_string()));
+            idx += 1;
+        }
+        if let Some(v) = input["quadrant"].as_str() {
+            sets.push(format!("quadrant=?{}", idx));
+            params.push(Box::new(v.to_string()));
+            idx += 1;
+        }
+        if let Some(v) = input["due_date"].as_str() {
+            sets.push(format!("due_date=?{}", idx));
+            params.push(Box::new(v.to_string()));
+            idx += 1;
+        }
     }
-
-    maybe_set!("text", "text");
-    maybe_set!("tab", "tab");
-    maybe_set!("quadrant", "quadrant");
-    maybe_set!("due_date", "due_date");
 
     if let Some(v) = input["progress"].as_i64() {
         sets.push(format!("progress=?{}", idx));
         params.push(Box::new(v));
         idx += 1;
-        // Auto-complete at 100%
         if v >= 100 {
             sets.push(format!("completed=1, completed_at=?{}", idx));
             params.push(Box::new(chrono::Utc::now().to_rfc3339()));
@@ -286,14 +392,16 @@ fn tool_update_todo(db: &Connection, user_id: &str, input: &Value) -> Value {
     params.push(Box::new(now));
     idx += 1;
 
-    let sql = format!(
-        "UPDATE todos SET {} WHERE id=?{} AND user_id=?{}",
-        sets.join(", "),
-        idx,
-        idx + 1
-    );
-    params.push(Box::new(id.to_string()));
-    params.push(Box::new(user_id.to_string()));
+    let sql = if is_owner {
+        let s = format!("UPDATE todos SET {} WHERE id=?{} AND user_id=?{}", sets.join(", "), idx, idx + 1);
+        params.push(Box::new(id.to_string()));
+        params.push(Box::new(user_id.to_string()));
+        s
+    } else {
+        let s = format!("UPDATE todos SET {} WHERE id=?{}", sets.join(", "), idx);
+        params.push(Box::new(id.to_string()));
+        s
+    };
 
     let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
     match db.execute(&sql, param_refs.as_slice()) {
@@ -303,19 +411,43 @@ fn tool_update_todo(db: &Connection, user_id: &str, input: &Value) -> Value {
 }
 
 fn tool_delete_todo(db: &Connection, user_id: &str, input: &Value) -> Value {
+    ensure_collab_tables(db);
     let id = match input["id"].as_str() {
         Some(id) => id,
         None => return json!({"error": "id is required"}),
     };
-    let now = chrono::Utc::now().to_rfc3339();
-    match db.execute(
-        "UPDATE todos SET deleted=1, deleted_at=?1, updated_at=?2 WHERE id=?3 AND user_id=?4",
-        rusqlite::params![now, now, id, user_id],
-    ) {
-        Ok(0) => json!({"error": "Task not found"}),
-        Ok(_) => json!({"success": true, "id": id}),
-        Err(e) => json!({"error": format!("Delete failed: {}", e)}),
+
+    let is_owner: bool = db
+        .query_row("SELECT COUNT(*) > 0 FROM todos WHERE id=?1 AND user_id=?2", rusqlite::params![id, user_id], |r| r.get(0))
+        .unwrap_or(false);
+
+    if is_owner {
+        let now = chrono::Utc::now().to_rfc3339();
+        return match db.execute(
+            "UPDATE todos SET deleted=1, deleted_at=?1, updated_at=?2 WHERE id=?3 AND user_id=?4",
+            rusqlite::params![now, now, id, user_id],
+        ) {
+            Ok(0) => json!({"error": "Task not found"}),
+            Ok(_) => json!({"success": true, "id": id}),
+            Err(e) => json!({"error": format!("Delete failed: {}", e)}),
+        };
     }
+
+    let is_collaborator: bool = db
+        .query_row("SELECT COUNT(*) > 0 FROM todo_collaborators WHERE todo_id=?1 AND user_id=?2 AND status='active'", rusqlite::params![id, user_id], |r| r.get(0))
+        .unwrap_or(false);
+
+    if is_collaborator {
+        let conf_id = uuid::Uuid::new_v4().to_string()[..8].to_string();
+        let now = chrono::Utc::now().to_rfc3339();
+        db.execute(
+            "INSERT INTO pending_confirmations (id, item_type, item_id, action, initiated_by, status, created_at) VALUES (?1, 'todo', ?2, 'delete', ?3, 'pending', ?4)",
+            rusqlite::params![conf_id, id, user_id, now],
+        ).ok();
+        return json!({"success": true, "id": id, "pending_confirmation": true, "message": "已提交删除请求，等待任务所有者确认"});
+    }
+
+    json!({"error": "Task not found"})
 }
 
 fn tool_restore_todo(db: &Connection, user_id: &str, input: &Value) -> Value {
@@ -335,6 +467,8 @@ fn tool_restore_todo(db: &Connection, user_id: &str, input: &Value) -> Value {
 }
 
 fn tool_query_todos(db: &Connection, user_id: &str, input: &Value) -> Value {
+    ensure_collab_tables(db);
+
     let mut conditions = vec!["user_id=?1".to_string(), "deleted=0".to_string()];
     let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = vec![Box::new(user_id.to_string())];
     let mut idx = 2;
@@ -367,7 +501,7 @@ fn tool_query_todos(db: &Connection, user_id: &str, input: &Value) -> Value {
     if let Some(tag) = input["tag"].as_str() {
         conditions.push(format!("tags LIKE ?{}", idx));
         params.push(Box::new(format!("%\"{}\"", tag)));
-        let _ = idx; // suppress warning
+        let _ = idx;
     }
 
     let sql = format!(
@@ -398,7 +532,68 @@ fn tool_query_todos(db: &Connection, user_id: &str, input: &Value) -> Value {
         Err(e) => return json!({"error": format!("Query failed: {}", e)}),
     };
 
-    let items: Vec<Value> = rows.flatten().collect();
+    let mut items: Vec<Value> = rows.flatten().collect();
+
+    // Collaborative todos
+    let mut collab_conditions = vec![
+        "tc.user_id = ?1".to_string(),
+        "tc.status = 'active'".to_string(),
+        "t.deleted = 0".to_string(),
+    ];
+    let mut collab_params: Vec<Box<dyn rusqlite::types::ToSql>> = vec![Box::new(user_id.to_string())];
+    let mut cidx = 2;
+
+    if let Some(tab) = input["tab"].as_str() {
+        collab_conditions.push(format!("tc.tab=?{}", cidx));
+        collab_params.push(Box::new(tab.to_string()));
+        cidx += 1;
+    }
+    if let Some(quadrant) = input["quadrant"].as_str() {
+        collab_conditions.push(format!("tc.quadrant=?{}", cidx));
+        collab_params.push(Box::new(quadrant.to_string()));
+        cidx += 1;
+    }
+    if let Some(completed) = input["completed"].as_bool() {
+        collab_conditions.push(format!("t.completed=?{}", cidx));
+        collab_params.push(Box::new(completed as i32));
+        cidx += 1;
+    }
+    if let Some(keyword) = input["keyword"].as_str() {
+        collab_conditions.push(format!("t.text LIKE ?{}", cidx));
+        collab_params.push(Box::new(format!("%{}%", keyword)));
+        let _ = cidx;
+    }
+
+    let collab_sql = format!(
+        "SELECT t.id, t.text, tc.tab, tc.quadrant, t.progress, t.completed, t.due_date, t.assignee, t.tags
+         FROM todos t
+         JOIN todo_collaborators tc ON t.id = tc.todo_id
+         WHERE {} LIMIT 20",
+        collab_conditions.join(" AND ")
+    );
+
+    let collab_param_refs: Vec<&dyn rusqlite::types::ToSql> = collab_params.iter().map(|p| p.as_ref()).collect();
+    if let Ok(mut cstmt) = db.prepare(&collab_sql) {
+        if let Ok(crows) = cstmt.query_map(collab_param_refs.as_slice(), |row| {
+            Ok(json!({
+                "id": row.get::<_, String>(0)?,
+                "text": row.get::<_, String>(1)?,
+                "tab": row.get::<_, String>(2)?,
+                "quadrant": row.get::<_, String>(3)?,
+                "progress": row.get::<_, i64>(4)?,
+                "completed": row.get::<_, bool>(5)?,
+                "due_date": row.get::<_, Option<String>>(6)?,
+                "assignee": row.get::<_, String>(7)?,
+                "tags": row.get::<_, String>(8)?,
+                "collaborative": true
+            }))
+        }) {
+            for item in crows.flatten() {
+                items.push(item);
+            }
+        }
+    }
+
     json!({"success": true, "count": items.len(), "items": items})
 }
 
@@ -475,30 +670,15 @@ fn tool_get_statistics(db: &Connection, user_id: &str, input: &Value) -> Value {
     };
 
     let total: i64 = db
-        .query_row(
-            &format!("SELECT COUNT(*) FROM todos WHERE {}", where_clause),
-            [user_id],
-            |r| r.get(0),
-        )
+        .query_row(&format!("SELECT COUNT(*) FROM todos WHERE {}", where_clause), [user_id], |r| r.get(0))
         .unwrap_or(0);
     let completed: i64 = db
-        .query_row(
-            &format!(
-                "SELECT COUNT(*) FROM todos WHERE {} AND completed=1",
-                where_clause
-            ),
-            [user_id],
-            |r| r.get(0),
-        )
+        .query_row(&format!("SELECT COUNT(*) FROM todos WHERE {} AND completed=1", where_clause), [user_id], |r| r.get(0))
         .unwrap_or(0);
     let overdue: i64 = db
         .query_row(
-            &format!(
-                "SELECT COUNT(*) FROM todos WHERE {} AND completed=0 AND due_date IS NOT NULL AND due_date < date('now')",
-                where_clause
-            ),
-            [user_id],
-            |r| r.get(0),
+            &format!("SELECT COUNT(*) FROM todos WHERE {} AND completed=0 AND due_date IS NOT NULL AND due_date < date('now')", where_clause),
+            [user_id], |r| r.get(0),
         )
         .unwrap_or(0);
 
