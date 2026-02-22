@@ -32,6 +32,9 @@ async fn main() {
         db: Arc::new(Mutex::new(conn)),
     };
 
+    // Spawn reminder poller (checks every 30s for due reminders)
+    services::reminder_poller::spawn_poller(state.db.clone());
+
     // Schedule daily backup
     let backup_state = state.clone();
     let backup_db_path = db_path.clone();
@@ -54,7 +57,8 @@ async fn main() {
         .route("/login", post(auth::login))
         .route("/logout", post(auth::logout))
         .route("/me", get(auth::me))
-        .route("/change-password", post(auth::change_password));
+        .route("/change-password", post(auth::change_password))
+        .route("/avatar", put(auth::update_avatar));
 
     // Todo routes (session required via UserId extractor)
     let todo_routes = Router::new()
@@ -111,6 +115,25 @@ async fn main() {
         .route("/{id}/decline", post(routes::friends::decline_friend))
         .route("/{id}", delete(routes::friends::delete_friend));
 
+    // Reminder routes
+    let reminder_routes = Router::new()
+        .route("/", get(routes::reminders::list_reminders).post(routes::reminders::create_reminder))
+        .route("/pending-count", get(routes::reminders::pending_count))
+        .route("/{id}", put(routes::reminders::update_reminder).delete(routes::reminders::cancel_reminder))
+        .route("/{id}/acknowledge", post(routes::reminders::acknowledge_reminder))
+        .route("/{id}/snooze", post(routes::reminders::snooze_reminder));
+
+    // Push subscription routes
+    let push_routes = Router::new()
+        .route("/vapid-public-key", get(routes::push::get_vapid_public_key))
+        .route("/subscribe", post(routes::push::subscribe).delete(routes::push::unsubscribe));
+
+    // Notification routes
+    let notification_routes = Router::new()
+        .route("/unread", get(routes::notifications::unread_notifications))
+        .route("/read-all", post(routes::notifications::mark_all_read))
+        .route("/{id}/read", post(routes::notifications::mark_read));
+
     // Share routes
     let share_routes = Router::new()
         .route("/", post(routes::friends::share_item))
@@ -118,6 +141,19 @@ async fn main() {
         .route("/inbox/count", get(routes::friends::shared_inbox_count))
         .route("/{id}/accept", post(routes::friends::accept_shared))
         .route("/{id}/dismiss", post(routes::friends::dismiss_shared));
+
+    // Contacts routes
+    let contacts_routes = Router::new()
+        .route("/", get(routes::contacts::list_contacts).post(routes::contacts::create_contact))
+        .route("/{id}", put(routes::contacts::update_contact).delete(routes::contacts::delete_contact));
+
+    // Collaborate routes (todo + routine collaboration + confirmations)
+    let collaborate_routes = Router::new()
+        .route("/todos/{id}", post(routes::collaborate::set_collaborator).delete(routes::collaborate::remove_collaborator))
+        .route("/routines/{id}", post(routes::routine_collab::set_routine_collaborator).delete(routes::routine_collab::remove_routine_collaborator))
+        .route("/confirmations/pending", get(routes::collaborate::list_pending_confirmations))
+        .route("/confirmations/{id}/respond", post(routes::collaborate::respond_confirmation))
+        .route("/confirmations/{id}/withdraw", post(routes::collaborate::withdraw_confirmation));
 
     // Health check
     let start_time = std::time::Instant::now();
@@ -133,7 +169,12 @@ async fn main() {
         .nest("/conversations", conversation_routes)
         .nest("/english", english_routes)
         .nest("/friends", friends_routes)
-        .nest("/share", share_routes);
+        .nest("/reminders", reminder_routes)
+        .nest("/notifications", notification_routes)
+        .nest("/push", push_routes)
+        .nest("/share", share_routes)
+        .nest("/contacts", contacts_routes)
+        .nest("/collaborate", collaborate_routes);
 
     // Frontend static files
     let frontend_dir = std::env::var("FRONTEND_DIR").unwrap_or_else(|_| "../frontend".to_string());

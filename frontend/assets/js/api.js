@@ -60,6 +60,10 @@ var API = (function() {
             });
         },
 
+        updateAvatar: async function(avatar) {
+            return await request('PUT', '/auth/avatar', { avatar: avatar });
+        },
+
         // ===== Todo APIs =====
         getTodos: async function(tab) {
             var path = '/todos';
@@ -258,6 +262,110 @@ var API = (function() {
 
         dismissShared: async function(id) {
             return await request('POST', '/share/' + encodeURIComponent(id) + '/dismiss');
+        },
+
+        // ===== Reminder APIs =====
+        getReminders: async function(status) {
+            var path = '/reminders';
+            if (status) path += '?status=' + encodeURIComponent(status);
+            return await request('GET', path);
+        },
+
+        createReminder: async function(data) {
+            return await request('POST', '/reminders', data);
+        },
+
+        updateReminder: async function(id, data) {
+            return await request('PUT', '/reminders/' + encodeURIComponent(id), data);
+        },
+
+        cancelReminder: async function(id) {
+            return await request('DELETE', '/reminders/' + encodeURIComponent(id));
+        },
+
+        acknowledgeReminder: async function(id) {
+            return await request('POST', '/reminders/' + encodeURIComponent(id) + '/acknowledge');
+        },
+
+        snoozeReminder: async function(id, minutes) {
+            return await request('POST', '/reminders/' + encodeURIComponent(id) + '/snooze', { minutes: minutes || 5 });
+        },
+
+        getReminderPendingCount: async function() {
+            return await request('GET', '/reminders/pending-count');
+        },
+
+        // ===== Notification APIs =====
+        getUnreadNotifications: async function() {
+            return await request('GET', '/notifications/unread');
+        },
+
+        markNotificationRead: async function(id) {
+            return await request('POST', '/notifications/' + encodeURIComponent(id) + '/read');
+        },
+
+        markAllNotificationsRead: async function() {
+            return await request('POST', '/notifications/read-all');
+        },
+
+        // ===== Push Subscription APIs =====
+        getVapidPublicKey: async function() {
+            return await request('GET', '/push/vapid-public-key');
+        },
+
+        subscribePush: async function(subscription) {
+            return await request('POST', '/push/subscribe', subscription);
+        },
+
+        unsubscribePush: async function(endpoint) {
+            return await request('DELETE', '/push/subscribe', { endpoint: endpoint });
+        },
+
+        // ===== Contacts APIs =====
+        getContacts: async function() {
+            return await request('GET', '/contacts');
+        },
+
+        createContact: async function(data) {
+            return await request('POST', '/contacts', data);
+        },
+
+        updateContact: async function(id, data) {
+            return await request('PUT', '/contacts/' + encodeURIComponent(id), data);
+        },
+
+        deleteContact: async function(id) {
+            return await request('DELETE', '/contacts/' + encodeURIComponent(id));
+        },
+
+        // ===== Collaboration APIs =====
+        setTodoCollaborator: async function(todoId, friendId) {
+            return await request('POST', '/collaborate/todos/' + encodeURIComponent(todoId), { friend_id: friendId });
+        },
+
+        removeTodoCollaborator: async function(todoId) {
+            return await request('DELETE', '/collaborate/todos/' + encodeURIComponent(todoId));
+        },
+
+        setRoutineCollaborator: async function(routineId, friendId) {
+            return await request('POST', '/collaborate/routines/' + encodeURIComponent(routineId), { friend_id: friendId });
+        },
+
+        removeRoutineCollaborator: async function(routineId) {
+            return await request('DELETE', '/collaborate/routines/' + encodeURIComponent(routineId));
+        },
+
+        // ===== Confirmation APIs =====
+        getPendingConfirmations: async function() {
+            return await request('GET', '/collaborate/confirmations/pending');
+        },
+
+        respondConfirmation: async function(id, response) {
+            return await request('POST', '/collaborate/confirmations/' + encodeURIComponent(id) + '/respond', { response: response });
+        },
+
+        withdrawConfirmation: async function(id) {
+            return await request('POST', '/collaborate/confirmations/' + encodeURIComponent(id) + '/withdraw');
         },
 
         // 环境检测 (always web now)

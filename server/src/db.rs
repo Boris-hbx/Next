@@ -14,7 +14,37 @@ pub fn init_db(db_path: &str) -> Connection {
     conn.execute_batch("PRAGMA foreign_keys=ON;").unwrap();
 
     create_tables(&conn);
+    run_migrations(&conn);
     conn
+}
+
+fn run_migrations(conn: &Connection) {
+    // Add avatar column to users if missing
+    let has_avatar: bool = conn
+        .prepare("SELECT avatar FROM users LIMIT 1")
+        .is_ok();
+    if !has_avatar {
+        conn.execute_batch("ALTER TABLE users ADD COLUMN avatar TEXT DEFAULT '';")
+            .ok();
+    }
+
+    // Add changed_by to todo_changelog
+    let has_changed_by: bool = conn.prepare("SELECT changed_by FROM todo_changelog LIMIT 1").is_ok();
+    if !has_changed_by {
+        conn.execute_batch("ALTER TABLE todo_changelog ADD COLUMN changed_by TEXT;").ok();
+    }
+
+    // Add is_collaborative to todos
+    let has_todo_collab: bool = conn.prepare("SELECT is_collaborative FROM todos LIMIT 1").is_ok();
+    if !has_todo_collab {
+        conn.execute_batch("ALTER TABLE todos ADD COLUMN is_collaborative INTEGER DEFAULT 0;").ok();
+    }
+
+    // Add is_collaborative to routines
+    let has_routine_collab: bool = conn.prepare("SELECT is_collaborative FROM routines LIMIT 1").is_ok();
+    if !has_routine_collab {
+        conn.execute_batch("ALTER TABLE routines ADD COLUMN is_collaborative INTEGER DEFAULT 0;").ok();
+    }
 }
 
 fn create_tables(conn: &Connection) {
@@ -26,6 +56,7 @@ fn create_tables(conn: &Connection) {
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
             display_name TEXT,
+            avatar TEXT DEFAULT '',
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
         );
@@ -180,6 +211,133 @@ fn create_tables(conn: &Connection) {
             created_at TEXT NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_shared_recipient ON shared_items(recipient_id, status);
+
+        -- Reminders
+        CREATE TABLE IF NOT EXISTS reminders (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL REFERENCES users(id),
+            text TEXT NOT NULL,
+            remind_at TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending',
+            related_todo_id TEXT,
+            repeat TEXT,
+            created_at TEXT NOT NULL,
+            triggered_at TEXT,
+            acknowledged_at TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_reminders_user ON reminders(user_id, status, remind_at);
+        CREATE INDEX IF NOT EXISTS idx_reminders_due ON reminders(status, remind_at);
+
+        -- Push subscriptions
+        CREATE TABLE IF NOT EXISTS push_subscriptions (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL REFERENCES users(id),
+            endpoint TEXT NOT NULL,
+            p256dh TEXT NOT NULL,
+            auth TEXT NOT NULL,
+            user_agent TEXT DEFAULT '',
+            created_at TEXT NOT NULL,
+            UNIQUE(user_id, endpoint)
+        );
+        CREATE INDEX IF NOT EXISTS idx_push_user ON push_subscriptions(user_id);
+
+        -- Notifications (in-app)
+        CREATE TABLE IF NOT EXISTS notifications (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL REFERENCES users(id),
+            type TEXT NOT NULL DEFAULT 'reminder',
+            title TEXT NOT NULL,
+            body TEXT DEFAULT '',
+            reminder_id TEXT,
+            todo_id TEXT,
+            read INTEGER DEFAULT 0,
+            created_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read, created_at DESC);
+
+        -- User settings
+        CREATE TABLE IF NOT EXISTS user_settings (
+            user_id TEXT PRIMARY KEY REFERENCES users(id),
+            push_enabled INTEGER DEFAULT 1,
+            wxpusher_uid TEXT,
+            quiet_hours_start TEXT,
+            quiet_hours_end TEXT,
+            updated_at TEXT NOT NULL
+        );
+
+        -- Contacts
+        CREATE TABLE IF NOT EXISTS contacts (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL REFERENCES users(id),
+            name TEXT NOT NULL,
+            linked_user_id TEXT REFERENCES users(id),
+            friendship_id TEXT REFERENCES friendships(id) ON DELETE SET NULL,
+            note TEXT DEFAULT '',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_contacts_user ON contacts(user_id);
+
+        -- Todo collaborators
+        CREATE TABLE IF NOT EXISTS todo_collaborators (
+            id TEXT PRIMARY KEY,
+            todo_id TEXT NOT NULL REFERENCES todos(id) ON DELETE CASCADE,
+            user_id TEXT NOT NULL REFERENCES users(id),
+            role TEXT NOT NULL DEFAULT 'collaborator',
+            tab TEXT NOT NULL DEFAULT 'today',
+            quadrant TEXT NOT NULL DEFAULT 'not-important-not-urgent',
+            sort_order REAL DEFAULT 0.0,
+            status TEXT NOT NULL DEFAULT 'active',
+            created_at TEXT NOT NULL,
+            UNIQUE(todo_id, user_id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_todo_collab_user ON todo_collaborators(user_id, status);
+        CREATE INDEX IF NOT EXISTS idx_todo_collab_todo ON todo_collaborators(todo_id);
+
+        -- Routine collaborators
+        CREATE TABLE IF NOT EXISTS routine_collaborators (
+            id TEXT PRIMARY KEY,
+            routine_id TEXT NOT NULL REFERENCES routines(id) ON DELETE CASCADE,
+            user_id TEXT NOT NULL REFERENCES users(id),
+            status TEXT NOT NULL DEFAULT 'active',
+            created_at TEXT NOT NULL,
+            UNIQUE(routine_id, user_id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_routine_collab_user ON routine_collaborators(user_id, status);
+
+        -- Routine completions (per-person per-day)
+        CREATE TABLE IF NOT EXISTS routine_completions (
+            id TEXT PRIMARY KEY,
+            routine_id TEXT NOT NULL REFERENCES routines(id) ON DELETE CASCADE,
+            user_id TEXT NOT NULL REFERENCES users(id),
+            completed_date TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            UNIQUE(routine_id, user_id, completed_date)
+        );
+        CREATE INDEX IF NOT EXISTS idx_routine_comp ON routine_completions(routine_id, user_id);
+
+        -- Pending confirmations
+        CREATE TABLE IF NOT EXISTS pending_confirmations (
+            id TEXT PRIMARY KEY,
+            item_type TEXT NOT NULL,
+            item_id TEXT NOT NULL,
+            action TEXT NOT NULL,
+            initiated_by TEXT NOT NULL REFERENCES users(id),
+            initiated_at TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending',
+            resolved_at TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_pending_item ON pending_confirmations(item_type, item_id, status);
+
+        -- Confirmation responses
+        CREATE TABLE IF NOT EXISTS confirmation_responses (
+            id TEXT PRIMARY KEY,
+            confirmation_id TEXT NOT NULL REFERENCES pending_confirmations(id) ON DELETE CASCADE,
+            user_id TEXT NOT NULL REFERENCES users(id),
+            response TEXT NOT NULL,
+            responded_at TEXT NOT NULL,
+            UNIQUE(confirmation_id, user_id)
+        );
         ",
     )
     .expect("Failed to create tables");
