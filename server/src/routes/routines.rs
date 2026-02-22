@@ -83,7 +83,7 @@ pub async fn list_routines(
     State(state): State<AppState>,
     user_id: UserId,
 ) -> (StatusCode, Json<RoutinesResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
     ensure_collab_tables(&db);
     let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
 
@@ -186,7 +186,7 @@ pub async fn create_routine(
     user_id: UserId,
     Json(req): Json<CreateRoutineRequest>,
 ) -> (StatusCode, Json<RoutineResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
     let id = uuid::Uuid::new_v4().to_string()[..8].to_string();
     let now = chrono::Utc::now().to_rfc3339();
 
@@ -222,7 +222,7 @@ pub async fn toggle_routine(
     user_id: UserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<RoutineResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
     ensure_collab_tables(&db);
     let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
     let now = chrono::Utc::now().to_rfc3339();
@@ -373,7 +373,7 @@ pub async fn delete_routine(
     user_id: UserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     let rows = db
         .execute(

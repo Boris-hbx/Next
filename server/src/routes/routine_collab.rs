@@ -49,7 +49,7 @@ pub async fn set_routine_collaborator(
     Path(id): Path<String>,
     Json(req): Json<SetCollaboratorRequest>,
 ) -> (StatusCode, Json<SimpleResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     // 1. Verify user owns the routine
     let owned: bool = db
@@ -116,7 +116,7 @@ pub async fn remove_routine_collaborator(
     user_id: UserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     // 1. Verify ownership
     let owned: bool = db

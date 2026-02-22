@@ -453,8 +453,9 @@ fn tool_update_todo(db: &Connection, user_id: &str, input: &Value) -> Value {
         params.push(Box::new(user_id.to_string()));
         s
     } else {
-        let s = format!("UPDATE todos SET {} WHERE id=?{}", sets.join(", "), idx);
+        let s = format!("UPDATE todos SET {} WHERE id=?{} AND id IN (SELECT todo_id FROM todo_collaborators WHERE user_id=?{} AND status='active')", sets.join(", "), idx, idx + 1);
         params.push(Box::new(id.to_string()));
+        params.push(Box::new(user_id.to_string()));
         s
     };
 

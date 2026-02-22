@@ -67,7 +67,7 @@ pub async fn list_reminders(
     UserId(user_id): UserId,
     Query(query): Query<ListQuery>,
 ) -> Result<Json<RemindersResponse>, StatusCode> {
-    let db = state.db.lock().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let db = state.db.lock();
 
     let status_filter = query.status.as_deref().unwrap_or("all");
     let (sql, params): (String, Vec<Box<dyn rusqlite::types::ToSql>>) = if status_filter == "all" {
@@ -122,7 +122,7 @@ pub async fn create_reminder(
         }));
     }
 
-    let db = state.db.lock().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let db = state.db.lock();
     let id = uuid::Uuid::new_v4().to_string()[..8].to_string();
     let now = chrono::Utc::now().to_rfc3339();
 
@@ -185,7 +185,7 @@ pub async fn update_reminder(
     Path(id): Path<String>,
     Json(req): Json<UpdateReminderRequest>,
 ) -> Result<Json<SimpleResponse>, StatusCode> {
-    let db = state.db.lock().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let db = state.db.lock();
 
     let mut sets = Vec::new();
     let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
@@ -246,7 +246,7 @@ pub async fn cancel_reminder(
     UserId(user_id): UserId,
     Path(id): Path<String>,
 ) -> Result<Json<SimpleResponse>, StatusCode> {
-    let db = state.db.lock().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let db = state.db.lock();
     let now = chrono::Utc::now().to_rfc3339();
 
     let rows = db.execute(
@@ -273,7 +273,7 @@ pub async fn acknowledge_reminder(
     UserId(user_id): UserId,
     Path(id): Path<String>,
 ) -> Result<Json<SimpleResponse>, StatusCode> {
-    let db = state.db.lock().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let db = state.db.lock();
     let now = chrono::Utc::now().to_rfc3339();
 
     let rows = db.execute(
@@ -307,7 +307,7 @@ pub async fn snooze_reminder(
     Path(id): Path<String>,
     Json(req): Json<SnoozeRequest>,
 ) -> Result<Json<ReminderResponse>, StatusCode> {
-    let db = state.db.lock().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let db = state.db.lock();
     let now = chrono::Utc::now();
     let now_str = now.to_rfc3339();
     let minutes = req.minutes.unwrap_or(5).max(1).min(120);
@@ -367,7 +367,7 @@ pub async fn pending_count(
     State(state): State<AppState>,
     UserId(user_id): UserId,
 ) -> Result<Json<CountResponse>, StatusCode> {
-    let db = state.db.lock().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let db = state.db.lock();
 
     let count: i64 = db.query_row(
         "SELECT COUNT(*) FROM reminders WHERE user_id=?1 AND status='triggered'",

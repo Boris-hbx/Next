@@ -14,7 +14,8 @@ pub async fn get_moment(
     let cache_ttl = chrono::Duration::minutes(15);
 
     // Check cache
-    if let Ok(cache) = state.moment_cache.lock() {
+    {
+        let cache = state.moment_cache.lock();
         if let Some((text, ts)) = cache.get(&uid) {
             if chrono::Utc::now() - *ts < cache_ttl {
                 return Json(json!({
@@ -28,7 +29,7 @@ pub async fn get_moment(
 
     // Build context from DB
     let moment_ctx = {
-        let db = state.db.lock().unwrap();
+        let db = state.db.lock();
         context::build_moment_context(&db, &uid)
     };
 
@@ -50,7 +51,8 @@ pub async fn get_moment(
     };
 
     // Store in cache
-    if let Ok(mut cache) = state.moment_cache.lock() {
+    {
+        let mut cache = state.moment_cache.lock();
         cache.insert(uid, (text.clone(), chrono::Utc::now()));
     }
 

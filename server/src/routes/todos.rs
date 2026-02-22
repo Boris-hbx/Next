@@ -113,7 +113,7 @@ pub async fn list_todos(
     user_id: UserId,
     Query(query): Query<ListQuery>,
 ) -> (StatusCode, Json<TodosResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     // Own todos
     let mut items: Vec<Todo> = if let Some(tab) = &query.tab {
@@ -197,7 +197,7 @@ pub async fn get_todo(
     user_id: UserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<TodoResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     // Try owner first, then collaborator
     let result = db.query_row(
@@ -210,7 +210,7 @@ pub async fn get_todo(
         Ok(todo) => Ok(todo),
         Err(_) => {
             db.query_row(
-                "SELECT t.id, t.text, t.content, tc.tab, tc.quadrant, t.progress, t.completed_at, t.completed, t.due_date, t.deleted, t.assignee, t.tags, t.created_at, t.updated_at, t.deleted_at FROM todos t JOIN todo_collaborators tc ON t.id = tc.todo_id WHERE t.id = ?1 AND tc.user_id = ?2 AND tc.status = 'active'",
+                "SELECT t.id, t.text, t.content, tc.tab, tc.quadrant, t.progress, t.completed_at, t.completed, t.due_date, t.deleted, t.assignee, t.tags, t.created_at, t.updated_at, t.deleted_at FROM todos t JOIN todo_collaborators tc ON t.id = tc.todo_id WHERE t.id = ?1 AND tc.user_id = ?2 AND tc.status = 'active' AND t.deleted = 0",
                 rusqlite::params![id, user_id.0],
                 row_to_todo,
             )
@@ -245,7 +245,15 @@ pub async fn create_todo(
     user_id: UserId,
     Json(req): Json<CreateTodoRequest>,
 ) -> (StatusCode, Json<TodoResponse>) {
-    let db = state.db.lock().unwrap();
+    // Input length validation
+    if req.text.len() > 500 {
+        return (StatusCode::BAD_REQUEST, Json(TodoResponse { success: false, item: None, message: Some("任务标题不能超过 500 字符".into()) }));
+    }
+    if req.content.as_ref().map(|c| c.len()).unwrap_or(0) > 10000 {
+        return (StatusCode::BAD_REQUEST, Json(TodoResponse { success: false, item: None, message: Some("任务内容不能超过 10000 字符".into()) }));
+    }
+
+    let db = state.db.lock();
     let now = chrono::Utc::now().to_rfc3339();
     let id = Todo::generate_id();
     let progress = req.progress.unwrap_or(0).min(100);
@@ -315,7 +323,7 @@ pub async fn update_todo(
     Path(id): Path<String>,
     Json(update): Json<TodoUpdate>,
 ) -> (StatusCode, Json<TodoResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     // Check role: owner or collaborator
     let is_collaborator = !collaboration::check_todo_owner(&db, &id, &user_id.0) 
@@ -436,9 +444,9 @@ pub async fn update_todo(
             "UPDATE todo_collaborators SET tab=?1, quadrant=?2 WHERE todo_id=?3 AND user_id=?4 AND status='active'",
             rusqlite::params![todo.tab.as_str(), todo.quadrant.as_str(), id, user_id.0],
         ).ok();
-        // Shared fields update the main todos table
+        // Shared fields update the main todos table (verify collaborator access via subquery)
         db.execute(
-            "UPDATE todos SET text=?1, content=?2, progress=?3, completed=?4, completed_at=?5, due_date=?6, assignee=?7, tags=?8, updated_at=?9 WHERE id=?10",
+            "UPDATE todos SET text=?1, content=?2, progress=?3, completed=?4, completed_at=?5, due_date=?6, assignee=?7, tags=?8, updated_at=?9 WHERE id=?10 AND id IN (SELECT todo_id FROM todo_collaborators WHERE user_id=?11 AND status='active')",
             rusqlite::params![
                 todo.text,
                 todo.content,
@@ -450,6 +458,7 @@ pub async fn update_todo(
                 tags_json,
                 todo.updated_at,
                 id,
+                user_id.0,
             ],
         ).ok();
     } else {
@@ -514,7 +523,7 @@ pub async fn delete_todo(
     user_id: UserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
     let now = chrono::Utc::now().to_rfc3339();
 
     // For collaborative todos, create a pending confirmation instead of immediate delete
@@ -565,7 +574,7 @@ pub async fn restore_todo(
     user_id: UserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<TodoResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
     let now = chrono::Utc::now().to_rfc3339();
 
     let rows = db
@@ -610,7 +619,7 @@ pub async fn permanent_delete_todo(
     user_id: UserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     let rows = db
         .execute(
@@ -643,7 +652,10 @@ pub async fn batch_update_todos(
     user_id: UserId,
     Json(updates): Json<Vec<BatchUpdateItem>>,
 ) -> (StatusCode, Json<SimpleResponse>) {
-    let db = state.db.lock().unwrap();
+    if updates.len() > 200 {
+        return (StatusCode::BAD_REQUEST, Json(SimpleResponse { success: false, message: Some("批量更新上限 200 条".into()) }));
+    }
+    let db = state.db.lock();
     let now = chrono::Utc::now().to_rfc3339();
     let mut updated_count = 0;
 
@@ -663,15 +675,15 @@ pub async fn batch_update_todos(
 
         if let Some(tab) = &item.tab {
             db.execute(
-                "UPDATE todos SET tab = ?1, updated_at = ?2 WHERE id = ?3",
-                rusqlite::params![tab, now, item.id],
+                "UPDATE todos SET tab = ?1, updated_at = ?2 WHERE id = ?3 AND user_id = ?4",
+                rusqlite::params![tab, now, item.id, user_id.0],
             )
             .ok();
         }
         if let Some(quadrant) = &item.quadrant {
             db.execute(
-                "UPDATE todos SET quadrant = ?1, updated_at = ?2 WHERE id = ?3",
-                rusqlite::params![quadrant, now, item.id],
+                "UPDATE todos SET quadrant = ?1, updated_at = ?2 WHERE id = ?3 AND user_id = ?4",
+                rusqlite::params![quadrant, now, item.id, user_id.0],
             )
             .ok();
         }
@@ -679,19 +691,20 @@ pub async fn batch_update_todos(
             let p = progress.min(100) as i32;
             let completed = if p == 100 { 1 } else { 0 };
             db.execute(
-                "UPDATE todos SET progress = ?1, completed = ?2, updated_at = ?3 WHERE id = ?4",
-                rusqlite::params![p, completed, now, item.id],
+                "UPDATE todos SET progress = ?1, completed = ?2, updated_at = ?3 WHERE id = ?4 AND user_id = ?5",
+                rusqlite::params![p, completed, now, item.id, user_id.0],
             )
             .ok();
         }
         if let Some(completed) = item.completed {
             db.execute(
-                "UPDATE todos SET completed = ?1, completed_at = ?2, updated_at = ?3 WHERE id = ?4",
+                "UPDATE todos SET completed = ?1, completed_at = ?2, updated_at = ?3 WHERE id = ?4 AND user_id = ?5",
                 rusqlite::params![
                     completed as i32,
                     if completed { Some(now.clone()) } else { None },
                     now,
                     item.id,
+                    user_id.0,
                 ],
             )
             .ok();
@@ -718,7 +731,7 @@ pub async fn get_todo_counts(
     user_id: UserId,
     Query(query): Query<CountsQuery>,
 ) -> Json<serde_json::Value> {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     let quadrants = [
         "important-urgent",

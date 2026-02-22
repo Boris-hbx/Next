@@ -2,7 +2,8 @@ use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
 use chrono::Datelike;
 use rusqlite::Connection;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use parking_lot::Mutex;
 
 use crate::services::push::{self, PushSubscription, VapidKeys};
 
@@ -43,7 +44,7 @@ pub fn spawn_poller(db: Arc<Mutex<Connection>>) {
 /// Single poll iteration: find due reminders, trigger them, create notifications.
 /// Returns triggered reminders for push notification (DB lock released before push).
 fn poll_once(db: &Arc<Mutex<Connection>>) -> Result<Vec<TriggeredReminder>, String> {
-    let db = db.lock().map_err(|e| format!("lock error: {}", e))?;
+    let db = db.lock();
     let now_utc = chrono::Utc::now();
     let now_str = now_utc.to_rfc3339();
 
@@ -214,10 +215,7 @@ async fn send_push_for_reminders(db: &Arc<Mutex<Connection>>, reminders: Vec<Tri
 
     // Fetch push subscriptions under lock
     let subs: Vec<(String, Vec<UserPushSub>)> = {
-        let db = match db.lock() {
-            Ok(d) => d,
-            Err(_) => return,
-        };
+        let db = db.lock();
 
         user_ids
             .iter()
@@ -280,14 +278,13 @@ async fn send_push_for_reminders(db: &Arc<Mutex<Connection>>, reminders: Vec<Tri
                     }
                     Err(push::PushError::Gone) => {
                         // Remove expired subscription
-                        if let Ok(db) = db.lock() {
-                            db.execute(
-                                "DELETE FROM push_subscriptions WHERE endpoint = ?1",
-                                [&sub_info.endpoint],
-                            )
-                            .ok();
-                            println!("[push] removed expired subscription");
-                        }
+                        let db = db.lock();
+                        db.execute(
+                            "DELETE FROM push_subscriptions WHERE endpoint = ?1",
+                            [&sub_info.endpoint],
+                        )
+                        .ok();
+                        println!("[push] removed expired subscription");
                     }
                     Err(e) => {
                         eprintln!("[push] error: {}", e);

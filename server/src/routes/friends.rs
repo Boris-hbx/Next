@@ -53,7 +53,7 @@ pub async fn list_friends(
     State(state): State<AppState>,
     user_id: UserId,
 ) -> (StatusCode, Json<FriendsResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     let mut stmt = db
         .prepare(
@@ -93,7 +93,7 @@ pub async fn list_friend_requests(
     State(state): State<AppState>,
     user_id: UserId,
 ) -> (StatusCode, Json<FriendRequestsResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     let mut stmt = db
         .prepare(
@@ -138,7 +138,7 @@ pub async fn send_friend_request(
     user_id: UserId,
     Json(req): Json<FriendRequestPayload>,
 ) -> (StatusCode, Json<SimpleResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     // Find target user
     let target = db.query_row(
@@ -212,7 +212,7 @@ pub async fn accept_friend(
     user_id: UserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
     let now = chrono::Utc::now().to_rfc3339();
 
     let rows = db
@@ -284,7 +284,7 @@ pub async fn decline_friend(
     user_id: UserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
     let now = chrono::Utc::now().to_rfc3339();
 
     let rows = db
@@ -318,7 +318,7 @@ pub async fn delete_friend(
     user_id: UserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     // Get the other user's id before deleting
     let other_user_id: Option<String> = db
@@ -381,7 +381,7 @@ pub async fn search_users(
     user_id: UserId,
     Query(query): Query<SearchQuery>,
 ) -> (StatusCode, Json<serde_json::Value>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
     let keyword = format!("%{}%", query.q);
 
     let mut stmt = db
@@ -416,7 +416,7 @@ pub async fn share_item(
     user_id: UserId,
     Json(req): Json<SharePayload>,
 ) -> (StatusCode, Json<SimpleResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     // Verify friendship
     let is_friend: bool = db
@@ -541,7 +541,7 @@ pub async fn shared_inbox(
     State(state): State<AppState>,
     user_id: UserId,
 ) -> (StatusCode, Json<SharedItemsResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     let mut stmt = db
         .prepare(
@@ -592,7 +592,7 @@ pub async fn shared_inbox_count(
     State(state): State<AppState>,
     user_id: UserId,
 ) -> (StatusCode, Json<CountResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     let count: i64 = db
         .query_row(
@@ -610,7 +610,7 @@ pub async fn accept_shared(
     user_id: UserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     // Get the shared item
     let result = db.query_row(
@@ -701,7 +701,7 @@ pub async fn dismiss_shared(
     user_id: UserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     let rows = db
         .execute(

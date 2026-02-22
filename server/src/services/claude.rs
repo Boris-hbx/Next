@@ -103,13 +103,17 @@ impl ClaudeClient {
             }
             if !status.is_success() {
                 let text = resp.text().await.unwrap_or_default();
-                return Err(format!("Claude API error {}: {}", status.as_u16(), text));
+                eprintln!("[Claude] API error {}: {}", status.as_u16(), text);
+                return Err("AI 服务暂时不可用，请稍后重试".into());
             }
 
             let resp_json: Value = resp
                 .json()
                 .await
-                .map_err(|e| format!("Failed to parse Claude response: {}", e))?;
+                .map_err(|e| {
+                    eprintln!("[Claude] Failed to parse response: {}", e);
+                    "AI 服务响应异常，请稍后重试".to_string()
+                })?;
 
             // Track tokens
             if let Some(usage) = resp_json.get("usage") {
@@ -220,13 +224,17 @@ impl ClaudeClient {
 
         if !resp.status().is_success() {
             let text = resp.text().await.unwrap_or_default();
-            return Err(format!("Claude API error: {}", text));
+            eprintln!("[Claude] simple_generate API error: {}", text);
+            return Err("AI 服务暂时不可用，请稍后重试".into());
         }
 
         let resp_json: Value = resp
             .json()
             .await
-            .map_err(|e| format!("Failed to parse Claude response: {}", e))?;
+            .map_err(|e| {
+                eprintln!("[Claude] simple_generate parse error: {}", e);
+                "AI 服务响应异常，请稍后重试".to_string()
+            })?;
 
         // Extract text from first content block
         if let Some(content) = resp_json["content"].as_array() {

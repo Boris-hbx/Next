@@ -44,7 +44,7 @@ pub async fn set_collaborator(
     Path(todo_id): Path<String>,
     Json(req): Json<SetCollaboratorRequest>,
 ) -> (StatusCode, Json<SimpleResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     if !collaboration::check_todo_owner(&db, &todo_id, &user_id.0) {
         return (
@@ -118,7 +118,7 @@ pub async fn remove_collaborator(
     Path(todo_id): Path<String>,
     Json(req): Json<SetCollaboratorRequest>,
 ) -> (StatusCode, Json<SimpleResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     if !collaboration::check_todo_owner(&db, &todo_id, &user_id.0) {
         return (
@@ -161,7 +161,7 @@ pub async fn list_collaborators(
     user_id: UserId,
     Path(todo_id): Path<String>,
 ) -> (StatusCode, Json<CollaboratorsResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     if !collaboration::check_todo_participant(&db, &todo_id, &user_id.0) {
         return (
@@ -219,7 +219,7 @@ pub async fn list_pending_confirmations(
     State(state): State<AppState>,
     user_id: UserId,
 ) -> (StatusCode, Json<ConfirmationsResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     let sql = "SELECT pc.id, pc.item_type, pc.item_id, pc.action, pc.initiated_by,                u.display_name, u.username, pc.initiated_at, pc.status,                t.text as item_text                FROM pending_confirmations pc                JOIN users u ON pc.initiated_by = u.id                LEFT JOIN todos t ON pc.item_type = 'todo' AND pc.item_id = t.id                WHERE pc.status = 'pending'                AND (pc.initiated_by = ?1                     OR EXISTS (SELECT 1 FROM todo_collaborators tc WHERE tc.todo_id = pc.item_id AND tc.user_id = ?1 AND tc.status = 'active')                     OR EXISTS (SELECT 1 FROM todos t2 WHERE t2.id = pc.item_id AND t2.user_id = ?1))                ORDER BY pc.initiated_at DESC";
 
@@ -263,7 +263,7 @@ pub async fn respond_confirmation(
     Path(confirmation_id): Path<String>,
     Json(req): Json<ConfirmationRespondRequest>,
 ) -> (StatusCode, Json<SimpleResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     if req.response != "approve" && req.response != "reject" {
         return (
@@ -398,7 +398,7 @@ pub async fn withdraw_confirmation(
     user_id: UserId,
     Path(confirmation_id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     let initiated_by: Option<String> = db
         .query_row(

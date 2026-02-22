@@ -55,22 +55,7 @@ pub async fn chat_handler(
 
     // Rate limiting: 5 per minute per user
     {
-        let db = match state.db.lock() {
-            Ok(db) => db,
-            Err(_) => {
-                return (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(ChatResponse {
-                        success: false,
-                        message: Some("服务器错误".into()),
-                        conversation_id: None,
-                        reply: None,
-                        tool_calls: None,
-                    }),
-                )
-                    .into_response()
-            }
-        };
+        let db = state.db.lock();
 
         let one_min_ago = (chrono::Utc::now() - chrono::Duration::minutes(1)).to_rfc3339();
         let recent_count: i64 = db
@@ -119,7 +104,7 @@ pub async fn chat_handler(
     let mut history_messages: Vec<serde_json::Value> = Vec::new();
 
     {
-        let db = state.db.lock().unwrap();
+        let db = state.db.lock();
 
         if let Some(conv_id) = &req.conversation_id {
             // Verify conversation belongs to user
@@ -211,7 +196,7 @@ pub async fn chat_handler(
 
     // Build system prompt
     let system_prompt = {
-        let db = state.db.lock().unwrap();
+        let db = state.db.lock();
         context::build_system_prompt(&db, &user_id.0)
     };
 
@@ -226,7 +211,7 @@ pub async fn chat_handler(
     // Call Claude with tool use loop
     let result = claude
         .chat(&system_prompt, history_messages, &tools, |name, input| {
-            let db = tool_state.db.lock().unwrap();
+            let db = tool_state.db.lock();
             tool_executor::execute_tool(&db, &tool_user_id, name, input)
         })
         .await;
@@ -236,7 +221,7 @@ pub async fn chat_handler(
     match result {
         Ok(chat_result) => {
             // Save assistant response
-            let db = state.db.lock().unwrap();
+            let db = state.db.lock();
             let msg_id = uuid::Uuid::new_v4().to_string();
             let now = chrono::Utc::now().to_rfc3339();
             let seq: i64 = db

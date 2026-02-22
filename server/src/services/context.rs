@@ -1,6 +1,20 @@
 use chrono::Timelike;
 use rusqlite::Connection;
 
+/// Sanitize user-generated text before injecting into AI prompts.
+/// Truncates to max_len, strips angle brackets and control chars.
+fn sanitize_for_prompt(text: &str, max_len: usize) -> String {
+    let truncated = if text.len() > max_len { &text[..max_len] } else { text };
+    truncated
+        .chars()
+        .filter(|c| !c.is_control() || *c == '\n')
+        .map(|c| match c {
+            '<' | '>' => ' ',
+            _ => c,
+        })
+        .collect()
+}
+
 /// Ensure collaboration tables exist for context queries
 fn ensure_collab_tables(db: &Connection) {
     db.execute_batch(
@@ -166,8 +180,8 @@ fn build_task_context(db: &Connection, user_id: &str) -> String {
                 let q_label = quadrant_label(&quadrant);
                 let due = due_date.map(|d| format!(", 截止:{}", d)).unwrap_or_default();
                 ctx.push_str(&format!(
-                    "- [{}] {} (ID:{}, 泳道:{}, 进度:{}%{})\n",
-                    check, text, id, q_label, progress, due
+                    "- [{}] <task>{}</task> (ID:{}, 泳道:{}, 进度:{}%{})\n",
+                    check, sanitize_for_prompt(&text, 200), id, q_label, progress, due
                 ));
             }
         }
@@ -189,7 +203,7 @@ fn build_task_context(db: &Connection, user_id: &str) -> String {
                 Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
             }) {
                 for r in rows.flatten() {
-                    ctx.push_str(&format!("- {} (ID:{})\n", r.1, r.0));
+                    ctx.push_str(&format!("- <task>{}</task> (ID:{})\n", sanitize_for_prompt(&r.1, 200), r.0));
                 }
             }
         }
@@ -218,7 +232,7 @@ fn build_task_context(db: &Connection, user_id: &str) -> String {
         if !due_items.is_empty() {
             ctx.push_str("\n## 即将到期（3天内）\n");
             for (id, text, due) in &due_items {
-                ctx.push_str(&format!("- {} (截止:{}, ID:{})\n", text, due, id));
+                ctx.push_str(&format!("- <task>{}</task> (截止:{}, ID:{})\n", sanitize_for_prompt(text, 200), due, id));
             }
         }
     }
@@ -256,8 +270,8 @@ fn build_task_context(db: &Connection, user_id: &str) -> String {
                     let check = if completed { "x" } else { " " };
                     let owner = owner_name.unwrap_or_else(|| "?".into());
                     ctx.push_str(&format!(
-                        "- [{}] {} (来自:{}, 进度:{}%, ID:{})\n",
-                        check, text, owner, progress, id
+                        "- [{}] <task>{}</task> (来自:{}, 进度:{}%, ID:{})\n",
+                        check, sanitize_for_prompt(&text, 200), sanitize_for_prompt(&owner, 50), progress, id
                     ));
                 }
             }
@@ -299,8 +313,8 @@ fn build_task_context(db: &Connection, user_id: &str) -> String {
                         .map(|t| format!(", 关联任务:{}", t))
                         .unwrap_or_default();
                     ctx.push_str(&format!(
-                        "- {} {} (ID:{}{})\n",
-                        display_time, text, id, related
+                        "- {} <reminder>{}</reminder> (ID:{}{})\n",
+                        display_time, sanitize_for_prompt(&text, 200), id, related
                     ));
                 }
             }

@@ -64,7 +64,7 @@ pub async fn list_scenarios(
     user_id: UserId,
     Query(query): Query<ListQuery>,
 ) -> (StatusCode, Json<ScenariosResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
     let archived = query.archived.unwrap_or(0);
 
     let mut stmt = db
@@ -105,8 +105,28 @@ pub async fn create_scenario(
             }),
         );
     }
+    if req.title.len() > 200 {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(ScenarioResponse {
+                success: false,
+                item: None,
+                message: Some("标题不能超过 200 字符".into()),
+            }),
+        );
+    }
+    if req.description.as_ref().map(|d| d.len()).unwrap_or(0) > 2000 {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(ScenarioResponse {
+                success: false,
+                item: None,
+                message: Some("描述不能超过 2000 字符".into()),
+            }),
+        );
+    }
 
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
     let id = uuid::Uuid::new_v4().to_string()[..8].to_string();
     let now = chrono::Utc::now().to_rfc3339();
     let icon = req.icon.unwrap_or_else(|| "📖".into());
@@ -146,7 +166,7 @@ pub async fn get_scenario(
     user_id: UserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<ScenarioResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     let result = db.query_row(
         &format!(
@@ -183,7 +203,7 @@ pub async fn update_scenario(
     Path(id): Path<String>,
     Json(req): Json<UpdateScenarioRequest>,
 ) -> (StatusCode, Json<ScenarioResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     let existing = db.query_row(
         &format!(
@@ -228,8 +248,8 @@ pub async fn update_scenario(
     item.updated_at = now;
 
     db.execute(
-        "UPDATE english_scenarios SET title=?1, title_en=?2, description=?3, icon=?4, content=?5, updated_at=?6 WHERE id=?7",
-        rusqlite::params![item.title, item.title_en, item.description, item.icon, item.content, item.updated_at, id],
+        "UPDATE english_scenarios SET title=?1, title_en=?2, description=?3, icon=?4, content=?5, updated_at=?6 WHERE id=?7 AND user_id=?8",
+        rusqlite::params![item.title, item.title_en, item.description, item.icon, item.content, item.updated_at, id, user_id.0],
     )
     .unwrap();
 
@@ -248,7 +268,7 @@ pub async fn delete_scenario(
     user_id: UserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     let rows = db
         .execute(
@@ -281,7 +301,7 @@ pub async fn archive_scenario(
     user_id: UserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
     let now = chrono::Utc::now().to_rfc3339();
 
     let rows = db
@@ -316,9 +336,27 @@ pub async fn generate_scenario(
     user_id: UserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<ScenarioResponse>) {
+    // Rate limit: 1 generation per 30 seconds per user
+    {
+        let mut limits = state.ai_rate_limits.lock();
+        if let Some(last) = limits.get(&user_id.0) {
+            if last.elapsed().as_secs() < 30 {
+                return (
+                    StatusCode::TOO_MANY_REQUESTS,
+                    Json(ScenarioResponse {
+                        success: false,
+                        item: None,
+                        message: Some("生成过于频繁，请 30 秒后再试".into()),
+                    }),
+                );
+            }
+        }
+        limits.insert(user_id.0.clone(), std::time::Instant::now());
+    }
+
     // Read scenario info
     let (title, description) = {
-        let db = state.db.lock().unwrap();
+        let db = state.db.lock();
         let result = db.query_row(
             "SELECT title, description FROM english_scenarios WHERE id = ?1 AND user_id = ?2",
             rusqlite::params![id, user_id.0],
@@ -341,7 +379,7 @@ pub async fn generate_scenario(
 
     // Set status to generating
     {
-        let db = state.db.lock().unwrap();
+        let db = state.db.lock();
         db.execute(
             "UPDATE english_scenarios SET status = 'generating', updated_at = ?1 WHERE id = ?2",
             rusqlite::params![chrono::Utc::now().to_rfc3339(), id],
@@ -353,7 +391,7 @@ pub async fn generate_scenario(
     let claude = match ClaudeClient::new() {
         Some(c) => c,
         None => {
-            let db = state.db.lock().unwrap();
+            let db = state.db.lock();
             db.execute(
                 "UPDATE english_scenarios SET status = 'error', updated_at = ?1 WHERE id = ?2",
                 rusqlite::params![chrono::Utc::now().to_rfc3339(), id],
@@ -417,7 +455,7 @@ pub async fn generate_scenario(
     match result {
         Ok(chat_result) => {
             let now = chrono::Utc::now().to_rfc3339();
-            let db = state.db.lock().unwrap();
+            let db = state.db.lock();
             db.execute(
                 "UPDATE english_scenarios SET content = ?1, status = 'ready', updated_at = ?2 WHERE id = ?3",
                 rusqlite::params![chat_result.text, now, id],
@@ -445,7 +483,7 @@ pub async fn generate_scenario(
             )
         }
         Err(err) => {
-            let db = state.db.lock().unwrap();
+            let db = state.db.lock();
             db.execute(
                 "UPDATE english_scenarios SET status = 'error', updated_at = ?1 WHERE id = ?2",
                 rusqlite::params![chrono::Utc::now().to_rfc3339(), id],
@@ -457,7 +495,10 @@ pub async fn generate_scenario(
                 Json(ScenarioResponse {
                     success: false,
                     item: None,
-                    message: Some(format!("生成失败: {}", err)),
+                    message: Some({
+                        eprintln!("[English] generate_scenario failed: {}", err);
+                        "内容生成失败，请稍后重试".to_string()
+                    }),
                 }),
             )
         }

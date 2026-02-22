@@ -18,6 +18,9 @@ FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y ca-certificates tzdata && rm -rf /var/lib/apt/lists/*
 
+# Create non-root user
+RUN groupadd -r nextapp && useradd -r -g nextapp -d /app -s /sbin/nologin nextapp
+
 WORKDIR /app
 
 # Copy binary
@@ -29,6 +32,9 @@ COPY frontend/ /app/frontend/
 # Copy data files (quotes)
 COPY data/quotes.txt /app/data/quotes.txt
 
+# Ensure data directory exists with correct permissions
+RUN mkdir -p /data && chown -R nextapp:nextapp /app /data
+
 # Environment
 ENV PORT=8080
 ENV DATABASE_PATH=/data/next.db
@@ -36,4 +42,5 @@ ENV FRONTEND_DIR=/app/frontend
 
 EXPOSE 8080
 
+USER nextapp
 CMD ["/app/next-server"]

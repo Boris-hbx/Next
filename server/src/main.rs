@@ -11,8 +11,10 @@ use axum::{
     Router,
 };
 use state::AppState;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use parking_lot::Mutex;
 use axum::response::IntoResponse;
+use axum::extract::DefaultBodyLimit;
 use tower_http::services::ServeDir;
 use tower_http::set_header::SetResponseHeaderLayer;
 use http::HeaderValue;
@@ -31,6 +33,9 @@ async fn main() {
     let state = AppState {
         db: Arc::new(Mutex::new(conn)),
         moment_cache: Arc::new(Mutex::new(std::collections::HashMap::new())),
+        login_ip_attempts: Arc::new(Mutex::new(std::collections::HashMap::new())),
+        login_user_lockouts: Arc::new(Mutex::new(std::collections::HashMap::new())),
+        ai_rate_limits: Arc::new(Mutex::new(std::collections::HashMap::new())),
     };
 
     // Spawn reminder poller (checks every 30s for due reminders)
@@ -42,12 +47,39 @@ async fn main() {
     tokio::spawn(async move {
         loop {
             tokio::time::sleep(tokio::time::Duration::from_secs(3600)).await;
-            if let Ok(db) = backup_state.db.lock() {
-                let backup_dir = std::path::Path::new(&backup_db_path)
-                    .parent()
-                    .unwrap_or(std::path::Path::new("."))
-                    .join("backups");
-                db::daily_backup(&db, backup_dir.to_str().unwrap_or("data/backups"));
+            let db = backup_state.db.lock();
+            let backup_dir = std::path::Path::new(&backup_db_path)
+                .parent()
+                .unwrap_or(std::path::Path::new("."))
+                .join("backups");
+            db::daily_backup(&db, backup_dir.to_str().unwrap_or("data/backups"));
+        }
+    });
+
+    // Spawn cleanup task: purge expired rate-limit entries + expired sessions every 10 min
+    let cleanup_state = state.clone();
+    tokio::spawn(async move {
+        loop {
+            tokio::time::sleep(tokio::time::Duration::from_secs(600)).await;
+            // Clean expired IP attempts
+            {
+                let mut attempts = cleanup_state.login_ip_attempts.lock();
+                attempts.retain(|_, (_, t)| t.elapsed().as_secs() < 120);
+            }
+            // Clean expired user lockouts
+            {
+                let mut lockouts = cleanup_state.login_user_lockouts.lock();
+                lockouts.retain(|_, (_, t)| t.elapsed().as_secs() < 900);
+            }
+            // Clean expired AI rate limits
+            {
+                let mut limits = cleanup_state.ai_rate_limits.lock();
+                limits.retain(|_, t| t.elapsed().as_secs() < 60);
+            }
+            // Clean expired sessions from DB
+            {
+                let db = cleanup_state.db.lock();
+                db.execute("DELETE FROM sessions WHERE expires_at < datetime('now')", []).ok();
             }
         }
     });
@@ -184,7 +216,7 @@ async fn main() {
 
     // Serve sw.js and index.html with no-cache to break SW caching cycles
     let sw_dir = frontend_dir.clone();
-    let idx_dir = frontend_dir.clone();
+    let _idx_dir = frontend_dir.clone();
 
     let app = Router::new()
         .route("/sw.js", get(move || async move {
@@ -214,12 +246,25 @@ async fn main() {
         ))
         .layer(SetResponseHeaderLayer::overriding(
             http::header::STRICT_TRANSPORT_SECURITY,
-            HeaderValue::from_static("max-age=31536000"),
+            HeaderValue::from_static("max-age=31536000; includeSubDomains; preload"),
         ))
         .layer(SetResponseHeaderLayer::overriding(
             http::header::X_CONTENT_TYPE_OPTIONS,
             HeaderValue::from_static("nosniff"),
         ))
+        .layer(SetResponseHeaderLayer::overriding(
+            http::header::X_FRAME_OPTIONS,
+            HeaderValue::from_static("DENY"),
+        ))
+        .layer(SetResponseHeaderLayer::overriding(
+            http::header::REFERRER_POLICY,
+            HeaderValue::from_static("strict-origin-when-cross-origin"),
+        ))
+        .layer(SetResponseHeaderLayer::overriding(
+            http::HeaderName::from_static("permissions-policy"),
+            HeaderValue::from_static("camera=(), microphone=(), geolocation=()"),
+        ))
+        .layer(DefaultBodyLimit::max(1_048_576)) // 1MB global body size limit
         .with_state(state);
 
     let addr = format!("0.0.0.0:{}", port);

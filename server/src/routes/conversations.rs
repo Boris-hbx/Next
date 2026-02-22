@@ -49,15 +49,7 @@ pub async fn list_conversations(
     State(state): State<AppState>,
     user_id: UserId,
 ) -> impl axum::response::IntoResponse {
-    let db = match state.db.lock() {
-        Ok(db) => db,
-        Err(_) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"success": false, "message": "服务器错误"})),
-            )
-        }
-    };
+    let db = state.db.lock();
 
     let mut stmt = db
         .prepare(
@@ -87,15 +79,7 @@ pub async fn get_messages(
     user_id: UserId,
     Path(conv_id): Path<String>,
 ) -> impl axum::response::IntoResponse {
-    let db = match state.db.lock() {
-        Ok(db) => db,
-        Err(_) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"success": false, "message": "服务器错误"})),
-            )
-        }
-    };
+    let db = state.db.lock();
 
     // Verify ownership
     let owns: bool = db
@@ -143,15 +127,7 @@ pub async fn delete_conversation(
     user_id: UserId,
     Path(conv_id): Path<String>,
 ) -> impl axum::response::IntoResponse {
-    let db = match state.db.lock() {
-        Ok(db) => db,
-        Err(_) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"success": false, "message": "服务器错误"})),
-            )
-        }
-    };
+    let db = state.db.lock();
 
     let deleted = db
         .execute(
@@ -177,15 +153,7 @@ pub async fn rename_conversation(
     Path(conv_id): Path<String>,
     Json(req): Json<RenameRequest>,
 ) -> impl axum::response::IntoResponse {
-    let db = match state.db.lock() {
-        Ok(db) => db,
-        Err(_) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"success": false, "message": "服务器错误"})),
-            )
-        }
-    };
+    let db = state.db.lock();
 
     let updated = db
         .execute(
@@ -209,15 +177,7 @@ pub async fn get_usage(
     State(state): State<AppState>,
     user_id: UserId,
 ) -> impl axum::response::IntoResponse {
-    let db = match state.db.lock() {
-        Ok(db) => db,
-        Err(_) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"success": false, "message": "服务器错误"})),
-            )
-        }
-    };
+    let db = state.db.lock();
 
     let today_msgs: i64 = db
         .query_row(

@@ -42,7 +42,7 @@ pub async fn unread_notifications(
     State(state): State<AppState>,
     UserId(user_id): UserId,
 ) -> Result<Json<UnreadResponse>, StatusCode> {
-    let db = state.db.lock().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let db = state.db.lock();
 
     let count: i64 = db
         .query_row(
@@ -90,7 +90,7 @@ pub async fn mark_read(
     UserId(user_id): UserId,
     Path(id): Path<String>,
 ) -> Result<Json<SimpleResponse>, StatusCode> {
-    let db = state.db.lock().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let db = state.db.lock();
 
     db.execute(
         "UPDATE notifications SET read=1 WHERE id=?1 AND user_id=?2",
@@ -109,7 +109,7 @@ pub async fn mark_all_read(
     State(state): State<AppState>,
     UserId(user_id): UserId,
 ) -> Result<Json<SimpleResponse>, StatusCode> {
-    let db = state.db.lock().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let db = state.db.lock();
     let now = chrono::Utc::now().to_rfc3339();
 
     // Mark all notifications as read

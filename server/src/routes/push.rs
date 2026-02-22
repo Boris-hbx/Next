@@ -59,7 +59,7 @@ pub async fn subscribe(
         }));
     }
 
-    let db = state.db.lock().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let db = state.db.lock();
     let id = uuid::Uuid::new_v4().to_string()[..8].to_string();
     let now = chrono::Utc::now().to_rfc3339();
 
@@ -83,7 +83,7 @@ pub async fn unsubscribe(
     UserId(user_id): UserId,
     Json(req): Json<UnsubscribeRequest>,
 ) -> Result<Json<SimpleResponse>, StatusCode> {
-    let db = state.db.lock().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let db = state.db.lock();
 
     db.execute(
         "DELETE FROM push_subscriptions WHERE user_id=?1 AND endpoint=?2",

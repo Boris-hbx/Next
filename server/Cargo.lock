@@ -1139,6 +1139,7 @@ dependencies = [
  "hkdf",
  "http",
  "p256",
+ "parking_lot",
  "rand",
  "rand_core 0.6.4",
  "reqwest",

@@ -301,6 +301,8 @@ var English = (function() {
     }
 
     function formatInline(text) {
+        // Escape HTML before markdown conversion to prevent XSS
+        text = escapeHtml(text);
         // Bold
         text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
         // Italic

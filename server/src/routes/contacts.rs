@@ -39,7 +39,7 @@ pub async fn list_contacts(
     State(state): State<AppState>,
     user_id: UserId,
 ) -> (StatusCode, Json<ContactsResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     let mut stmt = db
         .prepare(
@@ -98,8 +98,28 @@ pub async fn create_contact(
             }),
         );
     }
+    if req.name.len() > 100 {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(ContactResponse {
+                success: false,
+                item: None,
+                message: Some("联系人名称不能超过 100 字符".into()),
+            }),
+        );
+    }
+    if req.note.as_ref().map(|n| n.len()).unwrap_or(0) > 5000 {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(ContactResponse {
+                success: false,
+                item: None,
+                message: Some("备注不能超过 5000 字符".into()),
+            }),
+        );
+    }
 
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     let id = uuid::Uuid::new_v4().to_string()[..8].to_string();
     let now = chrono::Utc::now().to_rfc3339();
@@ -142,7 +162,7 @@ pub async fn update_contact(
     Path(id): Path<String>,
     Json(req): Json<UpdateContactPayload>,
 ) -> (StatusCode, Json<SimpleResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     // Verify ownership
     let owner: Result<String, _> = db.query_row(
@@ -187,16 +207,16 @@ pub async fn update_contact(
             );
         }
         db.execute(
-            "UPDATE contacts SET name = ?1, updated_at = ?2 WHERE id = ?3",
-            rusqlite::params![name.trim(), now, id],
+            "UPDATE contacts SET name = ?1, updated_at = ?2 WHERE id = ?3 AND user_id = ?4",
+            rusqlite::params![name.trim(), now, id, user_id.0],
         )
         .unwrap();
     }
 
     if let Some(ref note) = req.note {
         db.execute(
-            "UPDATE contacts SET note = ?1, updated_at = ?2 WHERE id = ?3",
-            rusqlite::params![note, now, id],
+            "UPDATE contacts SET note = ?1, updated_at = ?2 WHERE id = ?3 AND user_id = ?4",
+            rusqlite::params![note, now, id, user_id.0],
         )
         .unwrap();
     }
@@ -217,7 +237,7 @@ pub async fn delete_contact(
     user_id: UserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     // Verify ownership and check if it's a linked contact
     let result: Result<(String, Option<String>), _> = db.query_row(

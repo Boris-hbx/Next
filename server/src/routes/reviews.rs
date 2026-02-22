@@ -78,7 +78,7 @@ pub async fn list_reviews(
     State(state): State<AppState>,
     user_id: UserId,
 ) -> (StatusCode, Json<ReviewsResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     let mut stmt = db
         .prepare(
@@ -123,7 +123,13 @@ pub async fn create_review(
     user_id: UserId,
     Json(req): Json<CreateReviewRequest>,
 ) -> (StatusCode, Json<ReviewResponse>) {
-    let db = state.db.lock().unwrap();
+    if req.text.len() > 500 {
+        return (StatusCode::BAD_REQUEST, Json(ReviewResponse { success: false, item: None, message: Some("审视项标题不能超过 500 字符".into()) }));
+    }
+    if req.notes.len() > 5000 {
+        return (StatusCode::BAD_REQUEST, Json(ReviewResponse { success: false, item: None, message: Some("备注不能超过 5000 字符".into()) }));
+    }
+    let db = state.db.lock();
     let id = uuid::Uuid::new_v4().to_string()[..8].to_string();
     let now = chrono::Utc::now().to_rfc3339();
     let freq_str = serde_json::to_string(&req.frequency)
@@ -171,7 +177,7 @@ pub async fn update_review(
     Path(id): Path<String>,
     Json(req): Json<UpdateReviewRequest>,
 ) -> (StatusCode, Json<ReviewResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     let result = db.query_row(
         "SELECT id, text, frequency, frequency_config, notes, category, last_completed, paused, created_at, updated_at FROM reviews WHERE id = ?1 AND user_id = ?2",
@@ -223,7 +229,7 @@ pub async fn update_review(
     let config_json = serde_json::to_string(&item.frequency_config).unwrap();
 
     db.execute(
-        "UPDATE reviews SET text=?1, frequency=?2, frequency_config=?3, notes=?4, category=?5, paused=?6, updated_at=?7 WHERE id=?8",
+        "UPDATE reviews SET text=?1, frequency=?2, frequency_config=?3, notes=?4, category=?5, paused=?6, updated_at=?7 WHERE id=?8 AND user_id=?9",
         rusqlite::params![
             item.text,
             freq_str,
@@ -233,6 +239,7 @@ pub async fn update_review(
             item.paused as i32,
             item.updated_at,
             id,
+            user_id.0,
         ],
     )
     .unwrap();
@@ -252,7 +259,7 @@ pub async fn complete_review(
     user_id: UserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<ReviewResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
     let now = chrono::Utc::now().to_rfc3339();
 
     let rows = db
@@ -297,7 +304,7 @@ pub async fn uncomplete_review(
     user_id: UserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<ReviewResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
     let now = chrono::Utc::now().to_rfc3339();
 
     let rows = db
@@ -342,7 +349,7 @@ pub async fn delete_review(
     user_id: UserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
-    let db = state.db.lock().unwrap();
+    let db = state.db.lock();
 
     let rows = db
         .execute(
