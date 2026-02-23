@@ -79,7 +79,7 @@
     align-items: flex-start;
     gap: 12px;
     padding: 16px;
-    background: var(--card-bg, #161b22);
+    background: var(--bg-card, #fff);
     border: 1px solid var(--border-color, #30363d);
     border-radius: 12px;
     cursor: pointer;
@@ -211,7 +211,7 @@
 
 /* Content area */
 .english-content {
-    background: var(--card-bg, #161b22);
+    background: var(--bg-card, #fff);
     border: 1px solid var(--border-color, #30363d);
     border-radius: 12px;
     padding: 24px;
@@ -307,7 +307,7 @@
 }
 
 .english-modal {
-    background: var(--card-bg, #161b22);
+    background: var(--bg-card, #fff);
     border: 1px solid var(--border-color, #30363d);
     border-radius: 14px;
     width: 100%;
@@ -336,7 +336,7 @@
 .english-modal-field textarea {
     width: 100%;
     padding: 10px 12px;
-    background: var(--input-bg, #0d1117);
+    background: var(--bg-input, #fff);
     border: 1px solid var(--border-color, #30363d);
     border-radius: 8px;
     color: var(--text-primary);

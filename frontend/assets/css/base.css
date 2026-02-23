@@ -191,7 +191,7 @@ body {
 }
 
 .confirm-dialog {
-    background: var(--card-bg, white);
+    background: var(--bg-card, white);
     border-radius: 12px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     min-width: 300px;

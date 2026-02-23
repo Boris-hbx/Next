@@ -9107,7 +9107,7 @@ textarea.ocr-text:focus {
 }
 
 .friend-search-modal {
-    background: var(--card-bg, #161b22);
+    background: var(--bg-card, #fff);
     border: 1px solid var(--border-color, #30363d);
     border-radius: 14px;
     width: 100%;
@@ -9123,7 +9123,7 @@ textarea.ocr-text:focus {
 .friend-search-input {
     width: 100%;
     padding: 10px 12px;
-    background: var(--input-bg, #0d1117);
+    background: var(--bg-input, #fff);
     border: 1px solid var(--border-color, #30363d);
     border-radius: 8px;
     color: var(--text-primary);
@@ -9190,7 +9190,7 @@ textarea.ocr-text:focus {
 }
 
 .share-modal {
-    background: var(--card-bg, #161b22);
+    background: var(--bg-card, #fff);
     border: 1px solid var(--border-color, #30363d);
     border-radius: 14px;
     width: 100%;
@@ -9235,7 +9235,7 @@ textarea.ocr-text:focus {
 }
 
 .shared-item-card {
-    background: var(--card-bg, #161b22);
+    background: var(--bg-card, #fff);
     border: 1px solid var(--border-color, #30363d);
     border-radius: 10px;
     padding: 12px;
@@ -9316,7 +9316,7 @@ textarea.ocr-text:focus {
 .collab-add-btn { background: none; border: 1px dashed var(--border-color, #30363d); border-radius: 6px; padding: 6px 12px; color: var(--text-secondary); cursor: pointer; font-size: 12px; margin-top: 6px; display: block; width: 100%; }
 .collab-add-btn:hover { border-color: var(--primary-color); color: var(--primary-color); }
 .collab-picker-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000; }
-.collab-picker-dialog { background: var(--card-bg, #161b22); border: 1px solid var(--border-color, #30363d); border-radius: 12px; padding: 20px; min-width: 260px; max-width: 360px; }
+.collab-picker-dialog { background: var(--bg-card, #fff); border: 1px solid var(--border-color, #30363d); border-radius: 12px; padding: 20px; min-width: 260px; max-width: 360px; }
 .collab-picker-title { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 12px; }
 .collab-picker-item { padding: 10px 12px; border-radius: 8px; cursor: pointer; color: var(--text-primary); font-size: 14px; transition: background 0.15s; }
 .collab-picker-item:hover { background: var(--hover-bg, #21262d); }
