@@ -1,9 +1,4 @@
-use axum::{
-    extract::State,
-    http::StatusCode,
-    response::IntoResponse,
-    Json,
-};
+use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -162,8 +157,8 @@ pub async fn chat_handler(
             // Create new conversation
             conversation_id = uuid::Uuid::new_v4().to_string();
             let now = chrono::Utc::now().to_rfc3339();
-            let title = if message.len() > 30 {
-                format!("{}...", &message[..30])
+            let title = if message.chars().count() > 30 {
+                format!("{}...", message.chars().take(30).collect::<String>())
             } else {
                 message.clone()
             };
@@ -255,9 +250,7 @@ pub async fn chat_handler(
             let tool_info: Vec<serde_json::Value> = chat_result
                 .tool_calls
                 .iter()
-                .map(|(name, _input, result)| {
-                    json!({"tool": name, "result": result})
-                })
+                .map(|(name, _input, result)| json!({"tool": name, "result": result}))
                 .collect();
 
             (

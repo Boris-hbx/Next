@@ -57,7 +57,8 @@ fn row_to_scenario(row: &rusqlite::Row) -> rusqlite::Result<EnglishScenario> {
     })
 }
 
-const SCENARIO_COLUMNS: &str = "id, title, title_en, description, icon, content, status, created_at, archived, updated_at";
+const SCENARIO_COLUMNS: &str =
+    "id, title, title_en, description, icon, content, status, created_at, archived, updated_at";
 
 pub async fn list_scenarios(
     State(state): State<AppState>,
@@ -67,18 +68,17 @@ pub async fn list_scenarios(
     let db = state.db.lock();
     let archived = query.archived.unwrap_or(0);
 
-    let mut stmt = db
-        .prepare(&format!(
-            "SELECT {} FROM english_scenarios WHERE user_id = ?1 AND archived = ?2 ORDER BY updated_at DESC",
-            SCENARIO_COLUMNS
-        ))
-        .unwrap();
+    let Ok(mut stmt) = db.prepare(&format!(
+        "SELECT {} FROM english_scenarios WHERE user_id = ?1 AND archived = ?2 ORDER BY updated_at DESC",
+        SCENARIO_COLUMNS
+    )) else {
+        return (StatusCode::OK, Json(ScenariosResponse { success: true, items: vec![], message: None }));
+    };
 
     let items: Vec<EnglishScenario> = stmt
         .query_map(rusqlite::params![user_id.0, archived], row_to_scenario)
-        .unwrap()
-        .filter_map(|r| r.ok())
-        .collect();
+        .map(|rows| rows.filter_map(|r| r.ok()).collect())
+        .unwrap_or_default();
 
     (
         StatusCode::OK,
@@ -132,11 +132,15 @@ pub async fn create_scenario(
     let icon = req.icon.unwrap_or_else(|| "📖".into());
     let description = req.description.unwrap_or_default();
 
-    db.execute(
+    if let Err(e) = db.execute(
         "INSERT INTO english_scenarios (id, user_id, title, title_en, description, icon, content, status, archived, created_at, updated_at) VALUES (?1, ?2, ?3, '', ?4, ?5, '', 'draft', 0, ?6, ?7)",
         rusqlite::params![id, user_id.0, req.title, description, icon, now, now],
-    )
-    .unwrap();
+    ) {
+        return (StatusCode::INTERNAL_SERVER_ERROR, Json(ScenarioResponse {
+            success: false, item: None,
+            message: Some(format!("数据库写入失败: {}", e)),
+        }));
+    }
 
     let item = EnglishScenario {
         id,
@@ -247,11 +251,15 @@ pub async fn update_scenario(
     let now = chrono::Utc::now().to_rfc3339();
     item.updated_at = now;
 
-    db.execute(
+    if let Err(e) = db.execute(
         "UPDATE english_scenarios SET title=?1, title_en=?2, description=?3, icon=?4, content=?5, updated_at=?6 WHERE id=?7 AND user_id=?8",
         rusqlite::params![item.title, item.title_en, item.description, item.icon, item.content, item.updated_at, id, user_id.0],
-    )
-    .unwrap();
+    ) {
+        return (StatusCode::INTERNAL_SERVER_ERROR, Json(ScenarioResponse {
+            success: false, item: None,
+            message: Some(format!("数据库写入失败: {}", e)),
+        }));
+    }
 
     (
         StatusCode::OK,
@@ -360,7 +368,12 @@ pub async fn generate_scenario(
         let result = db.query_row(
             "SELECT title, description FROM english_scenarios WHERE id = ?1 AND user_id = ?2",
             rusqlite::params![id, user_id.0],
-            |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1).unwrap_or_default())),
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1).unwrap_or_default(),
+                ))
+            },
         );
         match result {
             Ok(r) => r,
@@ -446,7 +459,9 @@ pub async fn generate_scenario(
 保持内容实用、地道、贴近真实生活。对话要自然，不要太书面化。"#
     );
 
-    let messages = vec![json!({"role": "user", "content": format!("请生成关于「{}」的英语场景教学内容。", title)})];
+    let messages = vec![
+        json!({"role": "user", "content": format!("请生成关于「{}」的英语场景教学内容。", title)}),
+    ];
 
     let result = claude
         .chat(&system_prompt, messages, &[], |_, _| json!({}))
