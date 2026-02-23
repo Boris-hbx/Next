@@ -42,13 +42,29 @@ Next/
 └── CLAUDE.md
 ```
 
-## 部署（重要！）
+## 分支与部署
 
-> **⚠ 本项目线上运行在 Fly.io，修改代码后必须执行 `fly deploy`，不要启动本地 `cargo run`！**
+> **开发在 `dev` 分支，发版才合到 `main`。只从 `main` 部署 production。**
+
+```
+dev 分支 → 开发/测试 → deploy staging 验证
+main 分支 → git merge dev → deploy production 发版 → git tag vX.Y.Z
+```
+
+### 部署命令
 
 ```bash
+# Staging（测试验证）
+"C:/Users/huai/.fly/bin/flyctl.exe" deploy --config fly.staging.toml
+
+# Production（正式发版，只从 main 分支执行）
 "C:/Users/huai/.fly/bin/flyctl.exe" deploy
 ```
+
+| 环境 | URL | 用途 |
+|------|-----|------|
+| staging | https://next-boris-staging.fly.dev | 开发测试、手机验证 |
+| production | https://next-boris.fly.dev | 线上用户使用 |
 
 ### 部署前必做：缓存版本号
 
