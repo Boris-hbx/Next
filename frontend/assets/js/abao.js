@@ -747,6 +747,20 @@ var Abao = (function() {
             }
 
             var data = await resp.json();
+
+            // 对话不存在（服务器重启丢失了 session），自动重置后重发，用户无感知
+            if (resp.status === 404 || data.message === '对话不存在') {
+                conversationId = null;
+                // 直接用新对话重发，不再添加用户气泡
+                var retryResp = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ message: text })
+                });
+                data = await retryResp.json();
+            }
+
             hideThinking();
 
             if (data.conversation_id) {
