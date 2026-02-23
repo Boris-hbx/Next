@@ -16,7 +16,7 @@ RUN cargo build --release
 # Stage 2: Runtime image
 FROM debian:bookworm-slim
 
-RUN apt-get update && apt-get install -y ca-certificates tzdata && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y ca-certificates tzdata gosu && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
 RUN groupadd -r -g 999 nextapp && useradd -r -u 999 -g nextapp -d /app -s /sbin/nologin nextapp
@@ -32,6 +32,10 @@ COPY frontend/ /app/frontend/
 # Copy data files (quotes)
 COPY data/quotes.txt /app/data/quotes.txt
 
+# Copy entrypoint script
+COPY start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
 # Ensure data directory exists with correct permissions
 RUN mkdir -p /data && chown -R nextapp:nextapp /app /data
 
@@ -42,5 +46,5 @@ ENV FRONTEND_DIR=/app/frontend
 
 EXPOSE 8080
 
-USER nextapp
-CMD ["/app/next-server"]
+# Run as root so start.sh can fix /data permissions, then drops to nextapp
+CMD ["/app/start.sh"]

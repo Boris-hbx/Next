@@ -134,6 +134,23 @@
     color: #f44336;
 }
 
+.english-retry-btn {
+    display: inline-block;
+    margin-top: 6px;
+    padding: 3px 10px;
+    font-size: 0.75rem;
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.english-retry-btn:hover {
+    opacity: 0.85;
+}
+
 .english-status.draft {
     background: rgba(150, 150, 150, 0.15);
     color: #999;

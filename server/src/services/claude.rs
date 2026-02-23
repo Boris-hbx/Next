@@ -76,7 +76,11 @@ impl ClaudeClient {
 
             // Debug: log request on first round
             if round == 0 {
-                eprintln!("[Claude] Sending {} messages, {} tools", all_messages.len(), tools.len());
+                eprintln!(
+                    "[Claude] Sending {} messages, {} tools",
+                    all_messages.len(),
+                    tools.len()
+                );
             }
 
             let resp = self
@@ -86,7 +90,7 @@ impl ClaudeClient {
                 .header("anthropic-version", "2023-06-01")
                 .header("content-type", "application/json")
                 .json(&body)
-                .timeout(std::time::Duration::from_secs(30))
+                .timeout(std::time::Duration::from_secs(90))
                 .send()
                 .await
                 .map_err(|e| format!("Claude API request failed: {}", e))?;
@@ -107,13 +111,10 @@ impl ClaudeClient {
                 return Err("AI 服务暂时不可用，请稍后重试".into());
             }
 
-            let resp_json: Value = resp
-                .json()
-                .await
-                .map_err(|e| {
-                    eprintln!("[Claude] Failed to parse response: {}", e);
-                    "AI 服务响应异常，请稍后重试".to_string()
-                })?;
+            let resp_json: Value = resp.json().await.map_err(|e| {
+                eprintln!("[Claude] Failed to parse response: {}", e);
+                "AI 服务响应异常，请稍后重试".to_string()
+            })?;
 
             // Track tokens
             if let Some(usage) = resp_json.get("usage") {
@@ -122,12 +123,14 @@ impl ClaudeClient {
             }
 
             // Parse content blocks
-            let content = resp_json["content"]
-                .as_array()
-                .cloned()
-                .unwrap_or_default();
+            let content = resp_json["content"].as_array().cloned().unwrap_or_default();
             let stop_reason = resp_json["stop_reason"].as_str().unwrap_or("end_turn");
-            eprintln!("[Claude] Round {}: stop_reason={}, blocks={}", round, stop_reason, content.len());
+            eprintln!(
+                "[Claude] Round {}: stop_reason={}, blocks={}",
+                round,
+                stop_reason,
+                content.len()
+            );
 
             let mut blocks: Vec<ContentBlock> = Vec::new();
             for block in &content {
@@ -202,7 +205,12 @@ impl ClaudeClient {
 
     /// Simple one-shot generation — no tools, no conversation history.
     /// Used for lightweight text generation like moment header.
-    pub async fn simple_generate(&self, system: &str, user_message: &str, max_tokens: u32) -> Result<String, String> {
+    pub async fn simple_generate(
+        &self,
+        system: &str,
+        user_message: &str,
+        max_tokens: u32,
+    ) -> Result<String, String> {
         let body = json!({
             "model": MODEL,
             "max_tokens": max_tokens,
@@ -228,13 +236,10 @@ impl ClaudeClient {
             return Err("AI 服务暂时不可用，请稍后重试".into());
         }
 
-        let resp_json: Value = resp
-            .json()
-            .await
-            .map_err(|e| {
-                eprintln!("[Claude] simple_generate parse error: {}", e);
-                "AI 服务响应异常，请稍后重试".to_string()
-            })?;
+        let resp_json: Value = resp.json().await.map_err(|e| {
+            eprintln!("[Claude] simple_generate parse error: {}", e);
+            "AI 服务响应异常，请稍后重试".to_string()
+        })?;
 
         // Extract text from first content block
         if let Some(content) = resp_json["content"].as_array() {

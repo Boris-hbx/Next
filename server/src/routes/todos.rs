@@ -9,8 +9,8 @@ use serde_json::json;
 
 use crate::auth::UserId;
 use crate::models::todo::*;
-use crate::state::AppState;
 use crate::services::collaboration;
+use crate::state::AppState;
 
 #[derive(Debug, Serialize)]
 pub struct TodosResponse {
@@ -42,7 +42,11 @@ pub struct ListQuery {
 }
 
 /// Load the next pending/triggered reminder for a todo
-fn load_next_reminder(db: &rusqlite::Connection, todo_id: &str, user_id: &str) -> Option<TodoReminder> {
+fn load_next_reminder(
+    db: &rusqlite::Connection,
+    todo_id: &str,
+    user_id: &str,
+) -> Option<TodoReminder> {
     db.query_row(
         "SELECT id, remind_at, status FROM reminders \
          WHERE related_todo_id = ?1 AND user_id = ?2 AND status IN ('pending', 'triggered') \
@@ -91,8 +95,8 @@ fn row_to_todo(row: &rusqlite::Row) -> rusqlite::Result<Todo> {
         id: row.get(0)?,
         text: row.get(1)?,
         content: row.get(2).unwrap_or_default(),
-        tab: Tab::from_str(&row.get::<_, String>(3)?),
-        quadrant: Quadrant::from_str(&row.get::<_, String>(4)?),
+        tab: Tab::parse(&row.get::<_, String>(3)?),
+        quadrant: Quadrant::parse(&row.get::<_, String>(4)?),
         progress: row.get::<_, i32>(5)? as u8,
         completed: completed_int != 0,
         completed_at: row.get(6)?,
@@ -247,10 +251,24 @@ pub async fn create_todo(
 ) -> (StatusCode, Json<TodoResponse>) {
     // Input length validation
     if req.text.len() > 500 {
-        return (StatusCode::BAD_REQUEST, Json(TodoResponse { success: false, item: None, message: Some("任务标题不能超过 500 字符".into()) }));
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(TodoResponse {
+                success: false,
+                item: None,
+                message: Some("任务标题不能超过 500 字符".into()),
+            }),
+        );
     }
     if req.content.as_ref().map(|c| c.len()).unwrap_or(0) > 10000 {
-        return (StatusCode::BAD_REQUEST, Json(TodoResponse { success: false, item: None, message: Some("任务内容不能超过 10000 字符".into()) }));
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(TodoResponse {
+                success: false,
+                item: None,
+                message: Some("任务内容不能超过 10000 字符".into()),
+            }),
+        );
     }
 
     let db = state.db.lock();
@@ -258,15 +276,11 @@ pub async fn create_todo(
     let id = Todo::generate_id();
     let progress = req.progress.unwrap_or(0).min(100);
     let completed = progress == 100;
-    let completed_at = if completed {
-        Some(now.clone())
-    } else {
-        None
-    };
+    let completed_at = if completed { Some(now.clone()) } else { None };
     let tags = req.tags.unwrap_or_default();
     let tags_json = serde_json::to_string(&tags).unwrap();
 
-    db.execute(
+    if let Err(e) = db.execute(
         "INSERT INTO todos (id, user_id, text, content, tab, quadrant, progress, completed, completed_at, due_date, assignee, tags, created_at, updated_at, deleted, deleted_at) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,0,NULL)",
         rusqlite::params![
             id,
@@ -284,15 +298,20 @@ pub async fn create_todo(
             now,
             now,
         ],
-    )
-    .unwrap();
+    ) {
+        eprintln!("[todos] create_todo DB error: {}", e);
+        return (StatusCode::INTERNAL_SERVER_ERROR, Json(TodoResponse {
+            success: false, item: None,
+            message: Some("数据库写入失败，请稍后重试".into()),
+        }));
+    }
 
     let todo = Todo {
         id,
         text: req.text,
         content: req.content.unwrap_or_default(),
-        tab: Tab::from_str(&req.tab),
-        quadrant: Quadrant::from_str(&req.quadrant),
+        tab: Tab::parse(&req.tab),
+        quadrant: Quadrant::parse(&req.quadrant),
         progress,
         completed,
         completed_at,
@@ -326,9 +345,9 @@ pub async fn update_todo(
     let db = state.db.lock();
 
     // Check role: owner or collaborator
-    let is_collaborator = !collaboration::check_todo_owner(&db, &id, &user_id.0) 
-                          && collaboration::check_todo_collaborator(&db, &id, &user_id.0);
-    
+    let is_collaborator = !collaboration::check_todo_owner(&db, &id, &user_id.0)
+        && collaboration::check_todo_collaborator(&db, &id, &user_id.0);
+
     let current = if is_collaborator {
         db.query_row(
             "SELECT t.id, t.text, t.content, tc.tab, tc.quadrant, t.progress, t.completed_at, t.completed, t.due_date, t.deleted, t.assignee, t.tags, t.created_at, t.updated_at, t.deleted_at FROM todos t JOIN todo_collaborators tc ON t.id = tc.todo_id WHERE t.id = ?1 AND tc.user_id = ?2 AND tc.status = 'active'",
@@ -362,40 +381,88 @@ pub async fn update_todo(
     // Track changes and apply updates
     if let Some(text) = &update.text {
         if *text != todo.text {
-            insert_changelog(&db, &id, "text", Todo::field_label("text"), &todo.text, text, &now);
+            insert_changelog(
+                &db,
+                &id,
+                "text",
+                Todo::field_label("text"),
+                &todo.text,
+                text,
+                &now,
+            );
             todo.text = text.clone();
         }
     }
     if let Some(content) = &update.content {
         if *content != todo.content {
-            insert_changelog(&db, &id, "content", Todo::field_label("content"), "(已更新)", "(已更新)", &now);
+            insert_changelog(
+                &db,
+                &id,
+                "content",
+                Todo::field_label("content"),
+                "(已更新)",
+                "(已更新)",
+                &now,
+            );
             todo.content = content.clone();
         }
     }
     if let Some(tab_str) = &update.tab {
         let old_tab = todo.tab.as_str().to_string();
         if *tab_str != old_tab {
-            insert_changelog(&db, &id, "tab", Todo::field_label("tab"), &old_tab, tab_str, &now);
-            todo.tab = Tab::from_str(tab_str);
+            insert_changelog(
+                &db,
+                &id,
+                "tab",
+                Todo::field_label("tab"),
+                &old_tab,
+                tab_str,
+                &now,
+            );
+            todo.tab = Tab::parse(tab_str);
         }
     }
     if let Some(q_str) = &update.quadrant {
         let old_q = todo.quadrant.as_str().to_string();
         if *q_str != old_q {
             let old_label = todo.quadrant.label();
-            let new_q = Quadrant::from_str(q_str);
+            let new_q = Quadrant::parse(q_str);
             let new_label = new_q.label();
-            insert_changelog(&db, &id, "quadrant", Todo::field_label("quadrant"), old_label, new_label, &now);
+            insert_changelog(
+                &db,
+                &id,
+                "quadrant",
+                Todo::field_label("quadrant"),
+                old_label,
+                new_label,
+                &now,
+            );
             todo.quadrant = new_q;
         }
     }
     if let Some(progress) = update.progress {
         let new_progress = progress.min(100);
         if new_progress != todo.progress {
-            insert_changelog(&db, &id, "progress", Todo::field_label("progress"), &todo.progress.to_string(), &new_progress.to_string(), &now);
+            insert_changelog(
+                &db,
+                &id,
+                "progress",
+                Todo::field_label("progress"),
+                &todo.progress.to_string(),
+                &new_progress.to_string(),
+                &now,
+            );
             todo.progress = new_progress;
             if new_progress == 100 && !todo.completed {
-                insert_changelog(&db, &id, "completed", Todo::field_label("completed"), "未完成", "已完成", &now);
+                insert_changelog(
+                    &db,
+                    &id,
+                    "completed",
+                    Todo::field_label("completed"),
+                    "未完成",
+                    "已完成",
+                    &now,
+                );
                 todo.completed = true;
                 todo.completed_at = Some(now.clone());
             }
@@ -404,8 +471,15 @@ pub async fn update_todo(
     if let Some(completed) = update.completed {
         if completed != todo.completed {
             insert_changelog(
-                &db, &id, "completed", Todo::field_label("completed"),
-                if todo.completed { "已完成" } else { "未完成" },
+                &db,
+                &id,
+                "completed",
+                Todo::field_label("completed"),
+                if todo.completed {
+                    "已完成"
+                } else {
+                    "未完成"
+                },
                 if completed { "已完成" } else { "未完成" },
                 &now,
             );
@@ -416,13 +490,29 @@ pub async fn update_todo(
     if let Some(due_date) = &update.due_date {
         let old = todo.due_date.clone().unwrap_or_default();
         if *due_date != old {
-            insert_changelog(&db, &id, "due_date", Todo::field_label("due_date"), &old, due_date, &now);
+            insert_changelog(
+                &db,
+                &id,
+                "due_date",
+                Todo::field_label("due_date"),
+                &old,
+                due_date,
+                &now,
+            );
             todo.due_date = Some(due_date.clone());
         }
     }
     if let Some(assignee) = &update.assignee {
         if *assignee != todo.assignee {
-            insert_changelog(&db, &id, "assignee", Todo::field_label("assignee"), &todo.assignee, assignee, &now);
+            insert_changelog(
+                &db,
+                &id,
+                "assignee",
+                Todo::field_label("assignee"),
+                &todo.assignee,
+                assignee,
+                &now,
+            );
             todo.assignee = assignee.clone();
         }
     }
@@ -430,7 +520,15 @@ pub async fn update_todo(
         let old_tags = todo.tags.join(", ");
         let new_tags = tags.join(", ");
         if old_tags != new_tags {
-            insert_changelog(&db, &id, "tags", Todo::field_label("tags"), &old_tags, &new_tags, &now);
+            insert_changelog(
+                &db,
+                &id,
+                "tags",
+                Todo::field_label("tags"),
+                &old_tags,
+                &new_tags,
+                &now,
+            );
             todo.tags = tags.clone();
         }
     }
@@ -462,7 +560,7 @@ pub async fn update_todo(
             ],
         ).ok();
     } else {
-        db.execute(
+        if let Err(e) = db.execute(
             "UPDATE todos SET text=?1, content=?2, tab=?3, quadrant=?4, progress=?5, completed=?6, completed_at=?7, due_date=?8, assignee=?9, tags=?10, updated_at=?11 WHERE id=?12 AND user_id=?13",
             rusqlite::params![
                 todo.text,
@@ -479,8 +577,13 @@ pub async fn update_todo(
                 id,
                 user_id.0,
             ],
-        )
-        .unwrap();
+        ) {
+            eprintln!("[todos] update_todo DB error: {}", e);
+            return (StatusCode::INTERNAL_SERVER_ERROR, Json(TodoResponse {
+                success: false, item: None,
+                message: Some("数据库写入失败，请稍后重试".into()),
+            }));
+        }
     }
 
     todo.changelog = load_changelog(&db, &id);
@@ -527,7 +630,9 @@ pub async fn delete_todo(
     let now = chrono::Utc::now().to_rfc3339();
 
     // For collaborative todos, create a pending confirmation instead of immediate delete
-    if collaboration::is_todo_collaborative(&db, &id) && collaboration::check_todo_participant(&db, &id, &user_id.0) {
+    if collaboration::is_todo_collaborative(&db, &id)
+        && collaboration::check_todo_participant(&db, &id, &user_id.0)
+    {
         let conf_id = uuid::Uuid::new_v4().to_string()[..8].to_string();
         db.execute(
             "INSERT INTO pending_confirmations (id, item_type, item_id, action, initiated_by, initiated_at, status) VALUES (?1, 'todo', ?2, 'delete', ?3, ?4, 'pending')",
@@ -595,23 +700,32 @@ pub async fn restore_todo(
         );
     }
 
-    let mut todo = db
+    let todo = db
         .query_row(
             "SELECT id, text, content, tab, quadrant, progress, completed_at, completed, due_date, deleted, assignee, tags, created_at, updated_at, deleted_at FROM todos WHERE id = ?1",
             [&id],
             row_to_todo,
-        )
-        .unwrap();
-    todo.changelog = load_changelog(&db, &id);
-
-    (
-        StatusCode::OK,
-        Json(TodoResponse {
-            success: true,
-            item: Some(todo),
-            message: Some("任务已恢复".into()),
-        }),
-    )
+        );
+    match todo {
+        Ok(mut t) => {
+            t.changelog = load_changelog(&db, &id);
+            (
+                StatusCode::OK,
+                Json(TodoResponse {
+                    success: true,
+                    item: Some(t),
+                    message: Some("任务已恢复".into()),
+                }),
+            )
+        }
+        Err(e) => {
+            eprintln!("[todos] restore_todo fetch error: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(TodoResponse {
+                success: false, item: None,
+                message: Some("读取任务数据失败".into()),
+            }))
+        }
+    }
 }
 
 pub async fn permanent_delete_todo(
@@ -653,7 +767,13 @@ pub async fn batch_update_todos(
     Json(updates): Json<Vec<BatchUpdateItem>>,
 ) -> (StatusCode, Json<SimpleResponse>) {
     if updates.len() > 200 {
-        return (StatusCode::BAD_REQUEST, Json(SimpleResponse { success: false, message: Some("批量更新上限 200 条".into()) }));
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(SimpleResponse {
+                success: false,
+                message: Some("批量更新上限 200 条".into()),
+            }),
+        );
     }
     let db = state.db.lock();
     let now = chrono::Utc::now().to_rfc3339();

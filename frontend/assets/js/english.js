@@ -77,12 +77,15 @@ var English = (function() {
 
         grid.innerHTML = scenarios.map(function(s) {
             var statusBadge = '';
+            var retryBtn = '';
             if (s.status === 'generating') {
                 statusBadge = '<span class="english-status generating">生成中...</span>';
             } else if (s.status === 'error') {
                 statusBadge = '<span class="english-status error">生成失败</span>';
+                retryBtn = '<button class="english-retry-btn" onclick="event.stopPropagation();English.retryGenerate(\'' + s.id + '\')">重试</button>';
             } else if (s.status === 'draft') {
                 statusBadge = '<span class="english-status draft">草稿</span>';
+                retryBtn = '<button class="english-retry-btn" onclick="event.stopPropagation();English.retryGenerate(\'' + s.id + '\')">生成</button>';
             }
 
             return '<div class="english-card" data-id="' + s.id + '" onclick="English.openDetail(\'' + s.id + '\')">' +
@@ -91,6 +94,7 @@ var English = (function() {
                     '<div class="english-card-title">' + escapeHtml(s.title) + '</div>' +
                     (s.title_en ? '<div class="english-card-title-en">' + escapeHtml(s.title_en) + '</div>' : '') +
                     statusBadge +
+                    retryBtn +
                 '</div>' +
             '</div>';
         }).join('');
@@ -312,9 +316,35 @@ var English = (function() {
         return text;
     }
 
+    async function retryGenerate(id) {
+        var scenario = scenarios.find(function(s) { return s.id === id; });
+        if (!scenario) return;
+        showToast('正在重新生成...', 'info');
+        scenario.status = 'generating';
+        renderList();
+        try {
+            var resp = await API.generateScenario(id);
+            if (resp.success && resp.item) {
+                var idx = scenarios.findIndex(function(s) { return s.id === id; });
+                if (idx >= 0) scenarios[idx] = resp.item;
+                renderList();
+                showToast('内容生成完成', 'success');
+            } else {
+                scenario.status = 'error';
+                renderList();
+                showToast(resp.message || '生成失败，请稍后重试', 'error');
+            }
+        } catch (e) {
+            scenario.status = 'error';
+            renderList();
+            showToast('生成失败，请检查网络', 'error');
+        }
+    }
+
     return {
         init: init,
         openDetail: openDetail,
-        showList: showList
+        showList: showList,
+        retryGenerate: retryGenerate
     };
 })();
