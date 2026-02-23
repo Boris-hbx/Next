@@ -721,6 +721,26 @@
         padding: 8px 10px !important;
     }
 
+    /* 移动端没有 hover，强制显示 task-delete */
+    .task-item .task-delete {
+        opacity: 0.6;
+        width: 32px;
+        height: 32px;
+    }
+
+    /* 移动端强制显示 btn-quadrant-add */
+    .btn-quadrant-add {
+        opacity: 0.8 !important;
+        width: 32px !important;
+        height: 32px !important;
+    }
+
+    /* 移动端 task-checkbox 更大的点击区 */
+    .task-checkbox {
+        width: 24px !important;
+        height: 24px !important;
+    }
+
     /* Modal: full width on mobile */
     .modal-content {
         width: 95vw !important;

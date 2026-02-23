@@ -519,9 +519,9 @@ body {
 }
 
 .weather-desc {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     color: var(--text-secondary);
-    opacity: 0.8;
+    opacity: 0.9;
     max-width: 80px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -633,8 +633,8 @@ body {
 }
 
 .tz-datetime {
-    font-size: 0.7rem;
-    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.8);
 }
 
 .tz-time {
@@ -1178,7 +1178,7 @@ body {
 }
 
 .tab-edit-btn {
-    opacity: 0;
+    opacity: 0.2;
     padding: 0.3rem 0.5rem;
     border: none;
     background: rgba(var(--primary-color-rgb), 0.1);
@@ -1760,7 +1760,7 @@ body {
 /* Drop zone axis labels - positioned outside the quadrants */
 .drop-axis-label {
     position: absolute;
-    font-size: 0.55rem;
+    font-size: 0.7rem;
     font-weight: 600;
     white-space: nowrap;
     padding: 0.05rem 0.2rem;
@@ -1999,7 +1999,7 @@ body {
 /* Axis labels - transparent background, color matches logic */
 .axis-label {
     position: absolute;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     font-weight: 600;
     white-space: nowrap;
     padding: 0.1rem 0.3rem;
@@ -2156,8 +2156,8 @@ body {
 
 .btn-quadrant-add {
     margin-left: auto;
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     border: none;
     background: var(--primary-gradient);
     color: white;
@@ -2165,7 +2165,7 @@ body {
     font-weight: 600;
     border-radius: 6px;
     cursor: pointer;
-    opacity: 0.7;
+    opacity: 0.6;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
@@ -2303,8 +2303,8 @@ body {
 }
 
 .task-checkbox {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     border: 2px solid var(--primary-color);
     border-radius: 4px;
     cursor: pointer;
@@ -2416,20 +2416,20 @@ body {
 }
 
 .task-completed-time {
-    font-size: 0.7rem;
-    color: #95a5a6;
+    font-size: 0.75rem;
+    color: #7f8c8d;
     white-space: nowrap;
 }
 
 .task-delete {
-    width: 20px;
-    height: 20px;
+    width: 28px;
+    height: 28px;
     border: none;
     background: transparent;
     color: var(--danger-color);
     font-size: 1rem;
     cursor: pointer;
-    opacity: 0;
+    opacity: 0.25;
     transition: opacity 0.2s ease;
     display: flex;
     align-items: center;

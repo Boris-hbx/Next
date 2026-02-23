@@ -755,10 +755,10 @@ input, textarea, select {
 }
 
 .weather-toggle-fab .weather-toggle-status {
-    font-size: 8px;
+    font-size: 10px;
     font-weight: 600;
     line-height: 1;
-    opacity: 0.9;
+    opacity: 0.95;
 }
 
 .weather-toggle-fab.disabled .weather-toggle-status::after {
