@@ -178,10 +178,13 @@ var API = (function() {
             return await request('GET', '/chat/usage');
         },
 
-        // ===== English Scenario APIs =====
-        getScenarios: async function(archived) {
+        // ===== English Scenario (Learn) APIs =====
+        getScenarios: async function(archived, category) {
             var path = '/english/scenarios';
-            if (archived !== undefined) path += '?archived=' + archived;
+            var params = [];
+            if (archived !== undefined) params.push('archived=' + archived);
+            if (category) params.push('category=' + encodeURIComponent(category));
+            if (params.length) path += '?' + params.join('&');
             return await request('GET', path);
         },
 
@@ -371,6 +374,23 @@ var API = (function() {
         // ===== Moment API =====
         getMoment: async function() {
             return await request('GET', '/moment');
+        },
+
+        // ===== Pandora APIs =====
+        getPandoraToday: async function() {
+            return await request('GET', '/pandora/today');
+        },
+
+        getPandoraHistory: async function() {
+            return await request('GET', '/pandora/history');
+        },
+
+        getPandoraSaved: async function() {
+            return await request('GET', '/pandora/saved');
+        },
+
+        togglePandoraSave: async function(id) {
+            return await request('POST', '/pandora/' + encodeURIComponent(id) + '/save');
         },
 
         // 环境检测 (always web now)

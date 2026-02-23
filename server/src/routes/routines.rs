@@ -161,7 +161,11 @@ pub async fn list_routines(
                     id: rid,
                     text,
                     completed_today,
-                    last_completed_date: if completed_today { Some(today.clone()) } else { None },
+                    last_completed_date: if completed_today {
+                        Some(today.clone())
+                    } else {
+                        None
+                    },
                     created_at,
                     is_collaborative: Some(true),
                     owner_name,
@@ -280,8 +284,20 @@ pub async fn toggle_routine(
         }
 
         let completed_today = !already_done;
-        let text: String = db.query_row("SELECT text FROM routines WHERE id = ?1", rusqlite::params![id], |r| r.get(0)).unwrap_or_default();
-        let oid: String = db.query_row("SELECT user_id FROM routines WHERE id = ?1", rusqlite::params![id], |r| r.get(0)).unwrap_or_default();
+        let text: String = db
+            .query_row(
+                "SELECT text FROM routines WHERE id = ?1",
+                rusqlite::params![id],
+                |r| r.get(0),
+            )
+            .unwrap_or_default();
+        let oid: String = db
+            .query_row(
+                "SELECT user_id FROM routines WHERE id = ?1",
+                rusqlite::params![id],
+                |r| r.get(0),
+            )
+            .unwrap_or_default();
         let oname = get_user_display_name(&db, &oid);
 
         let routine = Routine {
@@ -295,10 +311,18 @@ pub async fn toggle_routine(
             owner_id: Some(oid),
         };
 
-        let message = if completed_today { "已完成" } else { "已取消完成" };
+        let message = if completed_today {
+            "已完成"
+        } else {
+            "已取消完成"
+        };
         return (
             StatusCode::OK,
-            Json(RoutineResponse { success: true, item: Some(routine), message: Some(message.into()) }),
+            Json(RoutineResponse {
+                success: true,
+                item: Some(routine),
+                message: Some(message.into()),
+            }),
         );
     }
 
@@ -352,11 +376,19 @@ pub async fn toggle_routine(
 
     db.execute(
         "UPDATE routines SET completed_today = ?1, last_completed_date = ?2 WHERE id = ?3",
-        rusqlite::params![routine.completed_today as i32, routine.last_completed_date, id],
+        rusqlite::params![
+            routine.completed_today as i32,
+            routine.last_completed_date,
+            id
+        ],
     )
     .unwrap();
 
-    let message = if routine.completed_today { "已完成" } else { "已取消完成" };
+    let message = if routine.completed_today {
+        "已完成"
+    } else {
+        "已取消完成"
+    };
 
     (
         StatusCode::OK,
@@ -393,8 +425,16 @@ pub async fn delete_routine(
     }
 
     // Clean up collaborators and completions
-    db.execute("DELETE FROM routine_collaborators WHERE routine_id = ?1", rusqlite::params![id]).ok();
-    db.execute("DELETE FROM routine_completions WHERE routine_id = ?1", rusqlite::params![id]).ok();
+    db.execute(
+        "DELETE FROM routine_collaborators WHERE routine_id = ?1",
+        rusqlite::params![id],
+    )
+    .ok();
+    db.execute(
+        "DELETE FROM routine_completions WHERE routine_id = ?1",
+        rusqlite::params![id],
+    )
+    .ok();
 
     (
         StatusCode::OK,

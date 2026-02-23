@@ -364,7 +364,8 @@ pub async fn delete_friend(
         db.execute(
             "DELETE FROM contacts WHERE friendship_id = ?1",
             rusqlite::params![id],
-        ).ok();
+        )
+        .ok();
     }
 
     (
@@ -478,7 +479,7 @@ pub async fn share_item(
         }
         "scenario" => {
             db.query_row(
-                "SELECT id, title, title_en, description, icon, content FROM english_scenarios WHERE id = ?1 AND user_id = ?2",
+                "SELECT id, title, title_en, description, icon, content, COALESCE(category, '英语'), COALESCE(notes, '') FROM english_scenarios WHERE id = ?1 AND user_id = ?2",
                 rusqlite::params![req.item_id, user_id.0],
                 |row| {
                     Ok(json!({
@@ -487,7 +488,9 @@ pub async fn share_item(
                         "title_en": row.get::<_, String>(2).unwrap_or_default(),
                         "description": row.get::<_, String>(3).unwrap_or_default(),
                         "icon": row.get::<_, String>(4).unwrap_or_default(),
-                        "content": row.get::<_, String>(5).unwrap_or_default()
+                        "content": row.get::<_, String>(5).unwrap_or_default(),
+                        "category": row.get::<_, String>(6).unwrap_or_else(|_| "英语".into()),
+                        "notes": row.get::<_, String>(7).unwrap_or_default()
                     }))
                 },
             )
@@ -602,7 +605,13 @@ pub async fn shared_inbox_count(
         )
         .unwrap_or(0);
 
-    (StatusCode::OK, Json(CountResponse { success: true, count }))
+    (
+        StatusCode::OK,
+        Json(CountResponse {
+            success: true,
+            count,
+        }),
+    )
 }
 
 pub async fn accept_shared(
@@ -642,7 +651,9 @@ pub async fn accept_shared(
             let text = snapshot["text"].as_str().unwrap_or("(分享的任务)");
             let content = snapshot["content"].as_str().unwrap_or("");
             let tab = snapshot["tab"].as_str().unwrap_or("today");
-            let quadrant = snapshot["quadrant"].as_str().unwrap_or("not-important-not-urgent");
+            let quadrant = snapshot["quadrant"]
+                .as_str()
+                .unwrap_or("not-important-not-urgent");
             let tags = snapshot["tags"].as_str().unwrap_or("[]");
 
             db.execute(
@@ -670,10 +681,12 @@ pub async fn accept_shared(
             let description = snapshot["description"].as_str().unwrap_or("");
             let icon = snapshot["icon"].as_str().unwrap_or("📖");
             let content = snapshot["content"].as_str().unwrap_or("");
+            let category = snapshot["category"].as_str().unwrap_or("英语");
+            let notes = snapshot["notes"].as_str().unwrap_or("");
 
             db.execute(
-                "INSERT INTO english_scenarios (id, user_id, title, title_en, description, icon, content, status, archived, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 'ready', 0, ?8, ?9)",
-                rusqlite::params![new_id, user_id.0, title, title_en, description, icon, content, now, now],
+                "INSERT INTO english_scenarios (id, user_id, title, title_en, description, icon, content, status, archived, created_at, updated_at, category, notes) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 'ready', 0, ?8, ?9, ?10, ?11)",
+                rusqlite::params![new_id, user_id.0, title, title_en, description, icon, content, now, now, category, notes],
             )
             .ok();
         }

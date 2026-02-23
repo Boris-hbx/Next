@@ -102,9 +102,15 @@ pub fn get_all_participants(db: &Connection, todo_id: &str) -> Vec<String> {
 }
 
 /// Check if all participants (except initiator) have responded to a confirmation
-pub fn check_all_responded(db: &Connection, confirmation_id: &str, initiated_by: &str, todo_id: &str) -> (bool, bool) {
+pub fn check_all_responded(
+    db: &Connection,
+    confirmation_id: &str,
+    initiated_by: &str,
+    todo_id: &str,
+) -> (bool, bool) {
     let participants = get_all_participants(db, todo_id);
-    let other_participants: Vec<&String> = participants.iter().filter(|p| *p != initiated_by).collect();
+    let other_participants: Vec<&String> =
+        participants.iter().filter(|p| *p != initiated_by).collect();
 
     if other_participants.is_empty() {
         return (true, true);
@@ -172,7 +178,11 @@ pub fn execute_confirmation_action(db: &Connection, item_type: &str, item_id: &s
 }
 
 /// Get collaboration info for a todo from the perspective of a user
-pub fn get_collab_info(db: &Connection, todo_id: &str, user_id: &str) -> Option<crate::models::collaboration::CollabInfo> {
+pub fn get_collab_info(
+    db: &Connection,
+    todo_id: &str,
+    user_id: &str,
+) -> Option<crate::models::collaboration::CollabInfo> {
     if !is_todo_collaborative(db, todo_id) {
         return None;
     }

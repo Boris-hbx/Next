@@ -6,7 +6,7 @@ use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use hkdf::Hkdf;
 use p256::{
     ecdh::EphemeralSecret,
-    ecdsa::{signature::Signer, SigningKey, Signature},
+    ecdsa::{signature::Signer, Signature, SigningKey},
     PublicKey,
 };
 use sha2::Sha256;
@@ -74,12 +74,15 @@ impl VapidKeys {
 /// Subscription info from the browser's PushManager
 pub struct PushSubscription {
     pub endpoint: String,
-    pub p256dh: Vec<u8>,  // client public key (65 bytes uncompressed)
-    pub auth: Vec<u8>,    // client auth secret (16 bytes)
+    pub p256dh: Vec<u8>, // client public key (65 bytes uncompressed)
+    pub auth: Vec<u8>,   // client auth secret (16 bytes)
 }
 
 /// Encrypt a payload for Web Push (aes128gcm, RFC 8188)
-pub fn encrypt_payload(sub: &PushSubscription, plaintext: &[u8]) -> Result<(Vec<u8>, Vec<u8>), String> {
+pub fn encrypt_payload(
+    sub: &PushSubscription,
+    plaintext: &[u8],
+) -> Result<(Vec<u8>, Vec<u8>), String> {
     // Generate ephemeral ECDH key pair
     let ephemeral_secret = EphemeralSecret::random(&mut rand_core_06::OsRng);
     let ephemeral_public = ephemeral_secret.public_key();
@@ -96,18 +99,21 @@ pub fn encrypt_payload(sub: &PushSubscription, plaintext: &[u8]) -> Result<(Vec<
     let auth_info = build_info(b"WebPush: info\x00", &sub.p256dh, &ephemeral_public_bytes);
     let hk_auth = Hkdf::<Sha256>::new(Some(&sub.auth), shared_secret.raw_secret_bytes());
     let mut prk = [0u8; 32];
-    hk_auth.expand(&auth_info, &mut prk)
+    hk_auth
+        .expand(&auth_info, &mut prk)
         .map_err(|_| "HKDF auth expand failed")?;
 
     // Derive content encryption key (CEK) and nonce
     let hk_cek = Hkdf::<Sha256>::new(Some(&[0u8; 0]), &prk);
     let mut cek = [0u8; 16];
-    hk_cek.expand(b"Content-Encoding: aes128gcm\x00", &mut cek)
+    hk_cek
+        .expand(b"Content-Encoding: aes128gcm\x00", &mut cek)
         .map_err(|_| "HKDF CEK failed")?;
 
     let mut nonce_bytes = [0u8; 12];
     let hk_nonce = Hkdf::<Sha256>::new(Some(&[0u8; 0]), &prk);
-    hk_nonce.expand(b"Content-Encoding: nonce\x00", &mut nonce_bytes)
+    hk_nonce
+        .expand(b"Content-Encoding: nonce\x00", &mut nonce_bytes)
         .map_err(|_| "HKDF nonce failed")?;
 
     // Build aes128gcm header: salt(16) + rs(4) + idlen(1) + keyid(65)
@@ -128,10 +134,10 @@ pub fn encrypt_payload(sub: &PushSubscription, plaintext: &[u8]) -> Result<(Vec<
     padded.extend_from_slice(plaintext);
     padded.push(0x02); // final record delimiter
 
-    let cipher = Aes128Gcm::new_from_slice(&cek2)
-        .map_err(|_| "AES init failed")?;
+    let cipher = Aes128Gcm::new_from_slice(&cek2).map_err(|_| "AES init failed")?;
     let nonce = Nonce::from_slice(&nonce2);
-    let ciphertext = cipher.encrypt(nonce, padded.as_slice())
+    let ciphertext = cipher
+        .encrypt(nonce, padded.as_slice())
         .map_err(|_| "AES encrypt failed")?;
 
     // Build aes128gcm content: header + ciphertext
@@ -160,11 +166,11 @@ pub async fn send_push(
     sub: &PushSubscription,
     payload: &str,
 ) -> Result<(), PushError> {
-    let (body, _) = encrypt_payload(sub, payload.as_bytes())
-        .map_err(|e| PushError::Encryption(e))?;
+    let (body, _) = encrypt_payload(sub, payload.as_bytes()).map_err(PushError::Encryption)?;
 
-    let auth_header = vapid.create_auth_header(&sub.endpoint)
-        .map_err(|e| PushError::Vapid(e))?;
+    let auth_header = vapid
+        .create_auth_header(&sub.endpoint)
+        .map_err(PushError::Vapid)?;
 
     let client = reqwest::Client::new();
     let resp = client
@@ -180,7 +186,7 @@ pub async fn send_push(
 
     let status = resp.status().as_u16();
     match status {
-        200 | 201 | 202 => Ok(()),
+        200..=202 => Ok(()),
         404 | 410 => Err(PushError::Gone), // subscription expired
         429 => Err(PushError::RateLimit),
         s if s >= 500 => Err(PushError::ServerError(status)),
@@ -196,8 +202,8 @@ pub enum PushError {
     Encryption(String),
     Vapid(String),
     Network(String),
-    Gone,       // 410: subscription no longer valid
-    RateLimit,  // 429
+    Gone,      // 410: subscription no longer valid
+    RateLimit, // 429
     ServerError(u16),
     Other(String),
 }

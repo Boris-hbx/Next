@@ -146,13 +146,11 @@ impl ReviewItem {
                     .unwrap_or(today);
                 if candidate >= today || !self.is_completed_this_period(today) {
                     candidate
+                } else if today.month() == 12 {
+                    NaiveDate::from_ymd_opt(today.year() + 1, 1, target_day).unwrap_or(today)
                 } else {
-                    if today.month() == 12 {
-                        NaiveDate::from_ymd_opt(today.year() + 1, 1, target_day).unwrap_or(today)
-                    } else {
-                        NaiveDate::from_ymd_opt(today.year(), today.month() + 1, target_day)
-                            .unwrap_or(today)
-                    }
+                    NaiveDate::from_ymd_opt(today.year(), today.month() + 1, target_day)
+                        .unwrap_or(today)
                 }
             }
             Frequency::Yearly => {

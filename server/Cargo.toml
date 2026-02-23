@@ -33,6 +33,10 @@ base64 = "0.22"
 url = "2"
 parking_lot = "0.12"
 
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
+
 [profile.release]
 panic = "abort"
 codegen-units = 1

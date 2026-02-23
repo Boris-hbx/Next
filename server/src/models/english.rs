@@ -16,6 +16,10 @@ pub struct EnglishScenario {
     pub status: String,
     #[serde(default)]
     pub archived: bool,
+    #[serde(default)]
+    pub category: String,
+    #[serde(default)]
+    pub notes: String,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -27,6 +31,10 @@ pub struct CreateScenarioRequest {
     pub description: Option<String>,
     #[serde(default)]
     pub icon: Option<String>,
+    #[serde(default)]
+    pub category: Option<String>,
+    #[serde(default)]
+    pub content: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -41,4 +49,10 @@ pub struct UpdateScenarioRequest {
     pub icon: Option<String>,
     #[serde(default)]
     pub content: Option<String>,
+    #[serde(default)]
+    pub category: Option<String>,
+    #[serde(default)]
+    pub notes: Option<String>,
+    #[serde(default)]
+    pub status: Option<String>,
 }

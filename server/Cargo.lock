@@ -1138,6 +1138,7 @@ dependencies = [
  "hex",
  "hkdf",
  "http",
+ "http-body-util",
  "p256",
  "parking_lot",
  "rand",

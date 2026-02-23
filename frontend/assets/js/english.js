@@ -1,8 +1,17 @@
-// ========== 场景英语模块 (IIFE) ==========
+// ========== 学习笔记模块 (IIFE) ==========
 var English = (function() {
     var scenarios = [];
     var currentScenario = null;
     var initialized = false;
+    var currentCategory = null; // null = 全部
+
+    var CATEGORIES = [
+        { key: '英语', icon: '🇬🇧', label: '英语' },
+        { key: '编程', icon: '💻', label: '编程' },
+        { key: '职场', icon: '💼', label: '职场' },
+        { key: '生活', icon: '🌱', label: '生活' },
+        { key: '其他', icon: '📝', label: '其他' }
+    ];
 
     function init() {
         if (!initialized) {
@@ -13,13 +22,6 @@ var English = (function() {
     }
 
     function bindEvents() {
-        // Create modal
-        var createBtn = document.getElementById('english-create-btn');
-        if (createBtn) createBtn.onclick = openCreateModal;
-
-        var emptyCreateBtn = document.getElementById('english-empty-create-btn');
-        if (emptyCreateBtn) emptyCreateBtn.onclick = openCreateModal;
-
         var modalOverlay = document.getElementById('english-modal-overlay');
         if (modalOverlay) modalOverlay.onclick = closeCreateModal;
 
@@ -27,14 +29,13 @@ var English = (function() {
         if (cancelBtn) cancelBtn.onclick = closeCreateModal;
 
         var submitBtn = document.getElementById('english-modal-submit');
-        if (submitBtn) submitBtn.onclick = createAndGenerate;
+        if (submitBtn) submitBtn.onclick = createEntry;
 
-        // Detail view
         var backBtn = document.getElementById('english-back-btn');
         if (backBtn) backBtn.onclick = showList;
 
-        var regenBtn = document.getElementById('english-regen-btn');
-        if (regenBtn) regenBtn.onclick = regenerateContent;
+        var aiBtn = document.getElementById('english-ai-btn');
+        if (aiBtn) aiBtn.onclick = aiOrganize;
 
         var deleteBtn = document.getElementById('english-delete-btn');
         if (deleteBtn) deleteBtn.onclick = deleteCurrentScenario;
@@ -45,18 +46,18 @@ var English = (function() {
 
     async function loadScenarios() {
         try {
-            var resp = await API.getScenarios(0);
+            var resp = await API.getScenarios(0, currentCategory);
             if (resp.success) {
                 scenarios = resp.items || [];
                 renderList();
             }
         } catch (e) {
-            console.error('[English] load failed:', e);
+            console.error('[Learn] load failed:', e);
         }
     }
 
     function renderList() {
-        var grid = document.getElementById('english-scenarios');
+        var container = document.getElementById('english-scenarios');
         var emptyState = document.getElementById('english-empty-state');
         var listView = document.querySelector('.english-list-view');
         var detailView = document.querySelector('.english-detail-view');
@@ -64,40 +65,64 @@ var English = (function() {
         if (listView) listView.style.display = '';
         if (detailView) detailView.style.display = 'none';
 
-        if (!grid) return;
+        // Show FAB
+        var fab = document.getElementById('learn-fab');
+        if (fab) fab.style.display = '';
+
+        if (!container) return;
+
+        renderCategoryFilters();
 
         if (scenarios.length === 0) {
-            grid.style.display = 'none';
+            container.style.display = 'none';
             if (emptyState) emptyState.style.display = '';
             return;
         }
 
-        grid.style.display = '';
+        container.style.display = '';
         if (emptyState) emptyState.style.display = 'none';
 
-        grid.innerHTML = scenarios.map(function(s) {
-            var statusBadge = '';
-            var retryBtn = '';
-            if (s.status === 'generating') {
-                statusBadge = '<span class="english-status generating">生成中...</span>';
-            } else if (s.status === 'error') {
-                statusBadge = '<span class="english-status error">生成失败</span>';
-                retryBtn = '<button class="english-retry-btn" onclick="event.stopPropagation();English.retryGenerate(\'' + s.id + '\')">重试</button>';
-            } else if (s.status === 'draft') {
-                statusBadge = '<span class="english-status draft">草稿</span>';
-                retryBtn = '<button class="english-retry-btn" onclick="event.stopPropagation();English.retryGenerate(\'' + s.id + '\')">生成</button>';
+        container.innerHTML = scenarios.map(function(s) {
+            var preview = (s.content || '').replace(/[#*`\n]/g, ' ').trim();
+            if (preview.length > 60) preview = preview.substring(0, 60) + '...';
+
+            var categoryBadge = '';
+            if (s.category) {
+                var cat = CATEGORIES.find(function(c) { return c.key === s.category; });
+                var catLabel = cat ? cat.icon + ' ' + cat.label : s.category;
+                categoryBadge = '<span class="learn-entry-badge">' + catLabel + '</span>';
             }
 
-            return '<div class="english-card" data-id="' + s.id + '" onclick="English.openDetail(\'' + s.id + '\')">' +
-                '<div class="english-card-icon">' + (s.icon || '📖') + '</div>' +
-                '<div class="english-card-info">' +
-                    '<div class="english-card-title">' + escapeHtml(s.title) + '</div>' +
-                    (s.title_en ? '<div class="english-card-title-en">' + escapeHtml(s.title_en) + '</div>' : '') +
-                    statusBadge +
-                    retryBtn +
+            var timeStr = formatTimeAgo(s.updated_at);
+
+            return '<div class="learn-entry" onclick="English.openDetail(\'' + s.id + '\')">' +
+                '<div class="learn-entry-body">' +
+                    '<div class="learn-entry-title">' + escapeHtml(s.title) + '</div>' +
+                    (preview ? '<div class="learn-entry-preview">' + escapeHtml(preview) + '</div>' : '') +
+                '</div>' +
+                '<div class="learn-entry-meta">' +
+                    categoryBadge +
+                    '<span class="learn-entry-time">' + timeStr + '</span>' +
                 '</div>' +
             '</div>';
         }).join('');
+    }
+
+    function renderCategoryFilters() {
+        var container = document.getElementById('learn-category-filters');
+        if (!container) return;
+
+        var html = '<button class="learn-filter-pill' + (!currentCategory ? ' active' : '') + '" onclick="English.filterCategory(null)">全部</button>';
+        CATEGORIES.forEach(function(cat) {
+            var isActive = currentCategory === cat.key;
+            html += '<button class="learn-filter-pill' + (isActive ? ' active' : '') + '" onclick="English.filterCategory(\'' + cat.key + '\')">' + cat.icon + ' ' + cat.label + '</button>';
+        });
+        container.innerHTML = html;
+    }
+
+    function filterCategory(cat) {
+        currentCategory = cat;
+        loadScenarios();
     }
 
     function escapeHtml(str) {
@@ -106,13 +131,49 @@ var English = (function() {
         return div.innerHTML;
     }
 
+    function formatTimeAgo(dateStr) {
+        if (!dateStr) return '';
+        try {
+            var date = new Date(dateStr);
+            var now = new Date();
+            var diff = Math.floor((now - date) / 1000);
+            if (diff < 60) return '刚刚';
+            if (diff < 3600) return Math.floor(diff / 60) + '分钟前';
+            if (diff < 86400) return Math.floor(diff / 3600) + '小时前';
+            if (diff < 2592000) return Math.floor(diff / 86400) + '天前';
+            return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+        } catch (e) {
+            return '';
+        }
+    }
+
     function openCreateModal() {
         var overlay = document.getElementById('english-modal-overlay');
         if (overlay) overlay.style.display = 'flex';
         var titleInput = document.getElementById('english-modal-title');
         if (titleInput) { titleInput.value = ''; titleInput.focus(); }
-        var descInput = document.getElementById('english-modal-desc');
-        if (descInput) descInput.value = '';
+        var contentInput = document.getElementById('english-modal-content');
+        if (contentInput) contentInput.value = '';
+
+        // Reset category selector
+        var catContainer = document.getElementById('learn-modal-categories');
+        if (catContainer) {
+            var html = '';
+            CATEGORIES.forEach(function(cat, idx) {
+                var isActive = idx === 0;
+                html += '<button class="learn-modal-cat-pill' + (isActive ? ' active' : '') + '" data-category="' + cat.key + '" onclick="English.selectModalCategory(this)">' + cat.icon + ' ' + cat.label + '</button>';
+            });
+            catContainer.innerHTML = html;
+        }
+    }
+
+    function selectModalCategory(el) {
+        var container = el.parentElement;
+        if (!container) return;
+        container.querySelectorAll('.learn-modal-cat-pill').forEach(function(btn) {
+            btn.classList.remove('active');
+        });
+        el.classList.add('active');
     }
 
     function closeCreateModal() {
@@ -120,44 +181,39 @@ var English = (function() {
         if (overlay) overlay.style.display = 'none';
     }
 
-    async function createAndGenerate() {
+    function getSelectedModalCategory() {
+        var container = document.getElementById('learn-modal-categories');
+        if (!container) return '英语';
+        var active = container.querySelector('.learn-modal-cat-pill.active');
+        return active ? active.dataset.category : '英语';
+    }
+
+    async function createEntry() {
         var title = (document.getElementById('english-modal-title').value || '').trim();
         if (!title) {
-            showToast('请输入场景标题', 'error');
+            showToast('请输入标题', 'error');
             return;
         }
-        var description = (document.getElementById('english-modal-desc').value || '').trim();
+        var content = (document.getElementById('english-modal-content').value || '').trim();
+        var category = getSelectedModalCategory();
 
         closeCreateModal();
-        showToast('正在创建场景...', 'info');
+        showToast('正在保存...', 'info');
 
         try {
-            var resp = await API.createScenario({ title: title, description: description || undefined });
+            var resp = await API.createScenario({
+                title: title,
+                content: content || undefined,
+                category: category
+            });
             if (!resp.success) {
                 showToast(resp.message || '创建失败', 'error');
                 return;
             }
 
-            var scenario = resp.item;
-            scenarios.unshift(scenario);
+            scenarios.unshift(resp.item);
             renderList();
-
-            // Auto-generate content
-            showToast('正在生成内容，请稍候...', 'info');
-            scenario.status = 'generating';
-            renderList();
-
-            var genResp = await API.generateScenario(scenario.id);
-            if (genResp.success && genResp.item) {
-                var idx = scenarios.findIndex(function(s) { return s.id === scenario.id; });
-                if (idx >= 0) scenarios[idx] = genResp.item;
-                renderList();
-                showToast('内容生成完成', 'success');
-            } else {
-                scenario.status = 'error';
-                renderList();
-                showToast(genResp.message || '生成失败', 'error');
-            }
+            showToast('笔记已创建', 'success');
         } catch (e) {
             showToast('创建失败', 'error');
         }
@@ -166,7 +222,6 @@ var English = (function() {
     async function openDetail(id) {
         var scenario = scenarios.find(function(s) { return s.id === id; });
 
-        // If we don't have full content, fetch it
         if (!scenario || !scenario.content) {
             try {
                 var resp = await API.getScenario(id);
@@ -189,25 +244,50 @@ var English = (function() {
         if (listView) listView.style.display = 'none';
         if (detailView) detailView.style.display = '';
 
-        var titleEl = document.getElementById('english-detail-title');
-        if (titleEl) titleEl.textContent = (scenario.icon || '📖') + ' ' + scenario.title;
+        // Hide FAB in detail view
+        var fab = document.getElementById('learn-fab');
+        if (fab) fab.style.display = 'none';
 
-        var contentEl = document.getElementById('english-content');
-        if (contentEl) {
-            if (scenario.status === 'generating') {
-                contentEl.innerHTML = '<div class="english-loading"><div class="english-spinner"></div><p>正在生成内容...</p></div>';
-            } else if (scenario.status === 'error') {
-                contentEl.innerHTML = '<div class="english-error"><p>内容生成失败，请点击"重新生成"重试</p></div>';
-            } else if (scenario.status === 'draft' || !scenario.content) {
-                contentEl.innerHTML = '<div class="english-error"><p>尚未生成内容</p></div>';
-            } else {
-                contentEl.innerHTML = renderMarkdown(scenario.content);
-            }
+        // Fill editable form
+        var titleInput = document.getElementById('learn-edit-title');
+        if (titleInput) titleInput.value = scenario.title || '';
+
+        var contentTextarea = document.getElementById('learn-edit-content');
+        if (contentTextarea) contentTextarea.value = scenario.content || '';
+
+        var notesTextarea = document.getElementById('learn-edit-notes');
+        if (notesTextarea) notesTextarea.value = scenario.notes || '';
+
+        // Render category pills
+        var catContainer = document.getElementById('learn-detail-categories');
+        if (catContainer) {
+            var html = '';
+            CATEGORIES.forEach(function(cat) {
+                var isActive = scenario.category === cat.key;
+                html += '<button class="learn-modal-cat-pill' + (isActive ? ' active' : '') + '" data-category="' + cat.key + '" onclick="English.selectDetailCategory(this)">' + cat.icon + ' ' + cat.label + '</button>';
+            });
+            catContainer.innerHTML = html;
         }
 
-        // Show/hide share button based on whether Friends module exists
-        var shareBtn = document.getElementById('english-share-btn');
-        if (shareBtn) shareBtn.style.display = '';
+        // Show AI content preview if it was AI-organized
+        var contentEl = document.getElementById('english-content');
+        if (contentEl) {
+            if (scenario.status === 'ready' && scenario.content && scenario.content.indexOf('#') >= 0) {
+                contentEl.innerHTML = renderMarkdown(scenario.content);
+                contentEl.style.display = '';
+            } else {
+                contentEl.style.display = 'none';
+            }
+        }
+    }
+
+    function selectDetailCategory(el) {
+        var container = document.getElementById('learn-detail-categories');
+        if (!container) return;
+        container.querySelectorAll('.learn-modal-cat-pill').forEach(function(btn) {
+            btn.classList.remove('active');
+        });
+        el.classList.add('active');
     }
 
     function showList() {
@@ -216,38 +296,100 @@ var English = (function() {
         var detailView = document.querySelector('.english-detail-view');
         if (listView) listView.style.display = '';
         if (detailView) detailView.style.display = 'none';
+
+        // Show FAB
+        var fab = document.getElementById('learn-fab');
+        if (fab) fab.style.display = '';
+
+        loadScenarios();
     }
 
-    async function regenerateContent() {
+    async function saveEntry() {
         if (!currentScenario) return;
-        showToast('正在重新生成...', 'info');
 
+        var title = (document.getElementById('learn-edit-title').value || '').trim();
+        if (!title) {
+            showToast('标题不能为空', 'error');
+            return;
+        }
+        var content = (document.getElementById('learn-edit-content').value || '').trim();
+        var notes = (document.getElementById('learn-edit-notes').value || '').trim();
+
+        var catContainer = document.getElementById('learn-detail-categories');
+        var category = currentScenario.category;
+        if (catContainer) {
+            var active = catContainer.querySelector('.learn-modal-cat-pill.active');
+            if (active) category = active.dataset.category;
+        }
+
+        var status = content ? 'ready' : 'draft';
+
+        try {
+            var resp = await API.updateScenario(currentScenario.id, {
+                title: title,
+                content: content,
+                notes: notes,
+                category: category,
+                status: status
+            });
+            if (resp.success) {
+                if (resp.item) {
+                    currentScenario = resp.item;
+                    var idx = scenarios.findIndex(function(s) { return s.id === currentScenario.id; });
+                    if (idx >= 0) scenarios[idx] = currentScenario;
+                }
+                showToast('已保存', 'success');
+            } else {
+                showToast(resp.message || '保存失败', 'error');
+            }
+        } catch (e) {
+            showToast('保存失败', 'error');
+        }
+    }
+
+    async function aiOrganize() {
+        if (!currentScenario) return;
+
+        // Save current content first
+        await saveEntry();
+
+        showToast('阿宝正在整理内容...', 'info');
         try {
             var resp = await API.generateScenario(currentScenario.id);
             if (resp.success && resp.item) {
                 currentScenario = resp.item;
                 var idx = scenarios.findIndex(function(s) { return s.id === currentScenario.id; });
                 if (idx >= 0) scenarios[idx] = currentScenario;
-                openDetail(currentScenario.id);
-                showToast('内容已更新', 'success');
+
+                // Update the form with new content
+                var contentTextarea = document.getElementById('learn-edit-content');
+                if (contentTextarea) contentTextarea.value = currentScenario.content || '';
+
+                // Show rendered preview
+                var contentEl = document.getElementById('english-content');
+                if (contentEl && currentScenario.content) {
+                    contentEl.innerHTML = renderMarkdown(currentScenario.content);
+                    contentEl.style.display = '';
+                }
+
+                showToast('内容已整理', 'success');
             } else {
-                showToast(resp.message || '生成失败', 'error');
+                showToast(resp.message || '整理失败', 'error');
             }
         } catch (e) {
-            showToast('生成失败', 'error');
+            showToast('整理失败', 'error');
         }
     }
 
     async function deleteCurrentScenario() {
         if (!currentScenario) return;
-        if (!confirm('确定删除这个场景吗？')) return;
+        if (!confirm('确定删除这条笔记吗？')) return;
 
         try {
             var resp = await API.deleteScenario(currentScenario.id);
             if (resp.success) {
                 scenarios = scenarios.filter(function(s) { return s.id !== currentScenario.id; });
                 showList();
-                renderList();
                 showToast('已删除', 'success');
             }
         } catch (e) {
@@ -264,17 +406,37 @@ var English = (function() {
         }
     }
 
-    // Simple Markdown renderer (handles headers, bold, lists, paragraphs)
     function renderMarkdown(md) {
         if (!md) return '';
         var lines = md.split('\n');
         var html = [];
         var inList = false;
+        var inCodeBlock = false;
+        var codeContent = [];
+        var codeLang = '';
 
         for (var i = 0; i < lines.length; i++) {
             var line = lines[i];
 
-            // Headers
+            if (/^```/.test(line)) {
+                if (inCodeBlock) {
+                    html.push('<pre><code class="lang-' + escapeHtml(codeLang) + '">' + escapeHtml(codeContent.join('\n')) + '</code></pre>');
+                    codeContent = [];
+                    codeLang = '';
+                    inCodeBlock = false;
+                } else {
+                    if (inList) { html.push('</ul>'); inList = false; }
+                    codeLang = line.replace(/^```/, '').trim();
+                    inCodeBlock = true;
+                }
+                continue;
+            }
+
+            if (inCodeBlock) {
+                codeContent.push(line);
+                continue;
+            }
+
             if (/^### (.+)/.test(line)) {
                 if (inList) { html.push('</ul>'); inList = false; }
                 html.push('<h4>' + formatInline(line.replace(/^### /, '')) + '</h4>');
@@ -284,34 +446,30 @@ var English = (function() {
             } else if (/^# (.+)/.test(line)) {
                 if (inList) { html.push('</ul>'); inList = false; }
                 html.push('<h2>' + formatInline(line.replace(/^# /, '')) + '</h2>');
-            }
-            // List items
-            else if (/^[-*] (.+)/.test(line)) {
+            } else if (/^[-*] (.+)/.test(line)) {
                 if (!inList) { html.push('<ul>'); inList = true; }
                 html.push('<li>' + formatInline(line.replace(/^[-*] /, '')) + '</li>');
-            }
-            // Empty line
-            else if (line.trim() === '') {
-                if (inList) { html.push('</ul>'); inList = false; }
-            }
-            // Paragraph text
-            else {
+            } else if (/^\d+\. (.+)/.test(line)) {
+                if (!inList) { html.push('<ol>'); inList = true; }
+                html.push('<li>' + formatInline(line.replace(/^\d+\. /, '')) + '</li>');
+            } else if (line.trim() === '') {
+                if (inList) { html.push(html[html.length-1] && html[html.length-1].indexOf('<ol>') >= 0 ? '</ol>' : '</ul>'); inList = false; }
+            } else {
                 if (inList) { html.push('</ul>'); inList = false; }
                 html.push('<p>' + formatInline(line) + '</p>');
             }
         }
         if (inList) html.push('</ul>');
+        if (inCodeBlock) {
+            html.push('<pre><code>' + escapeHtml(codeContent.join('\n')) + '</code></pre>');
+        }
         return html.join('\n');
     }
 
     function formatInline(text) {
-        // Escape HTML before markdown conversion to prevent XSS
         text = escapeHtml(text);
-        // Bold
         text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-        // Italic
         text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
-        // Inline code
         text = text.replace(/`(.+?)`/g, '<code>$1</code>');
         return text;
     }
@@ -344,7 +502,15 @@ var English = (function() {
     return {
         init: init,
         openDetail: openDetail,
+        openCreateModal: openCreateModal,
         showList: showList,
-        retryGenerate: retryGenerate
+        saveEntry: saveEntry,
+        retryGenerate: retryGenerate,
+        filterCategory: filterCategory,
+        selectModalCategory: selectModalCategory,
+        selectDetailCategory: selectDetailCategory
     };
 })();
+
+// Alias for backward compatibility
+var Learn = English;

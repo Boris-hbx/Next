@@ -559,31 +559,29 @@ pub async fn update_todo(
                 user_id.0,
             ],
         ).ok();
-    } else {
-        if let Err(e) = db.execute(
-            "UPDATE todos SET text=?1, content=?2, tab=?3, quadrant=?4, progress=?5, completed=?6, completed_at=?7, due_date=?8, assignee=?9, tags=?10, updated_at=?11 WHERE id=?12 AND user_id=?13",
-            rusqlite::params![
-                todo.text,
-                todo.content,
-                todo.tab.as_str(),
-                todo.quadrant.as_str(),
-                todo.progress as i32,
-                todo.completed as i32,
-                todo.completed_at,
-                todo.due_date,
-                todo.assignee,
-                tags_json,
-                todo.updated_at,
-                id,
-                user_id.0,
-            ],
-        ) {
-            eprintln!("[todos] update_todo DB error: {}", e);
-            return (StatusCode::INTERNAL_SERVER_ERROR, Json(TodoResponse {
-                success: false, item: None,
-                message: Some("数据库写入失败，请稍后重试".into()),
-            }));
-        }
+    } else if let Err(e) = db.execute(
+        "UPDATE todos SET text=?1, content=?2, tab=?3, quadrant=?4, progress=?5, completed=?6, completed_at=?7, due_date=?8, assignee=?9, tags=?10, updated_at=?11 WHERE id=?12 AND user_id=?13",
+        rusqlite::params![
+            todo.text,
+            todo.content,
+            todo.tab.as_str(),
+            todo.quadrant.as_str(),
+            todo.progress as i32,
+            todo.completed as i32,
+            todo.completed_at,
+            todo.due_date,
+            todo.assignee,
+            tags_json,
+            todo.updated_at,
+            id,
+            user_id.0,
+        ],
+    ) {
+        eprintln!("[todos] update_todo DB error: {}", e);
+        return (StatusCode::INTERNAL_SERVER_ERROR, Json(TodoResponse {
+            success: false, item: None,
+            message: Some("数据库写入失败，请稍后重试".into()),
+        }));
     }
 
     todo.changelog = load_changelog(&db, &id);
@@ -720,10 +718,14 @@ pub async fn restore_todo(
         }
         Err(e) => {
             eprintln!("[todos] restore_todo fetch error: {}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(TodoResponse {
-                success: false, item: None,
-                message: Some("读取任务数据失败".into()),
-            }))
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(TodoResponse {
+                    success: false,
+                    item: None,
+                    message: Some("读取任务数据失败".into()),
+                }),
+            )
         }
     }
 }

@@ -1,30 +1,24 @@
-mod auth;
-mod db;
-mod models;
-mod routes;
-mod services;
-mod state;
+pub mod auth;
+pub mod db;
+pub mod models;
+pub mod routes;
+pub mod services;
+pub mod state;
 
-#[cfg(test)]
-mod test_helpers;
+pub mod test_helpers;
 
+// Re-export build_app from the binary crate is not possible,
+// so we duplicate the builder here for integration tests.
 use axum::extract::DefaultBodyLimit;
-use axum::response::IntoResponse;
 use axum::{
-    http::StatusCode,
     routing::{delete, get, post, put},
     Router,
 };
 use http::HeaderValue;
-use parking_lot::Mutex;
-use state::AppState;
-use std::sync::Arc;
 use tower_http::set_header::SetResponseHeaderLayer;
 
-/// Build the full application router. Extracted so integration tests can call
-/// `build_app(test_state())` and use `tower::ServiceExt::oneshot()`.
-pub fn build_app(state: AppState) -> Router {
-    // Auth routes (no session required)
+/// Build the API router for testing. Mirrors main.rs `build_app`.
+pub fn build_app(state: state::AppState) -> Router {
     let auth_routes = Router::new()
         .route("/register", post(auth::register))
         .route("/login", post(auth::login))
@@ -33,7 +27,6 @@ pub fn build_app(state: AppState) -> Router {
         .route("/change-password", post(auth::change_password))
         .route("/avatar", put(auth::update_avatar));
 
-    // Todo routes (session required via UserId extractor)
     let todo_routes = Router::new()
         .route(
             "/",
@@ -53,7 +46,6 @@ pub fn build_app(state: AppState) -> Router {
             delete(routes::todos::permanent_delete_todo),
         );
 
-    // Routine routes
     let routine_routes = Router::new()
         .route(
             "/",
@@ -62,7 +54,6 @@ pub fn build_app(state: AppState) -> Router {
         .route("/{id}", delete(routes::routines::delete_routine))
         .route("/{id}/toggle", post(routes::routines::toggle_routine));
 
-    // Review routes
     let review_routes = Router::new()
         .route(
             "/",
@@ -75,15 +66,12 @@ pub fn build_app(state: AppState) -> Router {
         .route("/{id}/complete", post(routes::reviews::complete_review))
         .route("/{id}/uncomplete", post(routes::reviews::uncomplete_review));
 
-    // Quote routes
     let quote_routes = Router::new().route("/random", get(routes::quotes::get_random_quote));
 
-    // Chat routes (阿宝)
     let chat_routes = Router::new()
         .route("/", post(routes::chat::chat_handler))
         .route("/usage", get(routes::conversations::get_usage));
 
-    // Conversation routes
     let conversation_routes = Router::new()
         .route("/", get(routes::conversations::list_conversations))
         .route("/{id}/messages", get(routes::conversations::get_messages))
@@ -93,14 +81,12 @@ pub fn build_app(state: AppState) -> Router {
             post(routes::conversations::rename_conversation),
         );
 
-    // Pandora routes
     let pandora_routes = Router::new()
         .route("/today", get(routes::pandora::get_today))
         .route("/history", get(routes::pandora::get_history))
         .route("/{id}/save", post(routes::pandora::toggle_save))
         .route("/saved", get(routes::pandora::get_saved));
 
-    // English scenario routes
     let english_routes = Router::new()
         .route(
             "/scenarios",
@@ -121,7 +107,6 @@ pub fn build_app(state: AppState) -> Router {
             post(routes::english::archive_scenario),
         );
 
-    // Friends routes
     let friends_routes = Router::new()
         .route("/", get(routes::friends::list_friends))
         .route("/requests", get(routes::friends::list_friend_requests))
@@ -131,7 +116,6 @@ pub fn build_app(state: AppState) -> Router {
         .route("/{id}/decline", post(routes::friends::decline_friend))
         .route("/{id}", delete(routes::friends::delete_friend));
 
-    // Reminder routes
     let reminder_routes = Router::new()
         .route(
             "/",
@@ -148,7 +132,6 @@ pub fn build_app(state: AppState) -> Router {
         )
         .route("/{id}/snooze", post(routes::reminders::snooze_reminder));
 
-    // Push subscription routes
     let push_routes = Router::new()
         .route("/vapid-public-key", get(routes::push::get_vapid_public_key))
         .route(
@@ -156,13 +139,11 @@ pub fn build_app(state: AppState) -> Router {
             post(routes::push::subscribe).delete(routes::push::unsubscribe),
         );
 
-    // Notification routes
     let notification_routes = Router::new()
         .route("/unread", get(routes::notifications::unread_notifications))
         .route("/read-all", post(routes::notifications::mark_all_read))
         .route("/{id}/read", post(routes::notifications::mark_read));
 
-    // Share routes
     let share_routes = Router::new()
         .route("/", post(routes::friends::share_item))
         .route("/inbox", get(routes::friends::shared_inbox))
@@ -170,7 +151,6 @@ pub fn build_app(state: AppState) -> Router {
         .route("/{id}/accept", post(routes::friends::accept_shared))
         .route("/{id}/dismiss", post(routes::friends::dismiss_shared));
 
-    // Contacts routes
     let contacts_routes = Router::new()
         .route(
             "/",
@@ -181,7 +161,6 @@ pub fn build_app(state: AppState) -> Router {
             put(routes::contacts::update_contact).delete(routes::contacts::delete_contact),
         );
 
-    // Collaborate routes (todo + routine collaboration + confirmations)
     let collaborate_routes = Router::new()
         .route(
             "/todos/{id}",
@@ -210,10 +189,8 @@ pub fn build_app(state: AppState) -> Router {
             post(routes::collaborate::withdraw_confirmation),
         );
 
-    // Health check
     let start_time = std::time::Instant::now();
 
-    // API router
     let api_routes = Router::new()
         .nest("/auth", auth_routes)
         .nest("/todos", todo_routes)
@@ -266,111 +243,6 @@ pub fn build_app(state: AppState) -> Router {
             http::HeaderName::from_static("permissions-policy"),
             HeaderValue::from_static("camera=(), microphone=(), geolocation=()"),
         ))
-        .layer(DefaultBodyLimit::max(1_048_576)) // 1MB global body size limit
+        .layer(DefaultBodyLimit::max(1_048_576))
         .with_state(state)
-}
-
-#[tokio::main]
-async fn main() {
-    let db_path = std::env::var("DATABASE_PATH").unwrap_or_else(|_| "data/next.db".to_string());
-    let port: u16 = std::env::var("PORT")
-        .ok()
-        .and_then(|p| p.parse().ok())
-        .unwrap_or(3000);
-
-    println!("Initializing database at {}", db_path);
-    let conn = db::init_db(&db_path);
-
-    let state = AppState {
-        db: Arc::new(Mutex::new(conn)),
-        moment_cache: Arc::new(Mutex::new(std::collections::HashMap::new())),
-        login_ip_attempts: Arc::new(Mutex::new(std::collections::HashMap::new())),
-        login_user_lockouts: Arc::new(Mutex::new(std::collections::HashMap::new())),
-        ai_rate_limits: Arc::new(Mutex::new(std::collections::HashMap::new())),
-    };
-
-    // Spawn reminder poller (checks every 30s for due reminders)
-    services::reminder_poller::spawn_poller(state.db.clone());
-
-    // Schedule daily backup
-    let backup_state = state.clone();
-    let backup_db_path = db_path.clone();
-    tokio::spawn(async move {
-        loop {
-            tokio::time::sleep(tokio::time::Duration::from_secs(3600)).await;
-            let db = backup_state.db.lock();
-            let backup_dir = std::path::Path::new(&backup_db_path)
-                .parent()
-                .unwrap_or(std::path::Path::new("."))
-                .join("backups");
-            db::daily_backup(&db, backup_dir.to_str().unwrap_or("data/backups"));
-        }
-    });
-
-    // Spawn cleanup task: purge expired rate-limit entries + expired sessions every 10 min
-    let cleanup_state = state.clone();
-    tokio::spawn(async move {
-        loop {
-            tokio::time::sleep(tokio::time::Duration::from_secs(600)).await;
-            // Clean expired IP attempts
-            {
-                let mut attempts = cleanup_state.login_ip_attempts.lock();
-                attempts.retain(|_, (_, t)| t.elapsed().as_secs() < 120);
-            }
-            // Clean expired user lockouts
-            {
-                let mut lockouts = cleanup_state.login_user_lockouts.lock();
-                lockouts.retain(|_, (_, t)| t.elapsed().as_secs() < 900);
-            }
-            // Clean expired AI rate limits
-            {
-                let mut limits = cleanup_state.ai_rate_limits.lock();
-                limits.retain(|_, t| t.elapsed().as_secs() < 60);
-            }
-            // Clean expired sessions from DB
-            {
-                let db = cleanup_state.db.lock();
-                db.execute(
-                    "DELETE FROM sessions WHERE expires_at < datetime('now')",
-                    [],
-                )
-                .ok();
-            }
-        }
-    });
-
-    // Frontend static files
-    let frontend_dir = std::env::var("FRONTEND_DIR").unwrap_or_else(|_| "../frontend".to_string());
-    let sw_dir = frontend_dir.clone();
-
-    let app = build_app(state)
-        .route(
-            "/sw.js",
-            get(move || async move {
-                match tokio::fs::read_to_string(format!("{}/sw.js", sw_dir)).await {
-                    Ok(body) => (
-                        [
-                            (http::header::CONTENT_TYPE, "application/javascript"),
-                            (
-                                http::header::CACHE_CONTROL,
-                                "no-cache, no-store, must-revalidate",
-                            ),
-                        ],
-                        body,
-                    )
-                        .into_response(),
-                    Err(_) => StatusCode::NOT_FOUND.into_response(),
-                }
-            }),
-        )
-        .fallback_service(
-            tower_http::services::ServeDir::new(&frontend_dir)
-                .append_index_html_on_directories(true),
-        );
-
-    let addr = format!("0.0.0.0:{}", port);
-    println!("Next server listening on {}", addr);
-
-    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
-    axum::serve(listener, app).await.unwrap();
 }

@@ -8,12 +8,12 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Next">
     <title>Next - Focus on the Right Thing</title>
-    <link rel="stylesheet" href="assets/css/base.css?v=20260223b">
-    <link rel="stylesheet" href="assets/css/style.css?v=20260223b">
-    <link rel="stylesheet" href="assets/css/components.css?v=20260223b">
-    <link rel="stylesheet" href="assets/css/mobile.css?v=20260223b">
-    <link rel="stylesheet" href="assets/css/abao.css?v=20260223b">
-    <link rel="stylesheet" href="assets/css/english.css?v=20260223b">
+    <link rel="stylesheet" href="assets/css/base.css?v=20260223e">
+    <link rel="stylesheet" href="assets/css/style.css?v=20260223e">
+    <link rel="stylesheet" href="assets/css/components.css?v=20260223e">
+    <link rel="stylesheet" href="assets/css/mobile.css?v=20260223e">
+    <link rel="stylesheet" href="assets/css/abao.css?v=20260223e">
+    <link rel="stylesheet" href="assets/css/english.css?v=20260223e">
     <link rel="manifest" href="assets/manifest.json">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
     <script>
@@ -62,6 +62,9 @@
                     <a class="avatar-menu-item" onclick="if(typeof openAbout==='function')openAbout(); closeAvatarMenu()">
                         <span>ℹ</span> 关于
                     </a>
+                    <a class="avatar-menu-item" onclick="if(typeof openSecurity==='function')openSecurity(); closeAvatarMenu()">
+                        <span>🔒</span> 安全声明
+                    </a>
                     <div class="avatar-menu-divider"></div>
                     <a class="avatar-menu-item" onclick="doLogout()">
                         <span>🚪</span> 退出登录
@@ -93,6 +96,8 @@
             <div class="nav-links">
                 <a class="nav-link active" data-page="todo" onclick="switchPage('todo')">Todo</a>
                 <a class="nav-link" data-page="review" onclick="switchPage('review')">例行</a>
+                <a class="nav-link" data-page="english" onclick="switchPage('english')">学习</a>
+                <a class="nav-link" data-page="inbox" onclick="switchPage('inbox')">潘多拉</a>
             </div>
 
             <!-- 底部区域 -->
@@ -157,6 +162,35 @@
                 Version 1.2.0 · 2026.2.10
             </span>
             <div class="about-copyright">© 2026 Baoxing Huai 00827228<br>Huaibaoxing@huawei.com</div>
+        </div>
+    </div>
+
+    <!-- Security 安全声明弹窗 -->
+    <div class="about-overlay" id="security-overlay" style="display:none;" onclick="closeSecurity()">
+        <div class="security-dialog" onclick="event.stopPropagation()">
+            <div class="security-header">
+                <span class="security-icon">🔒</span>
+                <h2 class="security-title">安全与隐私</h2>
+            </div>
+            <ul class="security-list">
+                <li>密码经 <strong>Argon2id</strong> 加密存储，任何人（包括开发者）都无法查看</li>
+                <li>全程 <strong>HTTPS</strong> 加密传输，启用严格浏览器安全策略</li>
+                <li>你的数据与其他用户<strong>完全隔离</strong></li>
+                <li>登录保护：连续输错密码将临时锁定，防止暴力破解</li>
+                <li>阿宝由 Claude AI 驱动，对话通过加密连接处理</li>
+            </ul>
+            <div class="security-section">
+                <div class="security-section-title">🛡 防攻击措施</div>
+                <p class="security-section-desc">已针对以下攻击场景部署多层防护：</p>
+                <ul class="security-attack-list">
+                    <li><span class="attack-name">SQL 注入</span><span class="attack-defense">全部使用参数化查询</span></li>
+                    <li><span class="attack-name">跨站脚本 (XSS)</span><span class="attack-defense">内容安全策略 (CSP) + 输入过滤</span></li>
+                    <li><span class="attack-name">暴力破解</span><span class="attack-defense">IP 限速 + 账户锁定双重防护</span></li>
+                    <li><span class="attack-name">中间人攻击</span><span class="attack-defense">HTTPS 强制 + HSTS 策略</span></li>
+                    <li><span class="attack-name">点击劫持</span><span class="attack-defense">X-Frame-Options DENY</span></li>
+                    <li><span class="attack-name">会话劫持</span><span class="attack-defense">HttpOnly + Secure + SameSite Cookie</span></li>
+                </ul>
+            </div>
         </div>
     </div>
 
@@ -447,57 +481,117 @@
         </div>
     </div>
 
-    <!-- 英语场景页面 -->
+    <!-- 学习页面 -->
     <div class="english-main-layout" id="english-view" style="display:none;">
-        <!-- 场景列表页 -->
+        <!-- 列表页 -->
         <div class="english-list-view">
             <div class="english-header">
-                <h2>场景英语</h2>
-                <button class="btn" id="english-create-btn">+ 新场景</button>
+                <h2>学习笔记</h2>
             </div>
+            <!-- 分类筛选 -->
+            <div class="learn-category-filters" id="learn-category-filters"></div>
             <!-- 空状态 -->
             <div class="english-empty-state" id="english-empty-state">
-                <div class="empty-icon">📖</div>
-                <h3>还没有英语场景</h3>
-                <p>按日常场景学英语，阿宝帮你生成双语对话</p>
-                <button class="btn" id="english-empty-create-btn">创建第一个场景</button>
+                <div class="empty-icon">📒</div>
+                <h3>还没有学习笔记</h3>
+                <p>点击 + 创建你的第一条笔记</p>
             </div>
-            <!-- 场景卡片网格 -->
+            <!-- 笔记列表 -->
             <div class="english-scenarios" id="english-scenarios"></div>
         </div>
 
-        <!-- 场景详情页 -->
+        <!-- 详情页（可编辑表单） -->
         <div class="english-detail-view">
             <div class="english-detail-header">
                 <div class="english-detail-header-left">
                     <button class="english-back-btn" id="english-back-btn">&larr;</button>
-                    <span class="english-detail-title" id="english-detail-title"></span>
+                    <span class="english-detail-title" id="english-detail-title">编辑笔记</span>
                 </div>
                 <div class="english-detail-actions">
-                    <button class="btn-icon" id="english-regen-btn" title="重新生成">🔄</button>
+                    <button class="btn-icon" id="english-ai-btn" title="让阿宝整理">✨</button>
                     <button class="btn-icon" id="english-share-btn" title="分享">📤</button>
                     <button class="btn-icon" id="english-delete-btn" title="删除">🗑️</button>
                 </div>
             </div>
-            <div class="english-content" id="english-content"></div>
+            <!-- 编辑区域 -->
+            <div class="learn-edit-section">
+                <div class="learn-edit-field">
+                    <label>标题</label>
+                    <input type="text" id="learn-edit-title" placeholder="笔记标题">
+                </div>
+                <div class="learn-edit-field">
+                    <label>分类</label>
+                    <div class="learn-detail-categories" id="learn-detail-categories"></div>
+                </div>
+                <div class="learn-edit-field">
+                    <label>内容</label>
+                    <textarea id="learn-edit-content" rows="12" placeholder="粘贴从豆包等应用复制的内容，或直接输入..."></textarea>
+                </div>
+                <div class="learn-edit-field">
+                    <label>笔记</label>
+                    <textarea id="learn-edit-notes" rows="4" placeholder="记录你的学习心得..."></textarea>
+                </div>
+                <div class="learn-edit-actions">
+                    <button class="btn btn-primary" id="learn-save-btn" onclick="English.saveEntry()">保存</button>
+                </div>
+            </div>
+            <!-- AI 生成的渲染区（整理后显示） -->
+            <div class="english-content" id="english-content" style="display:none;"></div>
+        </div>
+
+        <!-- FAB 按钮 -->
+        <button class="learn-fab" id="learn-fab" onclick="English.openCreateModal()">+</button>
+    </div>
+
+    <!-- 潘多拉 - 每日发现 -->
+    <div class="pandora-main-layout" id="pandora-view" style="display:none;">
+        <!-- 今日发现 -->
+        <div class="pandora-today" id="pandora-today">
+            <div class="pandora-date" id="pandora-date"></div>
+            <div class="pandora-card" id="pandora-card" style="display:none;">
+                <div class="pandora-card-emoji" id="pandora-emoji">🎁</div>
+                <h2 class="pandora-card-title" id="pandora-title"></h2>
+                <div class="pandora-card-topic" id="pandora-topic"></div>
+                <div class="pandora-card-content" id="pandora-content"></div>
+                <button class="pandora-save-btn" id="pandora-save-btn" onclick="Pandora.toggleSave()">
+                    ☆ 收藏
+                </button>
+            </div>
+            <!-- Loading state -->
+            <div class="pandora-loading" id="pandora-loading" style="display:none;">
+                <div class="pandora-box-animation">🎁</div>
+                <p>正在打开潘多拉之盒...</p>
+            </div>
+        </div>
+        <!-- 历史/收藏 tabs -->
+        <div class="pandora-history-section">
+            <div class="pandora-tabs">
+                <button class="pandora-tab active" onclick="Pandora.switchTab('history')">历史</button>
+                <button class="pandora-tab" onclick="Pandora.switchTab('saved')">收藏</button>
+            </div>
+            <div class="pandora-list" id="pandora-list"></div>
         </div>
     </div>
 
-    <!-- 英语场景创建弹窗 -->
+    <!-- 学习笔记创建弹窗 -->
     <div class="english-modal-overlay" id="english-modal-overlay">
         <div class="english-modal" onclick="event.stopPropagation()">
-            <h3>新建英语场景</h3>
+            <h3>新建笔记</h3>
             <div class="english-modal-field">
-                <label>场景标题</label>
-                <input type="text" id="english-modal-title" placeholder="例如：银行开户、加油站">
+                <label>标题</label>
+                <input type="text" id="english-modal-title" placeholder="笔记标题">
             </div>
             <div class="english-modal-field">
-                <label>补充说明（可选）</label>
-                <textarea id="english-modal-desc" rows="2" placeholder="你想重点学什么？有什么特定需求？"></textarea>
+                <label>内容</label>
+                <textarea id="english-modal-content" rows="6" placeholder="粘贴从豆包等应用复制的内容，或直接输入..."></textarea>
+            </div>
+            <div class="english-modal-field">
+                <label>分类（可选）</label>
+                <div class="learn-modal-categories" id="learn-modal-categories"></div>
             </div>
             <div class="english-modal-actions">
                 <button class="btn btn-secondary" id="english-modal-cancel">取消</button>
-                <button class="btn btn-primary" id="english-modal-submit">创建并生成</button>
+                <button class="btn btn-primary" id="english-modal-submit">保存</button>
             </div>
         </div>
     </div>
@@ -762,7 +856,7 @@
         </a>
         <a class="mobile-nav-item" data-page="english" onclick="switchPage('english'); activateMobileNav(this)">
             <span class="mobile-nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="12" y1="7" x2="12" y2="13"/></svg></span>
-            <span class="mobile-nav-label">英语</span>
+            <span class="mobile-nav-label">学习</span>
         </a>
         <a class="mobile-nav-item" data-page="inbox" onclick="switchPage('inbox'); activateMobileNav(this)">
             <span class="mobile-nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg><span class="inbox-badge" id="inbox-badge" style="display:none;"></span></span>
@@ -827,23 +921,24 @@
     <div class="notif-banner-container" id="notif-banner-container"></div>
 
     <!-- JS Modules -->
-    <script src="assets/js/api.js?v=20260223b"></script>
-    <script src="assets/js/utils.js?v=20260223b"></script>
-    <script src="assets/js/app.js?v=20260223b"></script>
-    <script src="assets/js/tasks.js?v=20260223b"></script>
-    <script src="assets/js/modal.js?v=20260223b"></script>
-    <script src="assets/js/datepicker.js?v=20260223b"></script>
-    <script src="assets/js/drag.js?v=20260223b"></script>
-    <script src="assets/js/review.js?v=20260223b"></script>
-    <script src="assets/js/routines.js?v=20260223b"></script>
-    <script src="assets/js/features.js?v=20260223b"></script>
-    <script src="assets/js/particles.js?v=20260223b"></script>
-    <script src="assets/js/living-line.js?v=20260223b"></script>
-    <script src="assets/js/abao.js?v=20260223b"></script>
-    <script src="assets/js/english.js?v=20260223b"></script>
-    <script src="assets/js/friends.js?v=20260223b"></script>
-    <script src="assets/js/notifications.js?v=20260223b"></script>
-    <script src="assets/js/settings.js?v=20260223b"></script>
+    <script src="assets/js/api.js?v=20260223e"></script>
+    <script src="assets/js/utils.js?v=20260223e"></script>
+    <script src="assets/js/app.js?v=20260223e"></script>
+    <script src="assets/js/tasks.js?v=20260223e"></script>
+    <script src="assets/js/modal.js?v=20260223e"></script>
+    <script src="assets/js/datepicker.js?v=20260223e"></script>
+    <script src="assets/js/drag.js?v=20260223e"></script>
+    <script src="assets/js/review.js?v=20260223e"></script>
+    <script src="assets/js/routines.js?v=20260223e"></script>
+    <script src="assets/js/features.js?v=20260223e"></script>
+    <script src="assets/js/particles.js?v=20260223e"></script>
+    <script src="assets/js/living-line.js?v=20260223e"></script>
+    <script src="assets/js/abao.js?v=20260223e"></script>
+    <script src="assets/js/english.js?v=20260223e"></script>
+    <script src="assets/js/pandora.js?v=20260223e"></script>
+    <script src="assets/js/friends.js?v=20260223e"></script>
+    <script src="assets/js/notifications.js?v=20260223e"></script>
+    <script src="assets/js/settings.js?v=20260223e"></script>
 
     <script>
     // Initialize

@@ -165,11 +165,10 @@ pub async fn update_contact(
     let db = state.db.lock();
 
     // Verify ownership
-    let owner: Result<String, _> = db.query_row(
-        "SELECT user_id FROM contacts WHERE id = ?1",
-        [&id],
-        |row| row.get(0),
-    );
+    let owner: Result<String, _> =
+        db.query_row("SELECT user_id FROM contacts WHERE id = ?1", [&id], |row| {
+            row.get(0)
+        });
 
     match owner {
         Ok(uid) if uid == user_id.0 => {}

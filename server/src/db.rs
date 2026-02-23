@@ -13,37 +13,69 @@ pub fn init_db(db_path: &str) -> Connection {
     conn.execute_batch("PRAGMA journal_mode=WAL;").unwrap();
     conn.execute_batch("PRAGMA foreign_keys=ON;").unwrap();
 
-    create_tables(&conn);
-    run_migrations(&conn);
+    init_connection(&conn);
     conn
+}
+
+/// Initialize schema on an already-opened connection (tables + migrations).
+/// Used by tests with `Connection::open_in_memory()`.
+pub(crate) fn init_connection(conn: &Connection) {
+    conn.execute_batch("PRAGMA foreign_keys=ON;").unwrap();
+    create_tables(conn);
+    run_migrations(conn);
 }
 
 fn run_migrations(conn: &Connection) {
     // Add avatar column to users if missing
-    let has_avatar: bool = conn
-        .prepare("SELECT avatar FROM users LIMIT 1")
-        .is_ok();
+    let has_avatar: bool = conn.prepare("SELECT avatar FROM users LIMIT 1").is_ok();
     if !has_avatar {
         conn.execute_batch("ALTER TABLE users ADD COLUMN avatar TEXT DEFAULT '';")
             .ok();
     }
 
     // Add changed_by to todo_changelog
-    let has_changed_by: bool = conn.prepare("SELECT changed_by FROM todo_changelog LIMIT 1").is_ok();
+    let has_changed_by: bool = conn
+        .prepare("SELECT changed_by FROM todo_changelog LIMIT 1")
+        .is_ok();
     if !has_changed_by {
-        conn.execute_batch("ALTER TABLE todo_changelog ADD COLUMN changed_by TEXT;").ok();
+        conn.execute_batch("ALTER TABLE todo_changelog ADD COLUMN changed_by TEXT;")
+            .ok();
     }
 
     // Add is_collaborative to todos
-    let has_todo_collab: bool = conn.prepare("SELECT is_collaborative FROM todos LIMIT 1").is_ok();
+    let has_todo_collab: bool = conn
+        .prepare("SELECT is_collaborative FROM todos LIMIT 1")
+        .is_ok();
     if !has_todo_collab {
-        conn.execute_batch("ALTER TABLE todos ADD COLUMN is_collaborative INTEGER DEFAULT 0;").ok();
+        conn.execute_batch("ALTER TABLE todos ADD COLUMN is_collaborative INTEGER DEFAULT 0;")
+            .ok();
     }
 
     // Add is_collaborative to routines
-    let has_routine_collab: bool = conn.prepare("SELECT is_collaborative FROM routines LIMIT 1").is_ok();
+    let has_routine_collab: bool = conn
+        .prepare("SELECT is_collaborative FROM routines LIMIT 1")
+        .is_ok();
     if !has_routine_collab {
-        conn.execute_batch("ALTER TABLE routines ADD COLUMN is_collaborative INTEGER DEFAULT 0;").ok();
+        conn.execute_batch("ALTER TABLE routines ADD COLUMN is_collaborative INTEGER DEFAULT 0;")
+            .ok();
+    }
+
+    // Add category and notes to english_scenarios (Learn refactor)
+    let has_category: bool = conn
+        .prepare("SELECT category FROM english_scenarios LIMIT 1")
+        .is_ok();
+    if !has_category {
+        conn.execute_batch(
+            "ALTER TABLE english_scenarios ADD COLUMN category TEXT DEFAULT '英语';",
+        )
+        .ok();
+    }
+    let has_notes: bool = conn
+        .prepare("SELECT notes FROM english_scenarios LIMIT 1")
+        .is_ok();
+    if !has_notes {
+        conn.execute_batch("ALTER TABLE english_scenarios ADD COLUMN notes TEXT DEFAULT '';")
+            .ok();
     }
 }
 
@@ -338,6 +370,22 @@ fn create_tables(conn: &Connection) {
             responded_at TEXT NOT NULL,
             UNIQUE(confirmation_id, user_id)
         );
+
+        -- Discoveries (Pandora daily discovery)
+        CREATE TABLE IF NOT EXISTS discoveries (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL REFERENCES users(id),
+            title TEXT NOT NULL,
+            content TEXT NOT NULL DEFAULT '',
+            emoji TEXT NOT NULL DEFAULT '🎁',
+            topic_area TEXT NOT NULL DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'generating',
+            saved INTEGER NOT NULL DEFAULT 0,
+            date TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_discoveries_user_date ON discoveries(user_id, date);
+        CREATE INDEX IF NOT EXISTS idx_discoveries_saved ON discoveries(user_id, saved);
         ",
     )
     .expect("Failed to create tables");

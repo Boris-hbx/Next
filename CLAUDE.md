@@ -88,5 +88,12 @@ Next/
 
 新建 spec 时查看 `docs/specs/` 下最大序号 +1（当前最大: 043）。
 
+## 测试
+
+- 运行全部测试: `cd server && cargo test`
+- 运行单个测试: `cd server && cargo test test_name`
+- Clippy: `cd server && cargo clippy -- -D warnings`
+- 格式化: `cd server && cargo fmt`
+
 ## 项目所有者
 Boris Huai

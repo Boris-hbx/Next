@@ -50,3 +50,12 @@ docs/backup/
 # Screenshots
 PrtSc/
 server/data/
+
+# Windows artifacts
+nul
+
+# Temp scripts
+temp-*.ps1
+
+# Logo drafts
+logo-drafts/

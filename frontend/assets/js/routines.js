@@ -36,10 +36,25 @@ function copyVersion() {
     }
 }
 
-// ESC 关闭 About 弹窗
+// Security 安全声明弹窗
+function openSecurity() {
+    document.getElementById('security-overlay').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeSecurity() {
+    document.getElementById('security-overlay').style.display = 'none';
+    document.body.style.overflow = '';
+}
+
+// ESC 关闭弹窗
 document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && document.getElementById('about-overlay').style.display !== 'none') {
-        closeAbout();
+    if (e.key === 'Escape') {
+        if (document.getElementById('security-overlay').style.display !== 'none') {
+            closeSecurity();
+        } else if (document.getElementById('about-overlay').style.display !== 'none') {
+            closeAbout();
+        }
     }
 });
 

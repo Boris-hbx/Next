@@ -83,7 +83,9 @@ pub async fn list_reminders(
     };
 
     let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
-    let mut stmt = db.prepare(&sql).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let mut stmt = db
+        .prepare(&sql)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     let rows = stmt
         .query_map(param_refs.as_slice(), row_to_reminder)
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
@@ -148,7 +150,8 @@ pub async fn create_reminder(
             db.execute(
                 "UPDATE reminders SET related_todo_id=?1 WHERE id=?2 AND user_id=?3",
                 rusqlite::params![todo_id, id, user_id],
-            ).ok();
+            )
+            .ok();
             (Some(todo_id.clone()), Some(tab), Some(todo_id))
         } else {
             (None, None, None)
@@ -225,7 +228,9 @@ pub async fn update_reminder(
     params.push(Box::new(user_id));
 
     let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
-    let rows = db.execute(&sql, param_refs.as_slice()).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let rows = db
+        .execute(&sql, param_refs.as_slice())
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     if rows == 0 {
         return Ok(Json(SimpleResponse {
@@ -292,7 +297,8 @@ pub async fn acknowledge_reminder(
     db.execute(
         "UPDATE notifications SET read=1 WHERE reminder_id=?1 AND user_id=?2",
         rusqlite::params![id, user_id],
-    ).ok();
+    )
+    .ok();
 
     Ok(Json(SimpleResponse {
         success: true,
@@ -310,31 +316,37 @@ pub async fn snooze_reminder(
     let db = state.db.lock();
     let now = chrono::Utc::now();
     let now_str = now.to_rfc3339();
-    let minutes = req.minutes.unwrap_or(5).max(1).min(120);
+    let minutes = req.minutes.unwrap_or(5).clamp(1, 120);
 
     // Get the original reminder
-    let text: String = db.query_row(
-        "SELECT text FROM reminders WHERE id=?1 AND user_id=?2 AND status='triggered'",
-        rusqlite::params![id, user_id],
-        |r| r.get(0),
-    ).map_err(|_| StatusCode::NOT_FOUND)?;
+    let text: String = db
+        .query_row(
+            "SELECT text FROM reminders WHERE id=?1 AND user_id=?2 AND status='triggered'",
+            rusqlite::params![id, user_id],
+            |r| r.get(0),
+        )
+        .map_err(|_| StatusCode::NOT_FOUND)?;
 
     // Acknowledge the original
     db.execute(
         "UPDATE reminders SET status='acknowledged', acknowledged_at=?1 WHERE id=?2",
         rusqlite::params![now_str, id],
-    ).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    )
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     // Mark related notification as read
     db.execute(
         "UPDATE notifications SET read=1 WHERE reminder_id=?1 AND user_id=?2",
         rusqlite::params![id, user_id],
-    ).ok();
+    )
+    .ok();
 
     // Create new reminder with snoozed time
     let new_id = uuid::Uuid::new_v4().to_string()[..8].to_string();
     let snooze_time = now + chrono::Duration::minutes(minutes);
-    let snooze_at = snooze_time.with_timezone(&chrono::FixedOffset::east_opt(8 * 3600).unwrap()).to_rfc3339();
+    let snooze_at = snooze_time
+        .with_timezone(&chrono::FixedOffset::east_opt(8 * 3600).unwrap())
+        .to_rfc3339();
 
     db.execute(
         "INSERT INTO reminders (id, user_id, text, remind_at, status, created_at) VALUES (?1, ?2, ?3, ?4, 'pending', ?5)",
@@ -369,11 +381,13 @@ pub async fn pending_count(
 ) -> Result<Json<CountResponse>, StatusCode> {
     let db = state.db.lock();
 
-    let count: i64 = db.query_row(
-        "SELECT COUNT(*) FROM reminders WHERE user_id=?1 AND status='triggered'",
-        [&user_id],
-        |r| r.get(0),
-    ).unwrap_or(0);
+    let count: i64 = db
+        .query_row(
+            "SELECT COUNT(*) FROM reminders WHERE user_id=?1 AND status='triggered'",
+            [&user_id],
+            |r| r.get(0),
+        )
+        .unwrap_or(0);
 
     Ok(Json(CountResponse {
         success: true,

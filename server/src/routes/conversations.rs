@@ -17,18 +17,21 @@ pub struct ConversationItem {
     pub updated_at: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 pub struct ConversationsResponse {
     pub success: bool,
     pub items: Vec<ConversationItem>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 pub struct MessagesResponse {
     pub success: bool,
     pub items: Vec<MessageItem>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 pub struct MessageItem {
     pub id: String,
@@ -70,7 +73,10 @@ pub async fn list_conversations(
         .flatten()
         .collect();
 
-    (StatusCode::OK, Json(json!({"success": true, "items": items})))
+    (
+        StatusCode::OK,
+        Json(json!({"success": true, "items": items})),
+    )
 }
 
 /// GET /api/conversations/:id/messages — get messages for a conversation
@@ -118,7 +124,10 @@ pub async fn get_messages(
         .flatten()
         .collect();
 
-    (StatusCode::OK, Json(json!({"success": true, "items": items})))
+    (
+        StatusCode::OK,
+        Json(json!({"success": true, "items": items})),
+    )
 }
 
 /// DELETE /api/conversations/:id — delete a conversation
@@ -158,7 +167,12 @@ pub async fn rename_conversation(
     let updated = db
         .execute(
             "UPDATE conversations SET title=?1, updated_at=?2 WHERE id=?3 AND user_id=?4",
-            rusqlite::params![req.title, chrono::Utc::now().to_rfc3339(), conv_id, user_id.0],
+            rusqlite::params![
+                req.title,
+                chrono::Utc::now().to_rfc3339(),
+                conv_id,
+                user_id.0
+            ],
         )
         .unwrap_or(0);
 

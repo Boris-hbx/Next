@@ -1,11 +1,6 @@
-use axum::{
-    extract::State,
-    http::StatusCode,
-    response::IntoResponse,
-    Json,
-};
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
+use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use axum_extra::extract::cookie::{Cookie, CookieJar, SameSite};
 use http::HeaderMap;
 use serde::{Deserialize, Serialize};
@@ -72,7 +67,10 @@ pub struct UpdateAvatarRequest {
 impl FromRequestParts<AppState> for UserId {
     type Rejection = (StatusCode, Json<serde_json::Value>);
 
-    async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Self::Rejection> {
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
         // Extract cookie jar
         let jar = CookieJar::from_request_parts(parts, state)
             .await
@@ -141,7 +139,9 @@ fn check_ip_rate_limit(state: &AppState, ip: &str) -> bool {
 
 fn record_ip_attempt(state: &AppState, ip: &str) {
     let mut attempts = state.login_ip_attempts.lock();
-    let entry = attempts.entry(ip.to_string()).or_insert((0, Instant::now()));
+    let entry = attempts
+        .entry(ip.to_string())
+        .or_insert((0, Instant::now()));
     if entry.1.elapsed().as_secs() >= IP_WINDOW_SECS {
         *entry = (1, Instant::now());
     } else {
@@ -164,7 +164,9 @@ fn check_user_lockout(state: &AppState, username: &str) -> Option<u64> {
 
 fn record_user_failure(state: &AppState, username: &str) {
     let mut lockouts = state.login_user_lockouts.lock();
-    let entry = lockouts.entry(username.to_string()).or_insert((0, Instant::now()));
+    let entry = lockouts
+        .entry(username.to_string())
+        .or_insert((0, Instant::now()));
     if entry.1.elapsed().as_secs() >= USER_LOCKOUT_SECS {
         *entry = (1, Instant::now());
     } else {
@@ -179,7 +181,7 @@ fn clear_user_lockout(state: &AppState, username: &str) {
 }
 
 /// Validate password complexity: 8-128 chars, must contain uppercase + lowercase + digit
-fn validate_password(password: &str) -> Result<(), &'static str> {
+pub(crate) fn validate_password(password: &str) -> Result<(), &'static str> {
     if password.len() < 8 {
         return Err("密码至少需要 8 个字符");
     }
@@ -234,7 +236,11 @@ pub async fn register(
             ),
         );
     }
-    if !req.username.chars().all(|c| c.is_alphanumeric() || c == '_') {
+    if !req
+        .username
+        .chars()
+        .all(|c| c.is_alphanumeric() || c == '_')
+    {
         return (
             jar,
             (
@@ -370,7 +376,7 @@ pub async fn login(
 
     // User lockout check
     if let Some(remaining) = check_user_lockout(&state, &req.username) {
-        let mins = (remaining + 59) / 60;
+        let mins = remaining.div_ceil(60);
         return (
             jar,
             (
@@ -417,7 +423,7 @@ pub async fn login(
                         message: Some("用户名或密码错误".into()),
                     }),
                 ),
-            )
+            );
         }
     };
 
@@ -469,7 +475,11 @@ pub async fn login(
                     id: user_id,
                     username,
                     display_name,
-                    avatar: if avatar.is_empty() { None } else { Some(avatar) },
+                    avatar: if avatar.is_empty() {
+                        None
+                    } else {
+                        Some(avatar)
+                    },
                 }),
                 message: Some("登录成功".into()),
             }),
@@ -477,14 +487,12 @@ pub async fn login(
     )
 }
 
-pub async fn logout(
-    State(state): State<AppState>,
-    jar: CookieJar,
-) -> impl IntoResponse {
+pub async fn logout(State(state): State<AppState>, jar: CookieJar) -> impl IntoResponse {
     if let Some(cookie) = jar.get("session") {
         let token = cookie.value().to_string();
         let db = state.db.lock();
-        db.execute("DELETE FROM sessions WHERE token = ?1", [&token]).ok();
+        db.execute("DELETE FROM sessions WHERE token = ?1", [&token])
+            .ok();
     }
 
     let jar = jar.remove(Cookie::from("session"));
@@ -492,10 +500,7 @@ pub async fn logout(
     (jar, Json(serde_json::json!({ "success": true })))
 }
 
-pub async fn me(
-    State(state): State<AppState>,
-    user_id: UserId,
-) -> impl IntoResponse {
+pub async fn me(State(state): State<AppState>, user_id: UserId) -> impl IntoResponse {
     let db = state.db.lock();
 
     let result = db.query_row(
@@ -607,7 +612,8 @@ pub async fn change_password(
                 db.execute(
                     "DELETE FROM sessions WHERE user_id = ?1 AND token != ?2",
                     rusqlite::params![user_id.0, token],
-                ).ok();
+                )
+                .ok();
             }
             (
                 StatusCode::OK,
@@ -668,9 +674,9 @@ pub async fn update_avatar(
 
 // ─── Helpers ───
 
-fn hash_password(password: &str) -> Result<String, argon2::password_hash::Error> {
-    use argon2::{Argon2, PasswordHasher};
+pub(crate) fn hash_password(password: &str) -> Result<String, argon2::password_hash::Error> {
     use argon2::password_hash::SaltString;
+    use argon2::{Argon2, PasswordHasher};
     use rand::RngCore;
 
     // Generate salt bytes using rand, then encode as SaltString
@@ -683,9 +689,9 @@ fn hash_password(password: &str) -> Result<String, argon2::password_hash::Error>
     Ok(hash.to_string())
 }
 
-fn verify_password(password: &str, hash: &str) -> bool {
-    use argon2::{Argon2, PasswordVerifier};
+pub(crate) fn verify_password(password: &str, hash: &str) -> bool {
     use argon2::password_hash::PasswordHash;
+    use argon2::{Argon2, PasswordVerifier};
 
     let parsed = match PasswordHash::new(hash) {
         Ok(h) => h,
@@ -711,4 +717,59 @@ fn make_session_cookie(token: String) -> Cookie<'static> {
         .same_site(SameSite::Lax)
         .max_age(time::Duration::days(30))
         .build()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── validate_password tests ──
+
+    #[test]
+    fn test_password_too_short() {
+        assert!(validate_password("Ab1").is_err());
+        assert!(validate_password("Abcdef1").is_err()); // 7 chars
+    }
+
+    #[test]
+    fn test_password_no_uppercase() {
+        assert!(validate_password("abcdefg1").is_err());
+    }
+
+    #[test]
+    fn test_password_no_lowercase() {
+        assert!(validate_password("ABCDEFG1").is_err());
+    }
+
+    #[test]
+    fn test_password_no_digit() {
+        assert!(validate_password("Abcdefgh").is_err());
+    }
+
+    #[test]
+    fn test_password_too_long() {
+        let long = "A".repeat(100) + &"a".repeat(20) + "1234567890";
+        assert!(validate_password(&long).is_err());
+    }
+
+    #[test]
+    fn test_password_valid() {
+        assert!(validate_password("Abcdefg1").is_ok());
+        assert!(validate_password("Test1234").is_ok());
+        assert!(validate_password("P@ssw0rd").is_ok());
+    }
+
+    // ── hash + verify tests ──
+
+    #[test]
+    fn test_hash_and_verify_correct() {
+        let hash = hash_password("Correct1").expect("hash should succeed");
+        assert!(verify_password("Correct1", &hash));
+    }
+
+    #[test]
+    fn test_hash_and_verify_wrong() {
+        let hash = hash_password("Correct1").expect("hash should succeed");
+        assert!(!verify_password("Wrong123", &hash));
+    }
 }

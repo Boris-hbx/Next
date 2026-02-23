@@ -1,18 +1,13 @@
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum Tab {
+    #[default]
     Today,
     Week,
     Month,
-}
-
-impl Default for Tab {
-    fn default() -> Self {
-        Tab::Today
-    }
 }
 
 impl Tab {
@@ -24,7 +19,7 @@ impl Tab {
         }
     }
 
-    pub fn from_str(s: &str) -> Self {
+    pub fn parse(s: &str) -> Self {
         match s {
             "today" => Tab::Today,
             "week" => Tab::Week,
@@ -34,7 +29,8 @@ impl Tab {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[allow(clippy::enum_variant_names)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum Quadrant {
     #[serde(rename = "important-urgent")]
     ImportantUrgent,
@@ -43,13 +39,8 @@ pub enum Quadrant {
     #[serde(rename = "not-important-urgent")]
     NotImportantUrgent,
     #[serde(rename = "not-important-not-urgent")]
+    #[default]
     NotImportantNotUrgent,
-}
-
-impl Default for Quadrant {
-    fn default() -> Self {
-        Quadrant::NotImportantNotUrgent
-    }
 }
 
 impl Quadrant {
@@ -62,7 +53,7 @@ impl Quadrant {
         }
     }
 
-    pub fn from_str(s: &str) -> Self {
+    pub fn parse(s: &str) -> Self {
         match s {
             "important-urgent" => Quadrant::ImportantUrgent,
             "important-not-urgent" => Quadrant::ImportantNotUrgent,
@@ -95,6 +86,7 @@ pub struct ChangeEntry {
 }
 
 impl ChangeEntry {
+    #[allow(dead_code)]
     pub fn new(field: &str, label: &str, old_value: &str, new_value: &str) -> Self {
         Self {
             field: field.to_string(),
@@ -220,4 +212,48 @@ pub struct BatchUpdateItem {
     pub progress: Option<u8>,
     #[serde(default)]
     pub completed: Option<bool>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_tab_from_str_known() {
+        assert_eq!(Tab::parse("today"), Tab::Today);
+        assert_eq!(Tab::parse("week"), Tab::Week);
+        assert_eq!(Tab::parse("month"), Tab::Month);
+    }
+
+    #[test]
+    fn test_tab_from_str_unknown_defaults_today() {
+        assert_eq!(Tab::parse("unknown"), Tab::Today);
+        assert_eq!(Tab::parse(""), Tab::Today);
+    }
+
+    #[test]
+    fn test_quadrant_from_str_known() {
+        assert_eq!(
+            Quadrant::parse("important-urgent"),
+            Quadrant::ImportantUrgent
+        );
+        assert_eq!(
+            Quadrant::parse("important-not-urgent"),
+            Quadrant::ImportantNotUrgent
+        );
+        assert_eq!(
+            Quadrant::parse("not-important-urgent"),
+            Quadrant::NotImportantUrgent
+        );
+        assert_eq!(
+            Quadrant::parse("not-important-not-urgent"),
+            Quadrant::NotImportantNotUrgent
+        );
+    }
+
+    #[test]
+    fn test_quadrant_from_str_unknown_defaults() {
+        assert_eq!(Quadrant::parse("invalid"), Quadrant::NotImportantNotUrgent);
+        assert_eq!(Quadrant::parse(""), Quadrant::NotImportantNotUrgent);
+    }
 }

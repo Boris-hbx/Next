@@ -38,8 +38,8 @@ fn row_to_review(row: &rusqlite::Row) -> rusqlite::Result<ReviewItem> {
     let freq_config_json: String = row.get(3)?;
     let paused_int: i32 = row.get(7)?;
 
-    let frequency: Frequency = serde_json::from_str(&format!("\"{}\"", freq_str))
-        .unwrap_or(Frequency::Daily);
+    let frequency: Frequency =
+        serde_json::from_str(&format!("\"{}\"", freq_str)).unwrap_or(Frequency::Daily);
     let frequency_config: FrequencyConfig =
         serde_json::from_str(&freq_config_json).unwrap_or_default();
 
@@ -99,13 +99,11 @@ pub async fn list_reviews(
     items.sort_by(|a, b| {
         let a_order = due_sort_order(a);
         let b_order = due_sort_order(b);
-        a_order
-            .cmp(&b_order)
-            .then_with(|| {
-                a.days_until_due
-                    .unwrap_or(999)
-                    .cmp(&b.days_until_due.unwrap_or(999))
-            })
+        a_order.cmp(&b_order).then_with(|| {
+            a.days_until_due
+                .unwrap_or(999)
+                .cmp(&b.days_until_due.unwrap_or(999))
+        })
     });
 
     (
@@ -124,10 +122,24 @@ pub async fn create_review(
     Json(req): Json<CreateReviewRequest>,
 ) -> (StatusCode, Json<ReviewResponse>) {
     if req.text.len() > 500 {
-        return (StatusCode::BAD_REQUEST, Json(ReviewResponse { success: false, item: None, message: Some("审视项标题不能超过 500 字符".into()) }));
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(ReviewResponse {
+                success: false,
+                item: None,
+                message: Some("审视项标题不能超过 500 字符".into()),
+            }),
+        );
     }
     if req.notes.len() > 5000 {
-        return (StatusCode::BAD_REQUEST, Json(ReviewResponse { success: false, item: None, message: Some("备注不能超过 5000 字符".into()) }));
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(ReviewResponse {
+                success: false,
+                item: None,
+                message: Some("备注不能超过 5000 字符".into()),
+            }),
+        );
     }
     let db = state.db.lock();
     let id = uuid::Uuid::new_v4().to_string()[..8].to_string();

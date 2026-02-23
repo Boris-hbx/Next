@@ -6,10 +6,7 @@ use crate::services::{claude::ClaudeClient, context};
 use crate::state::AppState;
 
 /// GET /api/moment — get a one-liner from 阿宝 for the header
-pub async fn get_moment(
-    State(state): State<AppState>,
-    user_id: UserId,
-) -> impl IntoResponse {
+pub async fn get_moment(State(state): State<AppState>, user_id: UserId) -> impl IntoResponse {
     let uid = user_id.0;
     let cache_ttl = chrono::Duration::minutes(15);
 
@@ -39,7 +36,10 @@ pub async fn get_moment(
     // Try Claude
     let text = match ClaudeClient::new() {
         Some(client) => {
-            match client.simple_generate(system_prompt, &user_message, 60).await {
+            match client
+                .simple_generate(system_prompt, &user_message, 60)
+                .await
+            {
                 Ok(t) => truncate_moment(&t),
                 Err(e) => {
                     eprintln!("[Moment] Claude error: {}", e);

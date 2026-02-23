@@ -98,8 +98,7 @@ pub async fn set_routine_collaborator(
     )
     .ok();
 
-    let friend_name = get_user_display_name(&db, &req.friend_id)
-        .unwrap_or_else(|| "好友".into());
+    let friend_name = get_user_display_name(&db, &req.friend_id).unwrap_or_else(|| "好友".into());
 
     (
         StatusCode::OK,

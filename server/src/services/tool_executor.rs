@@ -227,19 +227,20 @@ pub fn tool_definitions() -> Vec<Value> {
         }),
         json!({
             "name": "create_english_scenario",
-            "description": "创建一个英语场景（如银行、餐厅、加油站等日常场景），创建后会自动生成双语教学内容",
+            "description": "创建一个学习场景（支持英语、编程、职场、生活等分类），创建后会自动生成学习内容",
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "title": {"type": "string", "description": "场景标题，如：银行开户、加油站加油"},
-                    "description": {"type": "string", "description": "补充说明，帮助生成更精准的内容"}
+                    "title": {"type": "string", "description": "学习主题，如：银行开户、Python 入门、时间管理"},
+                    "description": {"type": "string", "description": "补充说明，帮助生成更精准的内容"},
+                    "category": {"type": "string", "enum": ["英语", "编程", "职场", "生活", "其他"], "description": "分类，默认英语"}
                 },
                 "required": ["title"]
             }
         }),
         json!({
             "name": "query_english_scenarios",
-            "description": "查询用户的英语场景列表",
+            "description": "查询用户的学习场景列表",
             "input_schema": {
                 "type": "object",
                 "properties": {
@@ -318,7 +319,11 @@ fn tool_create_todo(db: &Connection, user_id: &str, input: &Value) -> Value {
     let assignee = input["assignee"].as_str().unwrap_or("");
     let tags: Vec<String> = input["tags"]
         .as_array()
-        .map(|a| a.iter().filter_map(|v| v.as_str().map(String::from)).collect())
+        .map(|a| {
+            a.iter()
+                .filter_map(|v| v.as_str().map(String::from))
+                .collect()
+        })
         .unwrap_or_default();
     let collaborator = input["collaborator"].as_str();
     let now = chrono::Utc::now().to_rfc3339();
@@ -348,7 +353,8 @@ fn tool_create_todo(db: &Connection, user_id: &str, input: &Value) -> Value {
 
     match result {
         Ok(_) => {
-            let mut resp = json!({"success": true, "id": id, "text": text, "tab": tab, "quadrant": quadrant});
+            let mut resp =
+                json!({"success": true, "id": id, "text": text, "tab": tab, "quadrant": quadrant});
             if let Some(cid) = collaborator {
                 resp["collaborative"] = json!(true);
                 resp["collaborator_name"] = json!(get_user_display_name(db, cid));
@@ -448,7 +454,12 @@ fn tool_update_todo(db: &Connection, user_id: &str, input: &Value) -> Value {
     idx += 1;
 
     let sql = if is_owner {
-        let s = format!("UPDATE todos SET {} WHERE id=?{} AND user_id=?{}", sets.join(", "), idx, idx + 1);
+        let s = format!(
+            "UPDATE todos SET {} WHERE id=?{} AND user_id=?{}",
+            sets.join(", "),
+            idx,
+            idx + 1
+        );
         params.push(Box::new(id.to_string()));
         params.push(Box::new(user_id.to_string()));
         s
@@ -474,7 +485,11 @@ fn tool_delete_todo(db: &Connection, user_id: &str, input: &Value) -> Value {
     };
 
     let is_owner: bool = db
-        .query_row("SELECT COUNT(*) > 0 FROM todos WHERE id=?1 AND user_id=?2", rusqlite::params![id, user_id], |r| r.get(0))
+        .query_row(
+            "SELECT COUNT(*) > 0 FROM todos WHERE id=?1 AND user_id=?2",
+            rusqlite::params![id, user_id],
+            |r| r.get(0),
+        )
         .unwrap_or(false);
 
     if is_owner {
@@ -596,7 +611,8 @@ fn tool_query_todos(db: &Connection, user_id: &str, input: &Value) -> Value {
         "tc.status = 'active'".to_string(),
         "t.deleted = 0".to_string(),
     ];
-    let mut collab_params: Vec<Box<dyn rusqlite::types::ToSql>> = vec![Box::new(user_id.to_string())];
+    let mut collab_params: Vec<Box<dyn rusqlite::types::ToSql>> =
+        vec![Box::new(user_id.to_string())];
     let mut cidx = 2;
 
     if let Some(tab) = input["tab"].as_str() {
@@ -628,7 +644,8 @@ fn tool_query_todos(db: &Connection, user_id: &str, input: &Value) -> Value {
         collab_conditions.join(" AND ")
     );
 
-    let collab_param_refs: Vec<&dyn rusqlite::types::ToSql> = collab_params.iter().map(|p| p.as_ref()).collect();
+    let collab_param_refs: Vec<&dyn rusqlite::types::ToSql> =
+        collab_params.iter().map(|p| p.as_ref()).collect();
     if let Ok(mut cstmt) = db.prepare(&collab_sql) {
         if let Ok(crows) = cstmt.query_map(collab_param_refs.as_slice(), |row| {
             Ok(json!({
@@ -726,10 +743,21 @@ fn tool_get_statistics(db: &Connection, user_id: &str, input: &Value) -> Value {
     };
 
     let total: i64 = db
-        .query_row(&format!("SELECT COUNT(*) FROM todos WHERE {}", where_clause), [user_id], |r| r.get(0))
+        .query_row(
+            &format!("SELECT COUNT(*) FROM todos WHERE {}", where_clause),
+            [user_id],
+            |r| r.get(0),
+        )
         .unwrap_or(0);
     let completed: i64 = db
-        .query_row(&format!("SELECT COUNT(*) FROM todos WHERE {} AND completed=1", where_clause), [user_id], |r| r.get(0))
+        .query_row(
+            &format!(
+                "SELECT COUNT(*) FROM todos WHERE {} AND completed=1",
+                where_clause
+            ),
+            [user_id],
+            |r| r.get(0),
+        )
         .unwrap_or(0);
     let overdue: i64 = db
         .query_row(
@@ -770,14 +798,15 @@ fn tool_create_english_scenario(db: &Connection, user_id: &str, input: &Value) -
         _ => return json!({"error": "title is required"}),
     };
     let description = input["description"].as_str().unwrap_or("");
+    let category = input["category"].as_str().unwrap_or("英语");
     let id = uuid::Uuid::new_v4().to_string()[..8].to_string();
     let now = chrono::Utc::now().to_rfc3339();
 
     match db.execute(
-        "INSERT INTO english_scenarios (id, user_id, title, title_en, description, icon, content, status, archived, created_at, updated_at) VALUES (?1, ?2, ?3, '', ?4, '📖', '', 'draft', 0, ?5, ?6)",
-        rusqlite::params![id, user_id, title, description, now, now],
+        "INSERT INTO english_scenarios (id, user_id, title, title_en, description, icon, content, status, archived, created_at, updated_at, category, notes) VALUES (?1, ?2, ?3, '', ?4, '📖', '', 'draft', 0, ?5, ?6, ?7, '')",
+        rusqlite::params![id, user_id, title, description, now, now, category],
     ) {
-        Ok(_) => json!({"success": true, "id": id, "title": title, "message": "场景已创建，请到英语页面查看并生成内容"}),
+        Ok(_) => json!({"success": true, "id": id, "title": title, "category": category, "message": "学习场景已创建，请到学习页面查看并生成内容"}),
         Err(e) => json!({"error": format!("Failed to create scenario: {}", e)}),
     }
 }
@@ -787,12 +816,12 @@ fn tool_query_english_scenarios(db: &Connection, user_id: &str, input: &Value) -
 
     let (sql, params): (String, Vec<Box<dyn rusqlite::types::ToSql>>) = if let Some(kw) = keyword {
         (
-            "SELECT id, title, title_en, status, icon FROM english_scenarios WHERE user_id=?1 AND archived=0 AND title LIKE ?2 ORDER BY updated_at DESC LIMIT 20".into(),
+            "SELECT id, title, title_en, status, icon, COALESCE(category, '英语') FROM english_scenarios WHERE user_id=?1 AND archived=0 AND title LIKE ?2 ORDER BY updated_at DESC LIMIT 20".into(),
             vec![Box::new(user_id.to_string()), Box::new(format!("%{}%", kw))],
         )
     } else {
         (
-            "SELECT id, title, title_en, status, icon FROM english_scenarios WHERE user_id=?1 AND archived=0 ORDER BY updated_at DESC LIMIT 20".into(),
+            "SELECT id, title, title_en, status, icon, COALESCE(category, '英语') FROM english_scenarios WHERE user_id=?1 AND archived=0 ORDER BY updated_at DESC LIMIT 20".into(),
             vec![Box::new(user_id.to_string())],
         )
     };
@@ -809,7 +838,8 @@ fn tool_query_english_scenarios(db: &Connection, user_id: &str, input: &Value) -
             "title": row.get::<_, String>(1)?,
             "title_en": row.get::<_, String>(2).unwrap_or_default(),
             "status": row.get::<_, String>(3)?,
-            "icon": row.get::<_, String>(4).unwrap_or_else(|_| "📖".into())
+            "icon": row.get::<_, String>(4).unwrap_or_else(|_| "📖".into()),
+            "category": row.get::<_, String>(5).unwrap_or_else(|_| "英语".into())
         }))
     }) {
         Ok(r) => r,
@@ -827,6 +857,7 @@ fn tool_query_english_scenarios(db: &Connection, user_id: &str, input: &Value) -
 /// - Same day → "today"
 /// - Same week (Mon-Sun) → "week"
 /// - Everything else → "month"
+///
 /// Compute tab from a YYYY-MM-DD date string
 pub fn compute_tab_for_date(date_str: &str) -> &'static str {
     use chrono::{Datelike, NaiveDate};
@@ -911,7 +942,8 @@ fn auto_create_todo_for_reminder(
     db.execute(
         "UPDATE reminders SET related_todo_id=?1 WHERE id=?2 AND user_id=?3",
         rusqlite::params![todo_id, reminder_id, user_id],
-    ).ok();
+    )
+    .ok();
 
     Some((todo_id.clone(), tab.to_string()))
 }
@@ -930,7 +962,9 @@ fn tool_create_reminder(db: &Connection, user_id: &str, input: &Value) -> Value 
 
     let parsed = match chrono::DateTime::parse_from_rfc3339(remind_at) {
         Ok(dt) => dt,
-        Err(_) => return json!({"error": "remind_at must be a valid ISO 8601 timestamp with timezone offset, e.g. 2026-02-21T15:00:00+08:00"}),
+        Err(_) => {
+            return json!({"error": "remind_at must be a valid ISO 8601 timestamp with timezone offset, e.g. 2026-02-21T15:00:00+08:00"})
+        }
     };
 
     if parsed <= chrono::Utc::now() {
@@ -1050,7 +1084,7 @@ fn tool_snooze_reminder(db: &Connection, user_id: &str, input: &Value) -> Value 
         Some(id) => id,
         None => return json!({"error": "id is required"}),
     };
-    let minutes = input["minutes"].as_i64().unwrap_or(5).max(1).min(120);
+    let minutes = input["minutes"].as_i64().unwrap_or(5).clamp(1, 120);
 
     let text: String = match db.query_row(
         "SELECT text FROM reminders WHERE id=?1 AND user_id=?2 AND status='triggered'",
@@ -1067,12 +1101,14 @@ fn tool_snooze_reminder(db: &Connection, user_id: &str, input: &Value) -> Value 
     db.execute(
         "UPDATE reminders SET status='acknowledged', acknowledged_at=?1 WHERE id=?2",
         rusqlite::params![now_str, id],
-    ).ok();
+    )
+    .ok();
 
     db.execute(
         "UPDATE notifications SET read=1 WHERE reminder_id=?1 AND user_id=?2",
         rusqlite::params![id, user_id],
-    ).ok();
+    )
+    .ok();
 
     let new_id = uuid::Uuid::new_v4().to_string()[..8].to_string();
     let snooze_time = now + chrono::Duration::minutes(minutes);

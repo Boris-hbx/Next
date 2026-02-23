@@ -1,9 +1,9 @@
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
 use chrono::Datelike;
+use parking_lot::Mutex;
 use rusqlite::Connection;
 use std::sync::Arc;
-use parking_lot::Mutex;
 
 use crate::services::push::{self, PushSubscription, VapidKeys};
 
@@ -56,7 +56,15 @@ fn poll_once(db: &Arc<Mutex<Connection>>) -> Result<Vec<TriggeredReminder>, Stri
         )
         .map_err(|e| format!("prepare error: {}", e))?;
 
-    let due_reminders: Vec<(String, String, String, String, Option<String>, Option<String>)> = stmt
+    type ReminderRow = (
+        String,
+        String,
+        String,
+        String,
+        Option<String>,
+        Option<String>,
+    );
+    let due_reminders: Vec<ReminderRow> = stmt
         .query_map([], |row| {
             Ok((
                 row.get::<_, String>(0)?,
@@ -131,7 +139,10 @@ fn poll_once(db: &Arc<Mutex<Connection>>) -> Result<Vec<TriggeredReminder>, Stri
                      VALUES (?1, ?2, ?3, ?4, 'pending', ?5, ?6, ?7)",
                     rusqlite::params![new_id, user_id, text, next_at, related_todo_id, repeat_str, now_str],
                 ).ok();
-                println!("[reminder_poller] created next {} reminder at {}", repeat_str, next_at);
+                println!(
+                    "[reminder_poller] created next {} reminder at {}",
+                    repeat_str, next_at
+                );
             }
         }
 
@@ -144,12 +155,17 @@ fn poll_once(db: &Arc<Mutex<Connection>>) -> Result<Vec<TriggeredReminder>, Stri
 
     // Cleanup: delete acknowledged reminders older than 30 days
     let cutoff = (now_utc - chrono::Duration::days(30)).to_rfc3339();
-    let cleaned = db.execute(
-        "DELETE FROM reminders WHERE status = 'acknowledged' AND acknowledged_at < ?1",
-        rusqlite::params![cutoff],
-    ).unwrap_or(0);
+    let cleaned = db
+        .execute(
+            "DELETE FROM reminders WHERE status = 'acknowledged' AND acknowledged_at < ?1",
+            rusqlite::params![cutoff],
+        )
+        .unwrap_or(0);
     if cleaned > 0 {
-        println!("[reminder_poller] cleaned {} old acknowledged reminder(s)", cleaned);
+        println!(
+            "[reminder_poller] cleaned {} old acknowledged reminder(s)",
+            cleaned
+        );
     }
 
     println!("[reminder_poller] triggered {} reminder(s)", count);
@@ -274,7 +290,10 @@ async fn send_push_for_reminders(db: &Arc<Mutex<Connection>>, reminders: Vec<Tri
 
                 match push::send_push(&vapid, &push_sub, &payload.to_string()).await {
                     Ok(()) => {
-                        println!("[push] sent to {}", &sub_info.endpoint[..40.min(sub_info.endpoint.len())]);
+                        println!(
+                            "[push] sent to {}",
+                            &sub_info.endpoint[..40.min(sub_info.endpoint.len())]
+                        );
                     }
                     Err(push::PushError::Gone) => {
                         // Remove expired subscription

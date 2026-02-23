@@ -1,8 +1,4 @@
-use axum::{
-    extract::State,
-    http::StatusCode,
-    Json,
-};
+use axum::{extract::State, http::StatusCode, Json};
 use serde::{Deserialize, Serialize};
 
 use crate::auth::UserId;
@@ -26,8 +22,8 @@ pub struct VapidKeyResponse {
 #[derive(Debug, Deserialize)]
 pub struct SubscribeRequest {
     pub endpoint: String,
-    pub p256dh: String,   // base64url encoded
-    pub auth: String,     // base64url encoded
+    pub p256dh: String, // base64url encoded
+    pub auth: String,   // base64url encoded
     #[serde(default)]
     pub user_agent: Option<String>,
 }
@@ -88,7 +84,8 @@ pub async fn unsubscribe(
     db.execute(
         "DELETE FROM push_subscriptions WHERE user_id=?1 AND endpoint=?2",
         rusqlite::params![user_id, req.endpoint],
-    ).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    )
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     Ok(Json(SimpleResponse {
         success: true,

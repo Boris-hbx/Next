@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TodoCollaborator {
     pub id: String,
@@ -32,6 +33,7 @@ pub struct PendingConfirmation {
     pub item_text: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConfirmationResponse {
     pub id: String,

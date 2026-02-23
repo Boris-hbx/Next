@@ -106,11 +106,17 @@ function switchPage(page) {
     document.getElementById('todo-view').style.display = page === 'todo' ? '' : 'none';
     document.getElementById('review-view').style.display = page === 'review' ? '' : 'none';
     document.getElementById('english-view').style.display = page === 'english' ? '' : 'none';
+    var pandoraView = document.getElementById('pandora-view');
+    if (pandoraView) pandoraView.style.display = page === 'inbox' ? '' : 'none';
     document.getElementById('settings-view').style.display = page === 'settings' ? '' : 'none';
 
     // Mobile FAB: show only on todo page
     var fab = document.getElementById('mobile-fab');
     if (fab) fab.classList.toggle('hidden', page !== 'todo');
+
+    // Learn FAB: show only on english page
+    var learnFab = document.getElementById('learn-fab');
+    if (learnFab) learnFab.style.display = page === 'english' ? '' : 'none';
 
     // 通过 body class 控制收件箱和设置页面
     document.body.classList.toggle('page-inbox', page === 'inbox');
@@ -123,8 +129,7 @@ function switchPage(page) {
         English.init();
     }
     if (page === 'inbox') {
-        if (typeof renderPendingItems === 'function') renderPendingItems();
-        if (typeof Friends !== 'undefined' && Friends.loadSharedInbox) Friends.loadSharedInbox();
+        if (typeof Pandora !== 'undefined') Pandora.init();
     }
     if (page === 'settings') {
         if (typeof loadSettingsData === 'function') loadSettingsData();

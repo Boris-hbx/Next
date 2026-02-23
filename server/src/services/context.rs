@@ -4,7 +4,11 @@ use rusqlite::Connection;
 /// Sanitize user-generated text before injecting into AI prompts.
 /// Truncates to max_len, strips angle brackets and control chars.
 fn sanitize_for_prompt(text: &str, max_len: usize) -> String {
-    let truncated = if text.len() > max_len { &text[..max_len] } else { text };
+    let truncated = if text.len() > max_len {
+        &text[..max_len]
+    } else {
+        text
+    };
     truncated
         .chars()
         .filter(|c| !c.is_control() || *c == '\n')
@@ -47,7 +51,9 @@ fn ensure_collab_tables(db: &Connection) {
 /// Build the system prompt with user's task context injected
 pub fn build_system_prompt(db: &Connection, user_id: &str) -> String {
     let task_context = build_task_context(db, user_id);
-    let now = chrono::Local::now().format("%Y-%m-%d %H:%M (%A)").to_string();
+    let now = chrono::Local::now()
+        .format("%Y-%m-%d %H:%M (%A)")
+        .to_string();
 
     format!(
         r#"你是阿宝，内嵌在"Next"任务管理应用中的 AI 助手。
@@ -83,8 +89,8 @@ pub fn build_system_prompt(db: &Connection, user_id: &str) -> String {
 - 用户问"有哪些/多少/什么任务" → 调用 query_todos 或 get_statistics
 - 用户说"帮我整理/分类" → 先 query_todos 再 batch_update_todos
 - 不确定日期时 → 先调 get_current_datetime
-- 用户说"创建英语场景/学英语/练口语" → 调用 create_english_scenario
-- 用户问"有哪些英语场景" → 调用 query_english_scenarios
+- 用户说"学习/创建学习场景/学英语/学编程/练口语" → 调用 create_english_scenario（可指定 category）
+- 用户问"有哪些学习场景/学习记录" → 调用 query_english_scenarios
 - 创建任务时指定协作者 → 在 create_todo 中传入 collaborator 参数
 - 用户说"提醒我/X点提醒/到时候叫我" → 调用 create_reminder
 - 用户问"有哪些提醒/我的提醒" → 调用 query_reminders
@@ -140,7 +146,11 @@ fn build_task_context(db: &Connection, user_id: &str) -> String {
 
     // Today counts
     let today_total: i64 = db
-        .query_row("SELECT COUNT(*) FROM todos WHERE user_id=?1 AND tab='today' AND deleted=0", [user_id], |r| r.get(0))
+        .query_row(
+            "SELECT COUNT(*) FROM todos WHERE user_id=?1 AND tab='today' AND deleted=0",
+            [user_id],
+            |r| r.get(0),
+        )
         .unwrap_or(0);
     let today_done: i64 = db
         .query_row("SELECT COUNT(*) FROM todos WHERE user_id=?1 AND tab='today' AND deleted=0 AND completed=1", [user_id], |r| r.get(0))
@@ -148,7 +158,11 @@ fn build_task_context(db: &Connection, user_id: &str) -> String {
 
     // Week counts
     let week_total: i64 = db
-        .query_row("SELECT COUNT(*) FROM todos WHERE user_id=?1 AND tab='week' AND deleted=0", [user_id], |r| r.get(0))
+        .query_row(
+            "SELECT COUNT(*) FROM todos WHERE user_id=?1 AND tab='week' AND deleted=0",
+            [user_id],
+            |r| r.get(0),
+        )
         .unwrap_or(0);
     let week_done: i64 = db
         .query_row("SELECT COUNT(*) FROM todos WHERE user_id=?1 AND tab='week' AND deleted=0 AND completed=1", [user_id], |r| r.get(0))
@@ -241,7 +255,8 @@ fn build_task_context(db: &Connection, user_id: &str) -> String {
     let collab_count: i64 = db
         .query_row(
             "SELECT COUNT(*) FROM todo_collaborators WHERE user_id = ?1 AND status = 'active'",
-            [user_id], |r| r.get(0),
+            [user_id],
+            |r| r.get(0),
         )
         .unwrap_or(0);
 
@@ -271,7 +286,11 @@ fn build_task_context(db: &Connection, user_id: &str) -> String {
                     let owner = owner_name.unwrap_or_else(|| "?".into());
                     ctx.push_str(&format!(
                         "- [{}] <task>{}</task> (来自:{}, 进度:{}%, ID:{})\n",
-                        check, sanitize_for_prompt(&text, 200), sanitize_for_prompt(&owner, 50), progress, id
+                        check,
+                        sanitize_for_prompt(&text, 200),
+                        sanitize_for_prompt(&owner, 50),
+                        progress,
+                        id
                     ));
                 }
             }

@@ -99,8 +99,8 @@ pub async fn set_collaborator(
     )
     .ok();
 
-    let friend_name = collaboration::get_user_display_name(&db, &req.friend_id)
-        .unwrap_or_else(|| "用户".into());
+    let friend_name =
+        collaboration::get_user_display_name(&db, &req.friend_id).unwrap_or_else(|| "用户".into());
 
     (
         StatusCode::OK,
