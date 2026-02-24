@@ -81,11 +81,15 @@ pub fn build_app(state: state::AppState) -> Router {
             post(routes::conversations::rename_conversation),
         );
 
-    let pandora_routes = Router::new()
-        .route("/today", get(routes::pandora::get_today))
-        .route("/history", get(routes::pandora::get_history))
-        .route("/{id}/save", post(routes::pandora::toggle_save))
-        .route("/saved", get(routes::pandora::get_saved));
+    let expense_routes = Router::new()
+        .route("/", get(routes::expenses::list_entries).post(routes::expenses::create_entry))
+        .route("/summary", get(routes::expenses::get_summary))
+        .route("/tags", get(routes::expenses::list_tags))
+        .route("/{id}", get(routes::expenses::get_entry).put(routes::expenses::update_entry).delete(routes::expenses::delete_entry))
+        .route("/{id}/photos", post(routes::expenses::upload_photos))
+        .route("/{id}/parse", post(routes::expenses::parse_receipts))
+        .route("/photos/{photo_id}", delete(routes::expenses::delete_photo))
+        .layer(DefaultBodyLimit::max(20_000_000));
 
     let english_routes = Router::new()
         .route(
@@ -200,7 +204,7 @@ pub fn build_app(state: state::AppState) -> Router {
         .nest("/chat", chat_routes)
         .nest("/conversations", conversation_routes)
         .nest("/english", english_routes)
-        .nest("/pandora", pandora_routes)
+        .nest("/expenses", expense_routes)
         .nest("/friends", friends_routes)
         .nest("/reminders", reminder_routes)
         .nest("/notifications", notification_routes)
@@ -208,7 +212,8 @@ pub fn build_app(state: state::AppState) -> Router {
         .nest("/share", share_routes)
         .nest("/contacts", contacts_routes)
         .nest("/collaborate", collaborate_routes)
-        .route("/moment", get(routes::moment::get_moment));
+        .route("/moment", get(routes::moment::get_moment))
+        .route("/uploads/{user_id}/{filename}", get(routes::expenses::serve_photo));
 
     Router::new()
         .route("/health", get(move || async move {
@@ -221,7 +226,7 @@ pub fn build_app(state: state::AppState) -> Router {
         .nest("/api", api_routes)
         .layer(SetResponseHeaderLayer::overriding(
             http::header::CONTENT_SECURITY_POLICY,
-            HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'"),
+            HeaderValue::from_static("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'"),
         ))
         .layer(SetResponseHeaderLayer::overriding(
             http::header::STRICT_TRANSPORT_SECURITY,
@@ -241,7 +246,7 @@ pub fn build_app(state: state::AppState) -> Router {
         ))
         .layer(SetResponseHeaderLayer::overriding(
             http::HeaderName::from_static("permissions-policy"),
-            HeaderValue::from_static("camera=(), microphone=(), geolocation=()"),
+            HeaderValue::from_static("camera=(self), microphone=(), geolocation=()"),
         ))
         .layer(DefaultBodyLimit::max(1_048_576))
         .with_state(state)

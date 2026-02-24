@@ -6,7 +6,7 @@ pub mod english;
 pub mod friends;
 pub mod moment;
 pub mod notifications;
-pub mod pandora;
+pub mod expenses;
 pub mod push;
 pub mod quotes;
 pub mod reminders;

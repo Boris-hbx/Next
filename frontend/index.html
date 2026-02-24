@@ -8,12 +8,12 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Next">
     <title>Next - Focus on the Right Thing</title>
-    <link rel="stylesheet" href="assets/css/base.css?v=20260223e">
-    <link rel="stylesheet" href="assets/css/style.css?v=20260223e">
-    <link rel="stylesheet" href="assets/css/components.css?v=20260223e">
-    <link rel="stylesheet" href="assets/css/mobile.css?v=20260223e">
-    <link rel="stylesheet" href="assets/css/abao.css?v=20260223e">
-    <link rel="stylesheet" href="assets/css/english.css?v=20260223e">
+    <link rel="stylesheet" href="assets/css/base.css?v=20260223m">
+    <link rel="stylesheet" href="assets/css/style.css?v=20260223m">
+    <link rel="stylesheet" href="assets/css/components.css?v=20260223m">
+    <link rel="stylesheet" href="assets/css/mobile.css?v=20260223m">
+    <link rel="stylesheet" href="assets/css/abao.css?v=20260223m">
+    <link rel="stylesheet" href="assets/css/english.css?v=20260223m">
     <link rel="manifest" href="assets/manifest.json">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
     <script>
@@ -97,7 +97,7 @@
                 <a class="nav-link active" data-page="todo" onclick="switchPage('todo')">Todo</a>
                 <a class="nav-link" data-page="review" onclick="switchPage('review')">例行</a>
                 <a class="nav-link" data-page="english" onclick="switchPage('english')">学习</a>
-                <a class="nav-link" data-page="inbox" onclick="switchPage('inbox')">潘多拉</a>
+                <a class="nav-link" data-page="life" onclick="switchPage('life')">生活</a>
             </div>
 
             <!-- 底部区域 -->
@@ -500,77 +500,202 @@
             <div class="english-scenarios" id="english-scenarios"></div>
         </div>
 
-        <!-- 详情页（可编辑表单） -->
+        <!-- 详情页（阅读/编辑双模式） -->
         <div class="english-detail-view">
             <div class="english-detail-header">
                 <div class="english-detail-header-left">
                     <button class="english-back-btn" id="english-back-btn">&larr;</button>
-                    <span class="english-detail-title" id="english-detail-title">编辑笔记</span>
+                    <!-- 阅读模式：标题文本 -->
+                    <h2 class="learn-detail-title" id="learn-detail-title-view"></h2>
+                    <!-- 编辑模式：标题输入框 -->
+                    <input type="text" class="learn-detail-title-input" id="learn-detail-title-edit" placeholder="笔记标题" style="display:none;">
                 </div>
-                <div class="english-detail-actions">
+                <!-- 阅读模式按钮 -->
+                <div class="english-detail-actions" id="learn-actions-view">
+                    <button class="btn-icon" id="learn-edit-mode-btn" title="编辑">✏️</button>
                     <button class="btn-icon" id="english-ai-btn" title="让阿宝整理">✨</button>
                     <button class="btn-icon" id="english-share-btn" title="分享">📤</button>
-                    <button class="btn-icon" id="english-delete-btn" title="删除">🗑️</button>
+                </div>
+                <!-- 编辑模式按钮 -->
+                <div class="english-detail-actions" id="learn-actions-edit" style="display:none;">
+                    <button class="learn-btn-cancel" id="learn-edit-cancel-btn">取消</button>
+                    <button class="learn-btn-save" id="learn-edit-save-btn">保存</button>
                 </div>
             </div>
-            <!-- 编辑区域 -->
-            <div class="learn-edit-section">
-                <div class="learn-edit-field">
-                    <label>标题</label>
-                    <input type="text" id="learn-edit-title" placeholder="笔记标题">
-                </div>
-                <div class="learn-edit-field">
-                    <label>分类</label>
-                    <div class="learn-detail-categories" id="learn-detail-categories"></div>
-                </div>
-                <div class="learn-edit-field">
-                    <label>内容</label>
-                    <textarea id="learn-edit-content" rows="12" placeholder="粘贴从豆包等应用复制的内容，或直接输入..."></textarea>
-                </div>
-                <div class="learn-edit-field">
-                    <label>笔记</label>
-                    <textarea id="learn-edit-notes" rows="4" placeholder="记录你的学习心得..."></textarea>
-                </div>
-                <div class="learn-edit-actions">
-                    <button class="btn btn-primary" id="learn-save-btn" onclick="English.saveEntry()">保存</button>
+
+            <!-- 分类标签 + 时间（阅读模式） -->
+            <div class="learn-detail-meta-bar" id="learn-meta-bar">
+                <span id="learn-category-badge"></span>
+                <span class="learn-meta-time" id="learn-meta-time"></span>
+            </div>
+
+            <!-- 阅读模式：渲染内容 -->
+            <div class="learn-reading-view" id="learn-reading-view">
+                <div class="english-content" id="learn-content-rendered"></div>
+                <!-- 笔记展示（有笔记时才显示） -->
+                <div class="learn-notes-display" id="learn-notes-display" style="display:none;">
+                    <h4>我的笔记</h4>
+                    <div class="learn-notes-text" id="learn-notes-text"></div>
                 </div>
             </div>
-            <!-- AI 生成的渲染区（整理后显示） -->
-            <div class="english-content" id="english-content" style="display:none;"></div>
+
+            <!-- 编辑模式：表单 -->
+            <div class="learn-editing-view" id="learn-editing-view" style="display:none;">
+                <div class="learn-edit-section">
+                    <div class="learn-edit-field">
+                        <label>内容</label>
+                        <textarea id="learn-edit-content" rows="12" placeholder="粘贴从豆包等应用复制的内容，或直接输入..."></textarea>
+                    </div>
+                    <div class="learn-edit-field">
+                        <label>我的笔记</label>
+                        <textarea id="learn-edit-notes" rows="4" placeholder="记录你的学习心得..."></textarea>
+                    </div>
+                    <div class="learn-edit-field learn-category-field">
+                        <label>分类</label>
+                        <div class="learn-detail-categories" id="learn-detail-categories"></div>
+                    </div>
+                </div>
+                <!-- 删除：最底部，不显眼 -->
+                <div class="learn-danger-zone">
+                    <button class="learn-btn-danger" id="english-delete-btn">删除此笔记</button>
+                </div>
+            </div>
         </div>
 
         <!-- FAB 按钮 -->
         <button class="learn-fab" id="learn-fab" onclick="English.openCreateModal()">+</button>
     </div>
 
-    <!-- 潘多拉 - 每日发现 -->
-    <div class="pandora-main-layout" id="pandora-view" style="display:none;">
-        <!-- 今日发现 -->
-        <div class="pandora-today" id="pandora-today">
-            <div class="pandora-date" id="pandora-date"></div>
-            <div class="pandora-card" id="pandora-card" style="display:none;">
-                <div class="pandora-card-emoji" id="pandora-emoji">🎁</div>
-                <h2 class="pandora-card-title" id="pandora-title"></h2>
-                <div class="pandora-card-topic" id="pandora-topic"></div>
-                <div class="pandora-card-content" id="pandora-content"></div>
-                <button class="pandora-save-btn" id="pandora-save-btn" onclick="Pandora.toggleSave()">
-                    ☆ 收藏
-                </button>
+    <!-- 生活 Hub -->
+    <div class="life-main-layout" id="life-view" style="display:none;">
+        <!-- Hub 页面 -->
+        <div class="life-hub" id="life-hub">
+            <div class="life-hub-header">
+                <h2>生活</h2>
             </div>
-            <!-- Loading state -->
-            <div class="pandora-loading" id="pandora-loading" style="display:none;">
-                <div class="pandora-box-animation">🎁</div>
-                <p>正在打开潘多拉之盒...</p>
+            <div class="life-hub-grid">
+                <div class="life-hub-card" onclick="Life.openFeature('expense')">
+                    <div class="life-hub-card-icon">💰</div>
+                    <div class="life-hub-card-title">记账</div>
+                    <div class="life-hub-card-desc">记录每一笔消费</div>
+                </div>
+                <div class="life-hub-card life-hub-card-disabled">
+                    <div class="life-hub-card-icon">🏥</div>
+                    <div class="life-hub-card-title">健康</div>
+                    <div class="life-hub-card-desc">待设计</div>
+                </div>
             </div>
         </div>
-        <!-- 历史/收藏 tabs -->
-        <div class="pandora-history-section">
-            <div class="pandora-tabs">
-                <button class="pandora-tab active" onclick="Pandora.switchTab('history')">历史</button>
-                <button class="pandora-tab" onclick="Pandora.switchTab('saved')">收藏</button>
+
+        <!-- 记账子视图 -->
+        <div class="expense-view" id="expense-view" style="display:none;">
+            <div class="expense-header">
+                <div class="expense-header-left">
+                    <button class="expense-back-btn" onclick="Life.showHub()">&larr; 生活</button>
+                    <h2 class="expense-title">记账</h2>
+                </div>
+                <div class="expense-period-tabs">
+                    <button class="expense-period-btn active" data-period="day" onclick="Expense.switchPeriod('day')">日</button>
+                    <button class="expense-period-btn" data-period="week" onclick="Expense.switchPeriod('week')">周</button>
+                    <button class="expense-period-btn" data-period="month" onclick="Expense.switchPeriod('month')">月</button>
+                </div>
             </div>
-            <div class="pandora-list" id="pandora-list"></div>
+            <!-- 日期导航 -->
+            <div class="expense-date-nav">
+                <button class="expense-nav-btn" onclick="Expense.navigateDate(-1)">&lsaquo;</button>
+                <span class="expense-date-label" id="expense-date-label">今天</span>
+                <button class="expense-nav-btn" onclick="Expense.navigateDate(1)">&rsaquo;</button>
+            </div>
+            <!-- 汇总卡片 -->
+            <div class="expense-summary" id="expense-summary">
+                <div class="expense-summary-total">
+                    <span class="expense-summary-label">总支出</span>
+                    <span class="expense-summary-amount" id="expense-total-amount">¥0.00</span>
+                </div>
+            </div>
+            <!-- 标签筛选 -->
+            <div class="expense-tags-filter" id="expense-tags-filter"></div>
+            <!-- 条目列表 -->
+            <div class="expense-list" id="expense-list">
+                <div class="expense-empty">
+                    <div class="expense-empty-icon">💰</div>
+                    <p>还没有记账记录</p>
+                    <p class="expense-empty-hint">点击 + 记一笔</p>
+                </div>
+            </div>
         </div>
+
+        <!-- 记一笔弹窗 -->
+        <div class="expense-add-overlay" id="expense-add-overlay" style="display:none;" onclick="Expense.closeAddModal()">
+            <div class="expense-add-modal" onclick="event.stopPropagation()">
+                <div class="expense-add-header">
+                    <h3 id="expense-modal-title">记一笔</h3>
+                    <button class="expense-add-close" onclick="Expense.closeAddModal()">&times;</button>
+                </div>
+                <div class="expense-add-body">
+                    <!-- State 1: Input form -->
+                    <div id="expense-state-input">
+                        <div class="expense-amount-input-wrapper">
+                            <span class="expense-amount-prefix">¥</span>
+                            <input type="number" id="expense-amount-input" class="expense-amount-input" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
+                        </div>
+                        <div class="expense-add-field">
+                            <label>日期</label>
+                            <input type="date" id="expense-date-input">
+                        </div>
+                        <div class="expense-add-field">
+                            <label>备注</label>
+                            <input type="text" id="expense-notes-input" placeholder="买了什么...">
+                        </div>
+                        <div class="expense-add-field">
+                            <label>照片（收据/小票）</label>
+                            <div class="expense-photo-area" id="expense-photo-area">
+                                <div class="expense-photo-grid" id="expense-photo-grid"></div>
+                                <label class="expense-photo-add-btn" id="expense-photo-add-btn">
+                                    <span>+ 添加照片</span>
+                                    <input type="file" multiple accept="image/*" id="expense-photo-input" style="display:none" onchange="Expense.handlePhotoSelect(event)">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- State 2: Analyzing -->
+                    <div id="expense-state-analyzing" style="display:none">
+                        <div class="expense-analyzing">
+                            <div class="expense-analyzing-icon">&#10024;</div>
+                            <p class="expense-analyzing-text">正在识别账单...</p>
+                            <div class="expense-progress-bar">
+                                <div class="expense-progress-fill" id="expense-progress-fill"></div>
+                            </div>
+                            <p class="expense-analyzing-hint">AI 正在分析照片内容</p>
+                        </div>
+                    </div>
+                    <!-- State 3: Preview -->
+                    <div id="expense-state-preview" style="display:none"></div>
+                </div>
+                <div class="expense-add-footer" id="expense-add-footer">
+                    <button class="btn btn-secondary" onclick="Expense.closeAddModal()">取消</button>
+                    <button class="btn btn-primary" onclick="Expense.submitEntry()">保存</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 条目详情弹窗 -->
+        <div class="expense-detail-overlay" id="expense-detail-overlay" style="display:none;" onclick="Expense.closeDetail()">
+            <div class="expense-detail-modal" onclick="event.stopPropagation()">
+                <div class="expense-detail-header">
+                    <h3>消费详情</h3>
+                    <button class="expense-detail-close" onclick="Expense.closeDetail()">&times;</button>
+                </div>
+                <div class="expense-detail-body" id="expense-detail-body"></div>
+                <div class="expense-detail-footer" id="expense-detail-footer">
+                    <button class="btn btn-danger-text" onclick="Expense.deleteEntry()">删除</button>
+                    <button class="btn btn-primary" onclick="Expense.editEntry()">编辑</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 记账 FAB -->
+        <button class="expense-fab" id="expense-fab" style="display:none;" onclick="Expense.openAddModal()">+</button>
     </div>
 
     <!-- 学习笔记创建弹窗 -->
@@ -858,9 +983,9 @@
             <span class="mobile-nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="12" y1="7" x2="12" y2="13"/></svg></span>
             <span class="mobile-nav-label">学习</span>
         </a>
-        <a class="mobile-nav-item" data-page="inbox" onclick="switchPage('inbox'); activateMobileNav(this)">
-            <span class="mobile-nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg><span class="inbox-badge" id="inbox-badge" style="display:none;"></span></span>
-            <span class="mobile-nav-label">潘多拉</span>
+        <a class="mobile-nav-item" data-page="life" onclick="switchPage('life'); activateMobileNav(this)">
+            <span class="mobile-nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+            <span class="mobile-nav-label">生活</span>
         </a>
     </nav>
 
@@ -921,24 +1046,25 @@
     <div class="notif-banner-container" id="notif-banner-container"></div>
 
     <!-- JS Modules -->
-    <script src="assets/js/api.js?v=20260223e"></script>
-    <script src="assets/js/utils.js?v=20260223e"></script>
-    <script src="assets/js/app.js?v=20260223e"></script>
-    <script src="assets/js/tasks.js?v=20260223e"></script>
-    <script src="assets/js/modal.js?v=20260223e"></script>
-    <script src="assets/js/datepicker.js?v=20260223e"></script>
-    <script src="assets/js/drag.js?v=20260223e"></script>
-    <script src="assets/js/review.js?v=20260223e"></script>
-    <script src="assets/js/routines.js?v=20260223e"></script>
-    <script src="assets/js/features.js?v=20260223e"></script>
-    <script src="assets/js/particles.js?v=20260223e"></script>
-    <script src="assets/js/living-line.js?v=20260223e"></script>
-    <script src="assets/js/abao.js?v=20260223e"></script>
-    <script src="assets/js/english.js?v=20260223e"></script>
-    <script src="assets/js/pandora.js?v=20260223e"></script>
-    <script src="assets/js/friends.js?v=20260223e"></script>
-    <script src="assets/js/notifications.js?v=20260223e"></script>
-    <script src="assets/js/settings.js?v=20260223e"></script>
+    <script src="assets/js/api.js?v=20260223m"></script>
+    <script src="assets/js/utils.js?v=20260223m"></script>
+    <script src="assets/js/app.js?v=20260223m"></script>
+    <script src="assets/js/tasks.js?v=20260223m"></script>
+    <script src="assets/js/modal.js?v=20260223m"></script>
+    <script src="assets/js/datepicker.js?v=20260223m"></script>
+    <script src="assets/js/drag.js?v=20260223m"></script>
+    <script src="assets/js/review.js?v=20260223m"></script>
+    <script src="assets/js/routines.js?v=20260223m"></script>
+    <script src="assets/js/features.js?v=20260223m"></script>
+    <script src="assets/js/particles.js?v=20260223m"></script>
+    <script src="assets/js/living-line.js?v=20260223m"></script>
+    <script src="assets/js/abao.js?v=20260223m"></script>
+    <script src="assets/js/english.js?v=20260223m"></script>
+    <script src="assets/js/life.js?v=20260223m"></script>
+    <script src="assets/js/expense.js?v=20260223m"></script>
+    <script src="assets/js/friends.js?v=20260223m"></script>
+    <script src="assets/js/notifications.js?v=20260223m"></script>
+    <script src="assets/js/settings.js?v=20260223m"></script>
 
     <script>
     // Initialize

@@ -2,6 +2,7 @@ pub mod collaboration;
 pub mod contact;
 pub mod conversation;
 pub mod english;
+pub mod expense;
 pub mod friend;
 pub mod reminder;
 pub mod review;

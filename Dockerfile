@@ -37,7 +37,7 @@ COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
 # Ensure data directory exists with correct permissions
-RUN mkdir -p /data && chown -R nextapp:nextapp /app /data
+RUN mkdir -p /data /data/uploads && chown -R nextapp:nextapp /app /data
 
 # Environment
 ENV PORT=8080

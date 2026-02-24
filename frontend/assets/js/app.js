@@ -39,7 +39,7 @@ var draggedItem = null;
 var draggedItemQuadrant = null;  // 拖拽任务原本所在的象限
 var routines = [];  // 每日例行任务
 var currentAssigneeFilter = null;  // null = 全部, 'name' = 指定人
-var currentPage = 'todo';  // 'todo' | 'review' | 'english' | 'inbox' | 'settings'
+var currentPage = 'todo';  // 'todo' | 'review' | 'english' | 'life' | 'settings'
 
 // Tab 切换
 function switchTab(tab) {
@@ -106,8 +106,8 @@ function switchPage(page) {
     document.getElementById('todo-view').style.display = page === 'todo' ? '' : 'none';
     document.getElementById('review-view').style.display = page === 'review' ? '' : 'none';
     document.getElementById('english-view').style.display = page === 'english' ? '' : 'none';
-    var pandoraView = document.getElementById('pandora-view');
-    if (pandoraView) pandoraView.style.display = page === 'inbox' ? '' : 'none';
+    var lifeView = document.getElementById('life-view');
+    if (lifeView) lifeView.style.display = page === 'life' ? '' : 'none';
     document.getElementById('settings-view').style.display = page === 'settings' ? '' : 'none';
 
     // Mobile FAB: show only on todo page
@@ -118,8 +118,7 @@ function switchPage(page) {
     var learnFab = document.getElementById('learn-fab');
     if (learnFab) learnFab.style.display = page === 'english' ? '' : 'none';
 
-    // 通过 body class 控制收件箱和设置页面
-    document.body.classList.toggle('page-inbox', page === 'inbox');
+    // 通过 body class 控制设置页面
     document.body.classList.toggle('page-settings', page === 'settings');
 
     if (page === 'review' && typeof loadReviews === 'function') {
@@ -128,8 +127,8 @@ function switchPage(page) {
     if (page === 'english' && typeof English !== 'undefined') {
         English.init();
     }
-    if (page === 'inbox') {
-        if (typeof Pandora !== 'undefined') Pandora.init();
+    if (page === 'life') {
+        if (typeof Life !== 'undefined') Life.init();
     }
     if (page === 'settings') {
         if (typeof loadSettingsData === 'function') loadSettingsData();

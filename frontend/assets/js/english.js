@@ -4,6 +4,7 @@ var English = (function() {
     var currentScenario = null;
     var initialized = false;
     var currentCategory = null; // null = 全部
+    var detailMode = 'view'; // 'view' or 'edit'
 
     var CATEGORIES = [
         { key: '英语', icon: '🇬🇧', label: '英语' },
@@ -22,6 +23,7 @@ var English = (function() {
     }
 
     function bindEvents() {
+        // 创建弹窗
         var modalOverlay = document.getElementById('english-modal-overlay');
         if (modalOverlay) modalOverlay.onclick = closeCreateModal;
 
@@ -31,18 +33,39 @@ var English = (function() {
         var submitBtn = document.getElementById('english-modal-submit');
         if (submitBtn) submitBtn.onclick = createEntry;
 
+        // 详情页：返回
         var backBtn = document.getElementById('english-back-btn');
-        if (backBtn) backBtn.onclick = showList;
+        if (backBtn) backBtn.onclick = function() {
+            if (detailMode === 'edit') {
+                cancelEdit();
+            } else {
+                showList();
+            }
+        };
+
+        // 详情页：阅读模式按钮
+        var editBtn = document.getElementById('learn-edit-mode-btn');
+        if (editBtn) editBtn.onclick = enterEditMode;
 
         var aiBtn = document.getElementById('english-ai-btn');
         if (aiBtn) aiBtn.onclick = aiOrganize;
 
-        var deleteBtn = document.getElementById('english-delete-btn');
-        if (deleteBtn) deleteBtn.onclick = deleteCurrentScenario;
-
         var shareBtn = document.getElementById('english-share-btn');
         if (shareBtn) shareBtn.onclick = shareCurrentScenario;
+
+        // 详情页：编辑模式按钮
+        var editCancelBtn = document.getElementById('learn-edit-cancel-btn');
+        if (editCancelBtn) editCancelBtn.onclick = cancelEdit;
+
+        var editSaveBtn = document.getElementById('learn-edit-save-btn');
+        if (editSaveBtn) editSaveBtn.onclick = saveAndReturn;
+
+        // 删除
+        var deleteBtn = document.getElementById('english-delete-btn');
+        if (deleteBtn) deleteBtn.onclick = deleteCurrentScenario;
     }
+
+    // ========== 列表 ==========
 
     async function loadScenarios() {
         try {
@@ -65,7 +88,6 @@ var English = (function() {
         if (listView) listView.style.display = '';
         if (detailView) detailView.style.display = 'none';
 
-        // Show FAB
         var fab = document.getElementById('learn-fab');
         if (fab) fab.style.display = '';
 
@@ -125,27 +147,7 @@ var English = (function() {
         loadScenarios();
     }
 
-    function escapeHtml(str) {
-        var div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    }
-
-    function formatTimeAgo(dateStr) {
-        if (!dateStr) return '';
-        try {
-            var date = new Date(dateStr);
-            var now = new Date();
-            var diff = Math.floor((now - date) / 1000);
-            if (diff < 60) return '刚刚';
-            if (diff < 3600) return Math.floor(diff / 60) + '分钟前';
-            if (diff < 86400) return Math.floor(diff / 3600) + '小时前';
-            if (diff < 2592000) return Math.floor(diff / 86400) + '天前';
-            return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
-        } catch (e) {
-            return '';
-        }
-    }
+    // ========== 创建 ==========
 
     function openCreateModal() {
         var overlay = document.getElementById('english-modal-overlay');
@@ -155,7 +157,6 @@ var English = (function() {
         var contentInput = document.getElementById('english-modal-content');
         if (contentInput) contentInput.value = '';
 
-        // Reset category selector
         var catContainer = document.getElementById('learn-modal-categories');
         if (catContainer) {
             var html = '';
@@ -198,7 +199,6 @@ var English = (function() {
         var category = getSelectedModalCategory();
 
         closeCreateModal();
-        showToast('正在保存...', 'info');
 
         try {
             var resp = await API.createScenario({
@@ -219,18 +219,22 @@ var English = (function() {
         }
     }
 
+    // ========== 详情页：阅读模式 ==========
+
     async function openDetail(id) {
         var scenario = scenarios.find(function(s) { return s.id === id; });
 
-        if (!scenario || !scenario.content) {
-            try {
-                var resp = await API.getScenario(id);
-                if (resp.success && resp.item) {
-                    scenario = resp.item;
-                    var idx = scenarios.findIndex(function(s) { return s.id === id; });
-                    if (idx >= 0) scenarios[idx] = scenario;
-                }
-            } catch (e) {
+        // 获取完整数据
+        try {
+            var resp = await API.getScenario(id);
+            if (resp.success && resp.item) {
+                scenario = resp.item;
+                var idx = scenarios.findIndex(function(s) { return s.id === id; });
+                if (idx >= 0) scenarios[idx] = scenario;
+                else scenarios.unshift(scenario);
+            }
+        } catch (e) {
+            if (!scenario) {
                 showToast('加载失败', 'error');
                 return;
             }
@@ -239,46 +243,134 @@ var English = (function() {
         if (!scenario) return;
         currentScenario = scenario;
 
+        // 显示详情页
         var listView = document.querySelector('.english-list-view');
         var detailView = document.querySelector('.english-detail-view');
         if (listView) listView.style.display = 'none';
-        if (detailView) detailView.style.display = '';
+        if (detailView) detailView.style.display = 'block';
 
-        // Hide FAB in detail view
         var fab = document.getElementById('learn-fab');
         if (fab) fab.style.display = 'none';
 
-        // Fill editable form
-        var titleInput = document.getElementById('learn-edit-title');
-        if (titleInput) titleInput.value = scenario.title || '';
+        // 进入阅读模式
+        renderReadingView(scenario);
+        setDetailMode('view');
+    }
 
-        var contentTextarea = document.getElementById('learn-edit-content');
-        if (contentTextarea) contentTextarea.value = scenario.content || '';
+    function renderReadingView(scenario) {
+        // 标题
+        var titleView = document.getElementById('learn-detail-title-view');
+        if (titleView) titleView.textContent = scenario.title || '';
 
-        var notesTextarea = document.getElementById('learn-edit-notes');
-        if (notesTextarea) notesTextarea.value = scenario.notes || '';
-
-        // Render category pills
-        var catContainer = document.getElementById('learn-detail-categories');
-        if (catContainer) {
-            var html = '';
-            CATEGORIES.forEach(function(cat) {
-                var isActive = scenario.category === cat.key;
-                html += '<button class="learn-modal-cat-pill' + (isActive ? ' active' : '') + '" data-category="' + cat.key + '" onclick="English.selectDetailCategory(this)">' + cat.icon + ' ' + cat.label + '</button>';
-            });
-            catContainer.innerHTML = html;
-        }
-
-        // Show AI content preview if it was AI-organized
-        var contentEl = document.getElementById('english-content');
-        if (contentEl) {
-            if (scenario.status === 'ready' && scenario.content && scenario.content.indexOf('#') >= 0) {
-                contentEl.innerHTML = renderMarkdown(scenario.content);
-                contentEl.style.display = '';
+        // 分类标签
+        var badgeEl = document.getElementById('learn-category-badge');
+        if (badgeEl) {
+            if (scenario.category) {
+                var cat = CATEGORIES.find(function(c) { return c.key === scenario.category; });
+                var label = cat ? cat.icon + ' ' + cat.label : scenario.category;
+                badgeEl.innerHTML = '<span class="learn-entry-badge">' + label + '</span>';
             } else {
-                contentEl.style.display = 'none';
+                badgeEl.innerHTML = '';
             }
         }
+
+        // 时间
+        var timeEl = document.getElementById('learn-meta-time');
+        if (timeEl) timeEl.textContent = formatTimeAgo(scenario.updated_at);
+
+        // 内容渲染
+        var contentEl = document.getElementById('learn-content-rendered');
+        if (contentEl) {
+            var content = scenario.content || '';
+            if (content) {
+                if (hasMarkdown(content)) {
+                    contentEl.innerHTML = renderMarkdown(content);
+                } else {
+                    contentEl.innerHTML = '<div class="learn-content-plain">' + escapeHtml(content) + '</div>';
+                }
+            } else {
+                contentEl.innerHTML = '<div class="learn-content-empty">暂无内容，点击 ✏️ 添加</div>';
+            }
+        }
+
+        // 笔记展示
+        var notesDisplay = document.getElementById('learn-notes-display');
+        var notesText = document.getElementById('learn-notes-text');
+        if (notesDisplay && notesText) {
+            if (scenario.notes && scenario.notes.trim()) {
+                notesText.textContent = scenario.notes;
+                notesDisplay.style.display = '';
+            } else {
+                notesDisplay.style.display = 'none';
+            }
+        }
+    }
+
+    function hasMarkdown(text) {
+        return /^#{1,3} /m.test(text) || text.indexOf('**') >= 0 ||
+               /^[-*] /m.test(text) || text.indexOf('```') >= 0;
+    }
+
+    // ========== 模式切换 ==========
+
+    function setDetailMode(mode) {
+        detailMode = mode;
+        var isEditing = mode === 'edit';
+
+        // 标题切换
+        var titleView = document.getElementById('learn-detail-title-view');
+        var titleEdit = document.getElementById('learn-detail-title-edit');
+        if (titleView) titleView.style.display = isEditing ? 'none' : '';
+        if (titleEdit) titleEdit.style.display = isEditing ? 'block' : 'none';
+
+        // 按钮组切换
+        var actionsView = document.getElementById('learn-actions-view');
+        var actionsEdit = document.getElementById('learn-actions-edit');
+        if (actionsView) actionsView.style.display = isEditing ? 'none' : 'flex';
+        if (actionsEdit) actionsEdit.style.display = isEditing ? 'flex' : 'none';
+
+        // 元信息栏
+        var metaBar = document.getElementById('learn-meta-bar');
+        if (metaBar) metaBar.style.display = isEditing ? 'none' : '';
+
+        // 阅读/编辑区域切换
+        var readingView = document.getElementById('learn-reading-view');
+        var editingView = document.getElementById('learn-editing-view');
+        if (readingView) readingView.style.display = isEditing ? 'none' : '';
+        if (editingView) editingView.style.display = isEditing ? '' : 'none';
+    }
+
+    function enterEditMode() {
+        if (!currentScenario) return;
+
+        // 填充编辑表单
+        var titleEdit = document.getElementById('learn-detail-title-edit');
+        if (titleEdit) titleEdit.value = currentScenario.title || '';
+
+        var contentTextarea = document.getElementById('learn-edit-content');
+        if (contentTextarea) contentTextarea.value = currentScenario.content || '';
+
+        var notesTextarea = document.getElementById('learn-edit-notes');
+        if (notesTextarea) notesTextarea.value = currentScenario.notes || '';
+
+        // 分类选择器
+        renderDetailCategoryPills(currentScenario.category);
+
+        setDetailMode('edit');
+
+        // 聚焦内容区
+        if (contentTextarea) setTimeout(function() { contentTextarea.focus(); }, 100);
+    }
+
+    function renderDetailCategoryPills(activeCategory) {
+        var container = document.getElementById('learn-detail-categories');
+        if (!container) return;
+        var html = '';
+        CATEGORIES.forEach(function(cat) {
+            var isActive = activeCategory === cat.key;
+            html += '<button class="learn-modal-cat-pill' + (isActive ? ' active' : '') + '" data-category="' + cat.key + '" onclick="English.selectDetailCategory(this)">' + cat.icon + ' ' + cat.label + '</button>';
+        });
+        container.innerHTML = html;
     }
 
     function selectDetailCategory(el) {
@@ -290,27 +382,19 @@ var English = (function() {
         el.classList.add('active');
     }
 
-    function showList() {
-        currentScenario = null;
-        var listView = document.querySelector('.english-list-view');
-        var detailView = document.querySelector('.english-detail-view');
-        if (listView) listView.style.display = '';
-        if (detailView) detailView.style.display = 'none';
-
-        // Show FAB
-        var fab = document.getElementById('learn-fab');
-        if (fab) fab.style.display = '';
-
-        loadScenarios();
+    function cancelEdit() {
+        setDetailMode('view');
     }
 
-    async function saveEntry() {
-        if (!currentScenario) return;
+    // ========== 保存 ==========
 
-        var title = (document.getElementById('learn-edit-title').value || '').trim();
+    async function saveEntry() {
+        if (!currentScenario) return false;
+
+        var title = (document.getElementById('learn-detail-title-edit').value || '').trim();
         if (!title) {
             showToast('标题不能为空', 'error');
-            return;
+            return false;
         }
         var content = (document.getElementById('learn-edit-content').value || '').trim();
         var notes = (document.getElementById('learn-edit-notes').value || '').trim();
@@ -332,26 +416,40 @@ var English = (function() {
                 category: category,
                 status: status
             });
-            if (resp.success) {
-                if (resp.item) {
-                    currentScenario = resp.item;
-                    var idx = scenarios.findIndex(function(s) { return s.id === currentScenario.id; });
-                    if (idx >= 0) scenarios[idx] = currentScenario;
-                }
-                showToast('已保存', 'success');
+            if (resp.success && resp.item) {
+                currentScenario = resp.item;
+                var idx = scenarios.findIndex(function(s) { return s.id === currentScenario.id; });
+                if (idx >= 0) scenarios[idx] = currentScenario;
+                return true;
             } else {
                 showToast(resp.message || '保存失败', 'error');
+                return false;
             }
         } catch (e) {
             showToast('保存失败', 'error');
+            return false;
         }
     }
+
+    async function saveAndReturn() {
+        var ok = await saveEntry();
+        if (ok) {
+            renderReadingView(currentScenario);
+            setDetailMode('view');
+            showToast('已保存', 'success');
+        }
+    }
+
+    // ========== AI 整理 ==========
 
     async function aiOrganize() {
         if (!currentScenario) return;
 
-        // Save current content first
-        await saveEntry();
+        // 如果在编辑模式，先保存
+        if (detailMode === 'edit') {
+            var ok = await saveEntry();
+            if (!ok) return;
+        }
 
         showToast('阿宝正在整理内容...', 'info');
         try {
@@ -360,18 +458,8 @@ var English = (function() {
                 currentScenario = resp.item;
                 var idx = scenarios.findIndex(function(s) { return s.id === currentScenario.id; });
                 if (idx >= 0) scenarios[idx] = currentScenario;
-
-                // Update the form with new content
-                var contentTextarea = document.getElementById('learn-edit-content');
-                if (contentTextarea) contentTextarea.value = currentScenario.content || '';
-
-                // Show rendered preview
-                var contentEl = document.getElementById('english-content');
-                if (contentEl && currentScenario.content) {
-                    contentEl.innerHTML = renderMarkdown(currentScenario.content);
-                    contentEl.style.display = '';
-                }
-
+                renderReadingView(currentScenario);
+                setDetailMode('view');
                 showToast('内容已整理', 'success');
             } else {
                 showToast(resp.message || '整理失败', 'error');
@@ -380,6 +468,8 @@ var English = (function() {
             showToast('整理失败', 'error');
         }
     }
+
+    // ========== 删除 / 分享 ==========
 
     async function deleteCurrentScenario() {
         if (!currentScenario) return;
@@ -403,6 +493,46 @@ var English = (function() {
             Friends.openShareModal('scenario', currentScenario.id);
         } else {
             showToast('好友功能加载中', 'info');
+        }
+    }
+
+    // ========== 列表返回 ==========
+
+    function showList() {
+        currentScenario = null;
+        detailMode = 'view';
+        var listView = document.querySelector('.english-list-view');
+        var detailView = document.querySelector('.english-detail-view');
+        if (listView) listView.style.display = '';
+        if (detailView) detailView.style.display = 'none';
+
+        var fab = document.getElementById('learn-fab');
+        if (fab) fab.style.display = '';
+
+        loadScenarios();
+    }
+
+    // ========== 工具函数 ==========
+
+    function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function formatTimeAgo(dateStr) {
+        if (!dateStr) return '';
+        try {
+            var date = new Date(dateStr);
+            var now = new Date();
+            var diff = Math.floor((now - date) / 1000);
+            if (diff < 60) return '刚刚';
+            if (diff < 3600) return Math.floor(diff / 60) + '分钟前';
+            if (diff < 86400) return Math.floor(diff / 3600) + '小时前';
+            if (diff < 2592000) return Math.floor(diff / 86400) + '天前';
+            return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+        } catch (e) {
+            return '';
         }
     }
 
@@ -432,10 +562,7 @@ var English = (function() {
                 continue;
             }
 
-            if (inCodeBlock) {
-                codeContent.push(line);
-                continue;
-            }
+            if (inCodeBlock) { codeContent.push(line); continue; }
 
             if (/^### (.+)/.test(line)) {
                 if (inList) { html.push('</ul>'); inList = false; }
@@ -460,9 +587,7 @@ var English = (function() {
             }
         }
         if (inList) html.push('</ul>');
-        if (inCodeBlock) {
-            html.push('<pre><code>' + escapeHtml(codeContent.join('\n')) + '</code></pre>');
-        }
+        if (inCodeBlock) html.push('<pre><code>' + escapeHtml(codeContent.join('\n')) + '</code></pre>');
         return html.join('\n');
     }
 
@@ -477,9 +602,7 @@ var English = (function() {
     async function retryGenerate(id) {
         var scenario = scenarios.find(function(s) { return s.id === id; });
         if (!scenario) return;
-        showToast('正在重新生成...', 'info');
-        scenario.status = 'generating';
-        renderList();
+        showToast('正在生成...', 'info');
         try {
             var resp = await API.generateScenario(id);
             if (resp.success && resp.item) {
@@ -488,14 +611,10 @@ var English = (function() {
                 renderList();
                 showToast('内容生成完成', 'success');
             } else {
-                scenario.status = 'error';
-                renderList();
-                showToast(resp.message || '生成失败，请稍后重试', 'error');
+                showToast(resp.message || '生成失败', 'error');
             }
         } catch (e) {
-            scenario.status = 'error';
-            renderList();
-            showToast('生成失败，请检查网络', 'error');
+            showToast('生成失败', 'error');
         }
     }
 
@@ -512,5 +631,4 @@ var English = (function() {
     };
 })();
 
-// Alias for backward compatibility
 var Learn = English;

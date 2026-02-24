@@ -20,6 +20,8 @@ const STATIC_ASSETS = [
     '/assets/js/abao.js',
     '/assets/js/settings.js',
     '/assets/js/notifications.js',
+    '/assets/js/life.js',
+    '/assets/js/expense.js',
 ];
 
 // Install: cache static assets

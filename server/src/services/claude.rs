@@ -203,6 +203,78 @@ impl ClaudeClient {
         Err("操作太复杂，请简化请求".into())
     }
 
+    /// Vision-enabled generation — send images + text to Claude.
+    /// Used for receipt parsing.
+    pub async fn vision_generate(
+        &self,
+        system: &str,
+        images: Vec<(String, String)>, // (base64_data, media_type)
+        user_message: &str,
+        max_tokens: u32,
+    ) -> Result<String, String> {
+        let mut content = Vec::new();
+
+        // Add image blocks
+        for (b64, mime) in &images {
+            content.push(json!({
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": mime,
+                    "data": b64,
+                }
+            }));
+        }
+
+        // Add text block
+        content.push(json!({
+            "type": "text",
+            "text": user_message,
+        }));
+
+        let body = json!({
+            "model": MODEL,
+            "max_tokens": max_tokens,
+            "system": system,
+            "messages": [{"role": "user", "content": content}],
+        });
+
+        let resp = self
+            .http
+            .post(CLAUDE_API_URL)
+            .header("x-api-key", &self.api_key)
+            .header("anthropic-version", "2023-06-01")
+            .header("content-type", "application/json")
+            .json(&body)
+            .timeout(std::time::Duration::from_secs(120))
+            .send()
+            .await
+            .map_err(|e| format!("Claude API request failed: {}", e))?;
+
+        if !resp.status().is_success() {
+            let text = resp.text().await.unwrap_or_default();
+            eprintln!("[Claude] vision_generate API error: {}", text);
+            return Err("AI 服务暂时不可用，请稍后重试".into());
+        }
+
+        let resp_json: Value = resp.json().await.map_err(|e| {
+            eprintln!("[Claude] vision_generate parse error: {}", e);
+            "AI 服务响应异常".to_string()
+        })?;
+
+        if let Some(content) = resp_json["content"].as_array() {
+            for block in content {
+                if block["type"].as_str() == Some("text") {
+                    if let Some(text) = block["text"].as_str() {
+                        return Ok(text.trim().to_string());
+                    }
+                }
+            }
+        }
+
+        Err("No text in Claude response".into())
+    }
+
     /// Simple one-shot generation — no tools, no conversation history.
     /// Used for lightweight text generation like moment header.
     pub async fn simple_generate(

@@ -77,6 +77,17 @@ fn run_migrations(conn: &Connection) {
         conn.execute_batch("ALTER TABLE english_scenarios ADD COLUMN notes TEXT DEFAULT '';")
             .ok();
     }
+
+    // Add currency to expense_entries
+    let has_currency: bool = conn
+        .prepare("SELECT currency FROM expense_entries LIMIT 1")
+        .is_ok();
+    if !has_currency {
+        conn.execute_batch(
+            "ALTER TABLE expense_entries ADD COLUMN currency TEXT DEFAULT 'CAD';",
+        )
+        .ok();
+    }
 }
 
 fn create_tables(conn: &Connection) {
@@ -371,7 +382,7 @@ fn create_tables(conn: &Connection) {
             UNIQUE(confirmation_id, user_id)
         );
 
-        -- Discoveries (Pandora daily discovery)
+        -- Discoveries (Pandora daily discovery) — kept for data preservation
         CREATE TABLE IF NOT EXISTS discoveries (
             id TEXT PRIMARY KEY,
             user_id TEXT NOT NULL REFERENCES users(id),
@@ -386,6 +397,45 @@ fn create_tables(conn: &Connection) {
         );
         CREATE INDEX IF NOT EXISTS idx_discoveries_user_date ON discoveries(user_id, date);
         CREATE INDEX IF NOT EXISTS idx_discoveries_saved ON discoveries(user_id, saved);
+
+        -- Expense entries (one row per spending event)
+        CREATE TABLE IF NOT EXISTS expense_entries (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL REFERENCES users(id),
+            amount REAL NOT NULL,
+            date TEXT NOT NULL,
+            notes TEXT DEFAULT '',
+            tags TEXT DEFAULT '[]',
+            ai_processed INTEGER DEFAULT 0,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_expense_user_date ON expense_entries(user_id, date DESC);
+
+        -- Expense line items (AI-parsed receipt details)
+        CREATE TABLE IF NOT EXISTS expense_items (
+            id TEXT PRIMARY KEY,
+            entry_id TEXT NOT NULL REFERENCES expense_entries(id) ON DELETE CASCADE,
+            name TEXT NOT NULL,
+            quantity REAL DEFAULT 1,
+            unit_price REAL,
+            amount REAL NOT NULL,
+            specs TEXT DEFAULT '',
+            sort_order INTEGER DEFAULT 0
+        );
+        CREATE INDEX IF NOT EXISTS idx_expense_items_entry ON expense_items(entry_id);
+
+        -- Expense photos (multiple per entry)
+        CREATE TABLE IF NOT EXISTS expense_photos (
+            id TEXT PRIMARY KEY,
+            entry_id TEXT NOT NULL REFERENCES expense_entries(id) ON DELETE CASCADE,
+            filename TEXT NOT NULL,
+            storage_path TEXT NOT NULL,
+            file_size INTEGER NOT NULL,
+            mime_type TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_expense_photos_entry ON expense_photos(entry_id);
         ",
     )
     .expect("Failed to create tables");

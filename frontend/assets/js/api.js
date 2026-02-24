@@ -376,21 +376,49 @@ var API = (function() {
             return await request('GET', '/moment');
         },
 
-        // ===== Pandora APIs =====
-        getPandoraToday: async function() {
-            return await request('GET', '/pandora/today');
+        // ===== Expense APIs =====
+        getExpenses: async function(from, to, tags) {
+            var params = [];
+            if (from) params.push('from=' + encodeURIComponent(from));
+            if (to) params.push('to=' + encodeURIComponent(to));
+            if (tags) params.push('tags=' + encodeURIComponent(tags));
+            var path = '/expenses' + (params.length ? '?' + params.join('&') : '');
+            return await request('GET', path);
         },
 
-        getPandoraHistory: async function() {
-            return await request('GET', '/pandora/history');
+        createExpense: async function(data) {
+            return await request('POST', '/expenses', data);
         },
 
-        getPandoraSaved: async function() {
-            return await request('GET', '/pandora/saved');
+        getExpense: async function(id) {
+            return await request('GET', '/expenses/' + encodeURIComponent(id));
         },
 
-        togglePandoraSave: async function(id) {
-            return await request('POST', '/pandora/' + encodeURIComponent(id) + '/save');
+        updateExpense: async function(id, data) {
+            return await request('PUT', '/expenses/' + encodeURIComponent(id), data);
+        },
+
+        deleteExpense: async function(id) {
+            return await request('DELETE', '/expenses/' + encodeURIComponent(id));
+        },
+
+        getExpenseSummary: async function(period, date) {
+            var params = [];
+            if (period) params.push('period=' + encodeURIComponent(period));
+            if (date) params.push('date=' + encodeURIComponent(date));
+            return await request('GET', '/expenses/summary?' + params.join('&'));
+        },
+
+        getExpenseTags: async function() {
+            return await request('GET', '/expenses/tags');
+        },
+
+        parseExpenseReceipts: async function(id) {
+            return await request('POST', '/expenses/' + encodeURIComponent(id) + '/parse');
+        },
+
+        parseExpensePreview: async function(images) {
+            return await request('POST', '/expenses/parse-preview', { images: images });
         },
 
         // 环境检测 (always web now)
