@@ -171,6 +171,7 @@ pub fn build_app(state: AppState) -> Router {
     // Share routes
     let share_routes = Router::new()
         .route("/", post(routes::friends::share_item))
+        .route("/sent", get(routes::friends::shared_sent))
         .route("/inbox", get(routes::friends::shared_inbox))
         .route("/inbox/count", get(routes::friends::shared_inbox_count))
         .route("/{id}/accept", post(routes::friends::accept_shared))

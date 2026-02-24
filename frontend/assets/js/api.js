@@ -251,6 +251,10 @@ var API = (function() {
             });
         },
 
+        getSharedSent: async function(itemType, itemId) {
+            return await request('GET', '/share/sent?item_type=' + encodeURIComponent(itemType) + '&item_id=' + encodeURIComponent(itemId));
+        },
+
         getSharedInbox: async function() {
             return await request('GET', '/share/inbox');
         },

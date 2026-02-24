@@ -135,6 +135,11 @@ function switchPage(page) {
         if (typeof Friends !== 'undefined' && Friends.loadFriendsData) Friends.loadFriendsData();
         activateMobileNav(null);
     }
+
+    // Load shared inbox when switching to todo or english pages
+    if ((page === 'todo' || page === 'english') && typeof Friends !== 'undefined') {
+        Friends.loadSharedInbox();
+    }
 }
 
 // Mobile bottom nav activation (pass null to deactivate all)

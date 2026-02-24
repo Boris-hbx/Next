@@ -5,6 +5,7 @@ use axum::{
 };
 use serde::Serialize;
 use serde_json::json;
+use std::collections::HashMap;
 
 use crate::auth::UserId;
 use crate::models::friend::*;
@@ -739,5 +740,50 @@ pub async fn dismiss_shared(
             success: true,
             message: Some("已忽略".into()),
         }),
+    )
+}
+
+/// GET /api/share/sent?item_type=scenario&item_id=xxx
+/// Returns list of recipient_ids this item has been shared to (for duplicate detection)
+pub async fn shared_sent(
+    State(state): State<AppState>,
+    user_id: UserId,
+    Query(params): Query<HashMap<String, String>>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    let item_type = params.get("item_type").cloned().unwrap_or_default();
+    let item_id = params.get("item_id").cloned().unwrap_or_default();
+
+    let db = state.db.lock();
+
+    let mut stmt = db
+        .prepare(
+            "SELECT s.recipient_id, u.username, u.display_name, s.status, s.created_at
+             FROM shared_items s
+             JOIN users u ON s.recipient_id = u.id
+             WHERE s.sender_id = ?1 AND s.item_type = ?2 AND s.item_id = ?3
+             ORDER BY s.created_at DESC",
+        )
+        .unwrap();
+
+    let items: Vec<serde_json::Value> = stmt
+        .query_map(rusqlite::params![user_id.0, item_type, item_id], |row| {
+            Ok(json!({
+                "recipient_id": row.get::<_, String>(0)?,
+                "username": row.get::<_, String>(1)?,
+                "display_name": row.get::<_, Option<String>>(2)?,
+                "status": row.get::<_, String>(3)?,
+                "created_at": row.get::<_, String>(4)?
+            }))
+        })
+        .unwrap()
+        .filter_map(|r| r.ok())
+        .collect();
+
+    (
+        StatusCode::OK,
+        Json(json!({
+            "success": true,
+            "items": items
+        })),
     )
 }

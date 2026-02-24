@@ -9222,6 +9222,16 @@ textarea.ocr-text:focus {
     background: var(--hover-bg, #21262d);
 }
 
+.share-friend-sent {
+    opacity: 0.5;
+    cursor: default;
+    pointer-events: none;
+}
+.share-sent-label {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: var(--text-muted, #8b949e);
+}
 .share-modal-close {
     margin-top: 12px;
     text-align: right;
@@ -9296,6 +9306,39 @@ textarea.ocr-text:focus {
     align-items: center;
     justify-content: center;
     padding: 0 3px;
+}
+
+.inbox-bell-wrapper {
+    position: relative;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+.inbox-bell-wrapper svg {
+    color: var(--text-secondary, #8b949e);
+}
+
+/* Share banner (English page) */
+.share-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: var(--bg-card, #161b22);
+    border: 1px solid var(--primary-color, #58a6ff);
+    border-radius: 8px;
+    margin: 8px 16px;
+}
+.share-banner-icon { font-size: 1.1rem; }
+.share-banner-text { flex: 1; font-size: 0.9rem; color: var(--text-primary); }
+.share-banner-btn {
+    background: var(--primary-color, #58a6ff);
+    color: #fff;
+    border: none;
+    padding: 4px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
 }
 
 .mobile-nav-icon {

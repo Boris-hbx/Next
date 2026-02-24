@@ -237,9 +237,34 @@ var Friends = (function() {
             return;
         }
 
+        // Check who already received this item
+        var sentMap = {};
+        try {
+            if (shareContext.itemType && shareContext.itemId) {
+                var sentResp = await API.getSharedSent(shareContext.itemType, shareContext.itemId);
+                if (sentResp.success && sentResp.items) {
+                    sentResp.items.forEach(function(s) {
+                        sentMap[s.recipient_id] = s.status;
+                    });
+                }
+            }
+        } catch (e) {}
+
         container.innerHTML = friends.map(function(f) {
             var name = f.display_name || f.username;
             var initial = name.charAt(0).toUpperCase();
+            var alreadySent = sentMap[f.id];
+
+            if (alreadySent) {
+                var statusLabel = alreadySent === 'accepted' ? '已收下' :
+                                  alreadySent === 'dismissed' ? '已忽略' : '已分享';
+                return '<div class="share-friend-item share-friend-sent">' +
+                    '<div class="friend-avatar">' + initial + '</div>' +
+                    '<span class="friend-name">' + escapeHtml(name) + '</span>' +
+                    '<span class="share-sent-label">' + statusLabel + '</span>' +
+                '</div>';
+            }
+
             return '<div class="share-friend-item" onclick="Friends.doShare(\'' + f.id + '\')">' +
                 '<div class="friend-avatar">' + initial + '</div>' +
                 '<span class="friend-name">' + escapeHtml(name) + '</span>' +
@@ -270,10 +295,40 @@ var Friends = (function() {
             if (resp.success) {
                 sharedItems = resp.items || [];
                 renderSharedInbox();
+                updateInboxBadge();
+
+                // Show/hide shared section in sidebar
+                var sharedSection = document.getElementById('shared-section');
+                if (sharedSection) {
+                    sharedSection.style.display = sharedItems.length > 0 ? '' : 'none';
+                }
+
+                // Render share banner on English page
+                renderEnglishShareBanner();
             }
         } catch (e) {
             console.error('[Friends] inbox load failed:', e);
         }
+    }
+
+    function renderEnglishShareBanner() {
+        var banner = document.getElementById('english-share-banner');
+        if (!banner) return;
+
+        var scenarioItems = sharedItems.filter(function(item) {
+            return item.item_type === 'scenario';
+        });
+
+        if (scenarioItems.length === 0) {
+            banner.innerHTML = '';
+            return;
+        }
+
+        banner.innerHTML = '<div class="share-banner">' +
+            '<span class="share-banner-icon">📬</span>' +
+            '<span class="share-banner-text">你收到 ' + scenarioItems.length + ' 条好友分享的学习笔记</span>' +
+            '<button class="share-banner-btn" onclick="switchPage(\'todo\')">查看</button>' +
+        '</div>';
     }
 
     function renderSharedInbox() {
@@ -349,13 +404,16 @@ var Friends = (function() {
             var resp = await API.getSharedInboxCount();
             if (resp.success) {
                 var badge = document.getElementById('inbox-badge');
-                if (badge) {
-                    if (resp.count > 0) {
+                var wrapper = document.getElementById('inbox-bell-wrapper');
+                if (resp.count > 0) {
+                    if (badge) {
                         badge.textContent = resp.count;
                         badge.style.display = '';
-                    } else {
-                        badge.style.display = 'none';
                     }
+                    if (wrapper) wrapper.style.display = '';
+                } else {
+                    if (badge) badge.style.display = 'none';
+                    if (wrapper) wrapper.style.display = 'none';
                 }
             }
         } catch (e) {}
