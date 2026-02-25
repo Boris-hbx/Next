@@ -396,6 +396,9 @@ async fn main() {
     // Frontend static files
     let frontend_dir = std::env::var("FRONTEND_DIR").unwrap_or_else(|_| "../frontend".to_string());
     let sw_dir = frontend_dir.clone();
+    let index_dir = frontend_dir.clone();
+    let index_dir2 = frontend_dir.clone();
+    let login_dir = frontend_dir.clone();
 
     let app = build_app(state)
         .route(
@@ -413,6 +416,43 @@ async fn main() {
                         body,
                     )
                         .into_response(),
+                    Err(_) => StatusCode::NOT_FOUND.into_response(),
+                }
+            }),
+        )
+        // Serve HTML files explicitly with charset=utf-8 to prevent mojibake on mobile
+        .route(
+            "/",
+            get(move || async move {
+                match tokio::fs::read(format!("{}/index.html", index_dir)).await {
+                    Ok(bytes) => (
+                        [(http::header::CONTENT_TYPE, "text/html; charset=utf-8")],
+                        bytes,
+                    ).into_response(),
+                    Err(_) => StatusCode::NOT_FOUND.into_response(),
+                }
+            }),
+        )
+        .route(
+            "/index.html",
+            get(move || async move {
+                match tokio::fs::read(format!("{}/index.html", index_dir2)).await {
+                    Ok(bytes) => (
+                        [(http::header::CONTENT_TYPE, "text/html; charset=utf-8")],
+                        bytes,
+                    ).into_response(),
+                    Err(_) => StatusCode::NOT_FOUND.into_response(),
+                }
+            }),
+        )
+        .route(
+            "/login.html",
+            get(move || async move {
+                match tokio::fs::read(format!("{}/login.html", login_dir)).await {
+                    Ok(bytes) => (
+                        [(http::header::CONTENT_TYPE, "text/html; charset=utf-8")],
+                        bytes,
+                    ).into_response(),
                     Err(_) => StatusCode::NOT_FOUND.into_response(),
                 }
             }),
