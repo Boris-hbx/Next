@@ -169,3 +169,36 @@ window.AppUtils = {
 function showToast(message, type) {
     AppUtils.showToast(message, type);
 }
+
+/**
+ * 图片文件 → { data: base64, mime_type } 对象
+ * 自动压缩到 maxPx（默认 1024），JPEG quality 0.85
+ * 用于 Claude vision API — expense/trip/health 等模块共用
+ *
+ * @param {File} file
+ * @param {number} [maxPx=1024]
+ * @returns {Promise<{data: string, mime_type: string}>}
+ */
+function imageFileToBase64(file, maxPx) {
+    var MAX = maxPx || 1024;
+    var QUALITY = 0.85;
+    return new Promise(function(resolve, reject) {
+        var url = URL.createObjectURL(file);
+        var img = new Image();
+        img.onload = function() {
+            URL.revokeObjectURL(url);
+            var w = img.width, h = img.height;
+            if (w > MAX || h > MAX) {
+                if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+                else { w = Math.round(w * MAX / h); h = MAX; }
+            }
+            var canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            var dataUrl = canvas.toDataURL('image/jpeg', QUALITY);
+            resolve({ data: dataUrl.split(',')[1], mime_type: 'image/jpeg' });
+        };
+        img.onerror = reject;
+        img.src = url;
+    });
+}

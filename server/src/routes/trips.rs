@@ -1214,10 +1214,14 @@ pub async fn analyze_item(
 
 只返回 JSON 数组，不要其他文字。"#;
 
-    let user_message = if has_text {
-        format!("请分析以下行程信息：\n\n{}", text)
-    } else {
-        "请分析以上票据照片，提取所有差旅条目。".to_string()
+    let user_message = match (has_images, has_text) {
+        (true, true) => format!(
+            "请分析这些票据照片，同时结合以下文字信息，提取所有差旅条目：\n\n{}",
+            text
+        ),
+        (true, false) => "请分析这些票据照片，提取所有差旅条目。".to_string(),
+        (false, true) => format!("请分析以下行程信息，提取所有差旅条目：\n\n{}", text),
+        (false, false) => unreachable!(), // already guarded above
     };
 
     let images: Vec<(String, String)> = req.images.iter()

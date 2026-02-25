@@ -660,19 +660,21 @@ var Trip = (function() {
         var textEl = document.getElementById('trip-ai-text');
         var text = textEl ? textEl.value.trim() : '';
 
-        // 收集待上传的照片，转成 base64
+        // 收集待上传的照片，转成 base64（用共享工具压缩后发给 AI）
         var images = [];
+        var failCount = 0;
         if (_pendingPhotos.length > 0) {
             for (var i = 0; i < _pendingPhotos.length; i++) {
                 try {
-                    var b64 = await _fileToBase64(_pendingPhotos[i]);
-                    images.push({
-                        data: b64.split(',')[1],
-                        mime_type: _pendingPhotos[i].type || 'image/jpeg'
-                    });
+                    var img = await imageFileToBase64(_pendingPhotos[i]);
+                    images.push(img);
                 } catch (e) {
+                    failCount++;
                     console.warn('[Trip] photo to base64 failed', e);
                 }
+            }
+            if (failCount > 0) {
+                showToast('有 ' + failCount + ' 张图片读取失败，已跳过', 'error');
             }
         }
 
@@ -712,15 +714,6 @@ var Trip = (function() {
     }
 
     // File → base64 DataURL
-    function _fileToBase64(file) {
-        return new Promise(function(resolve, reject) {
-            var reader = new FileReader();
-            reader.onload = function(e) { resolve(e.target.result); };
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
-    }
-
     // 多条预览：AI检测到多个差旅事件（拆单场景）
     function _showMultiItemPreview(items) {
         var TYPE_LABELS = {
