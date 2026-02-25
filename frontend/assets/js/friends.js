@@ -323,8 +323,8 @@ var Friends = (function() {
             return;
         }
 
-        var typeIcons = { todo: '✓', review: '🔄', scenario: '📖' };
-        var typeLabels = { todo: '任务', review: '例行事项', scenario: '英语场景' };
+        var typeIcons = { todo: '✓', review: '🔄', scenario: '📖', routine: '🔁', expense: '💰' };
+        var typeLabels = { todo: '任务', review: '例行事项', scenario: '英语场景', routine: '日常习惯', expense: '记账' };
 
         var isMobile = window.innerWidth <= 768;
         var html = '';
@@ -341,7 +341,15 @@ var Friends = (function() {
             var label = typeLabels[item.item_type] || item.item_type;
             var title = '';
             if (item.item_snapshot) {
-                title = item.item_snapshot.text || item.item_snapshot.title || '(未命名)';
+                title = item.item_snapshot.text || item.item_snapshot.title || '';
+                if (!title && item.item_type === 'expense') {
+                    var s = item.item_snapshot;
+                    var sym = s.currency === 'CNY' ? '¥' : 'CA$';
+                    title = sym + (s.amount || 0).toFixed(2);
+                    if (s.notes) title += ' ' + s.notes;
+                    if (s.date) title += ' (' + s.date + ')';
+                }
+                if (!title) title = '(未命名)';
             }
 
             return '<div class="shared-item-card">' +
@@ -382,15 +390,18 @@ var Friends = (function() {
     }
 
     function navigateToAcceptedItem(itemType, newId) {
-        // Close share inbox overlay first
-        closeShareInbox();
+        // Remove inbox overlay without triggering switchPage (avoid conflict)
+        document.body.classList.remove('page-inbox');
+
+        // Force switchPage to work by clearing currentPage
+        if (typeof currentPage !== 'undefined') currentPage = '';
 
         switch (itemType) {
             case 'todo':
                 if (typeof switchPage === 'function') switchPage('todo');
                 setTimeout(function() {
                     if (typeof openTaskDetail === 'function') openTaskDetail(newId);
-                }, 300);
+                }, 500);
                 break;
             case 'review':
                 if (typeof switchPage === 'function') switchPage('review');
@@ -402,7 +413,7 @@ var Friends = (function() {
                 if (typeof switchPage === 'function') switchPage('english');
                 setTimeout(function() {
                     if (typeof English !== 'undefined') English.openDetail(newId);
-                }, 300);
+                }, 500);
                 break;
             case 'expense':
                 if (typeof switchPage === 'function') switchPage('life');
@@ -410,8 +421,8 @@ var Friends = (function() {
                     if (typeof Life !== 'undefined') Life.openFeature('expense');
                     setTimeout(function() {
                         if (typeof Expense !== 'undefined') Expense.openDetail(newId);
-                    }, 300);
-                }, 300);
+                    }, 500);
+                }, 500);
                 break;
         }
     }
