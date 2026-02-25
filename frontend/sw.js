@@ -1,4 +1,4 @@
-const CACHE_NAME = 'next-v14';
+const CACHE_NAME = 'next-v15';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -125,11 +125,22 @@ self.addEventListener('notificationclick', event => {
 self.addEventListener('fetch', event => {
     const url = new URL(event.request.url);
 
-    // API requests: always network
+    // API requests: always network, no SW interference
     if (url.pathname.startsWith('/api/')) {
         return;
     }
 
+    // HTML pages: always fetch fresh from network (never cache)
+    // This prevents stale HTML (e.g. wrong charset) after deployments
+    const isHtml = url.pathname === '/'
+        || url.pathname.endsWith('.html')
+        || url.pathname === '';
+    if (isHtml) {
+        event.respondWith(fetch(event.request));
+        return;
+    }
+
+    // Static assets: network first, fallback to cache
     event.respondWith(
         fetch(event.request)
             .then(response => {

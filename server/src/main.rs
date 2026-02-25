@@ -420,15 +420,13 @@ async fn main() {
                 }
             }),
         )
-        // Serve HTML files explicitly with charset=utf-8 to prevent mojibake on mobile
+        // Serve HTML files explicitly with charset=utf-8 to prevent mojibake on mobile.
+        // axum::response::Html sets Content-Type: text/html; charset=utf-8 automatically.
         .route(
             "/",
             get(move || async move {
-                match tokio::fs::read(format!("{}/index.html", index_dir)).await {
-                    Ok(bytes) => (
-                        [(http::header::CONTENT_TYPE, "text/html; charset=utf-8")],
-                        bytes,
-                    ).into_response(),
+                match tokio::fs::read_to_string(format!("{}/index.html", index_dir)).await {
+                    Ok(body) => axum::response::Html(body).into_response(),
                     Err(_) => StatusCode::NOT_FOUND.into_response(),
                 }
             }),
@@ -436,11 +434,8 @@ async fn main() {
         .route(
             "/index.html",
             get(move || async move {
-                match tokio::fs::read(format!("{}/index.html", index_dir2)).await {
-                    Ok(bytes) => (
-                        [(http::header::CONTENT_TYPE, "text/html; charset=utf-8")],
-                        bytes,
-                    ).into_response(),
+                match tokio::fs::read_to_string(format!("{}/index.html", index_dir2)).await {
+                    Ok(body) => axum::response::Html(body).into_response(),
                     Err(_) => StatusCode::NOT_FOUND.into_response(),
                 }
             }),
@@ -448,11 +443,8 @@ async fn main() {
         .route(
             "/login.html",
             get(move || async move {
-                match tokio::fs::read(format!("{}/login.html", login_dir)).await {
-                    Ok(bytes) => (
-                        [(http::header::CONTENT_TYPE, "text/html; charset=utf-8")],
-                        bytes,
-                    ).into_response(),
+                match tokio::fs::read_to_string(format!("{}/login.html", login_dir)).await {
+                    Ok(body) => axum::response::Html(body).into_response(),
                     Err(_) => StatusCode::NOT_FOUND.into_response(),
                 }
             }),
