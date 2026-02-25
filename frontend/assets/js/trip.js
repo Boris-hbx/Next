@@ -486,12 +486,16 @@ var Trip = (function() {
             }
         }
 
-        // AI analysis section (new items only, owner can use)
+        // AI analysis section (owner can use, both new and edit)
         var aiSection = '';
-        if (canEditAll && !isEdit) {
+        if (canEditAll) {
+            var aiHint = isEdit
+                ? '上传新票据照片后可重新分析，或粘贴补充信息...'
+                : '粘贴行程信息（确认邮件、短信、订单截图文字等），阿宝会自动提取信息...';
+            var aiDividerText = isEdit ? '或 让阿宝重新分析' : '或 让阿宝帮你填';
             aiSection = '<div class="trip-ai-section">'
-                + '<div class="trip-ai-divider"><span>或 让阿宝帮你填</span></div>'
-                + '<textarea id="trip-ai-text" class="trip-ai-textarea" rows="3" placeholder="粘贴行程信息（确认邮件、短信、订单截图文字等），阿宝会自动提取信息..."></textarea>'
+                + '<div class="trip-ai-divider"><span>' + aiDividerText + '</span></div>'
+                + '<textarea id="trip-ai-text" class="trip-ai-textarea" rows="3" placeholder="' + aiHint + '"></textarea>'
                 + '<button class="trip-ai-btn" id="trip-ai-btn" onclick="Trip.analyzeText()">阿宝分析 ✨</button>'
                 + '</div>';
         }
