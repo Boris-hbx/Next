@@ -8,3 +8,4 @@ pub mod reminder;
 pub mod review;
 pub mod routine;
 pub mod todo;
+pub mod trip;

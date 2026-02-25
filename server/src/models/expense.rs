@@ -184,6 +184,26 @@ fn default_period() -> String {
     "day".to_string()
 }
 
+#[derive(Debug, Deserialize)]
+pub struct ExpenseAnalyticsQuery {
+    pub period: String,
+    pub date: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CategoryTotal {
+    pub category: String,
+    pub amount: f64,
+    pub count: i64,
+    pub percentage: f64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DailyTotal {
+    pub date: String,
+    pub amount: f64,
+}
+
 #[derive(Debug, Serialize)]
 pub struct ExpenseSummary {
     pub total_amount: f64,

@@ -83,11 +83,28 @@ fn run_migrations(conn: &Connection) {
         .prepare("SELECT currency FROM expense_entries LIMIT 1")
         .is_ok();
     if !has_currency {
-        conn.execute_batch(
-            "ALTER TABLE expense_entries ADD COLUMN currency TEXT DEFAULT 'CAD';",
+        conn.execute_batch("ALTER TABLE expense_entries ADD COLUMN currency TEXT DEFAULT 'CAD';")
+            .ok();
+    }
+
+    // Add role column to users (default 'user')
+    let has_role: bool = conn.prepare("SELECT role FROM users LIMIT 1").is_ok();
+    if !has_role {
+        conn.execute_batch("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user';")
+            .ok();
+        // Set first registered user as admin
+        conn.execute(
+            "UPDATE users SET role = 'admin' WHERE id = (SELECT id FROM users ORDER BY created_at ASC LIMIT 1)",
+            [],
         )
         .ok();
     }
+    // Ensure boris_dev is always admin
+    conn.execute(
+        "UPDATE users SET role = 'admin' WHERE username = 'boris_dev'",
+        [],
+    )
+    .ok();
 }
 
 fn create_tables(conn: &Connection) {
@@ -100,6 +117,7 @@ fn create_tables(conn: &Connection) {
             password_hash TEXT NOT NULL,
             display_name TEXT,
             avatar TEXT DEFAULT '',
+            role TEXT DEFAULT 'user',
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
         );
@@ -436,6 +454,61 @@ fn create_tables(conn: &Connection) {
             created_at TEXT NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_expense_photos_entry ON expense_photos(entry_id);
+
+        -- Trips (差旅)
+        CREATE TABLE IF NOT EXISTS trips (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL REFERENCES users(id),
+            title TEXT NOT NULL,
+            destination TEXT NOT NULL DEFAULT '',
+            date_from TEXT NOT NULL,
+            date_to TEXT NOT NULL,
+            purpose TEXT DEFAULT '',
+            notes TEXT DEFAULT '',
+            currency TEXT DEFAULT 'CAD',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_trips_user ON trips(user_id, date_from DESC);
+
+        -- Trip items (按天挂载的行程条目)
+        CREATE TABLE IF NOT EXISTS trip_items (
+            id TEXT PRIMARY KEY,
+            trip_id TEXT NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+            type TEXT NOT NULL DEFAULT 'misc',
+            date TEXT NOT NULL,
+            description TEXT NOT NULL DEFAULT '',
+            amount REAL NOT NULL DEFAULT 0,
+            currency TEXT DEFAULT 'CAD',
+            reimburse_status TEXT NOT NULL DEFAULT 'pending',
+            notes TEXT DEFAULT '',
+            sort_order INTEGER DEFAULT 0,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_trip_items_trip ON trip_items(trip_id, date, sort_order);
+
+        -- Trip photos (票据照片)
+        CREATE TABLE IF NOT EXISTS trip_photos (
+            id TEXT PRIMARY KEY,
+            item_id TEXT NOT NULL REFERENCES trip_items(id) ON DELETE CASCADE,
+            filename TEXT NOT NULL,
+            storage_path TEXT NOT NULL,
+            file_size INTEGER NOT NULL,
+            mime_type TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_trip_photos_item ON trip_photos(item_id);
+
+        -- Trip collaborators (协作者)
+        CREATE TABLE IF NOT EXISTS trip_collaborators (
+            trip_id TEXT NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+            user_id TEXT NOT NULL REFERENCES users(id),
+            role TEXT NOT NULL DEFAULT 'viewer',
+            created_at TEXT NOT NULL,
+            PRIMARY KEY (trip_id, user_id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_trip_collab_user ON trip_collaborators(user_id);
         ",
     )
     .expect("Failed to create tables");

@@ -115,6 +115,17 @@ function renderRoutines() {
     });
     list.innerHTML = html;
     updateButtonAnimations();
+
+    // 长按操作菜单 (SPEC-047)
+    if (typeof ActionSheet !== 'undefined') {
+        ActionSheet.bindAll(list, '.routine-item:not(.completed)', function(el) {
+            var id = el.dataset.id;
+            return [
+                { icon: '📤', label: '分享给好友', action: function() { Friends.openShareModal('routine', id); } },
+                { icon: '🗑️', label: '删除', action: function() { deleteRoutine(id); }, danger: true }
+            ];
+        });
+    }
 }
 
 function addRoutine() {

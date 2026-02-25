@@ -168,11 +168,7 @@ pub async fn create_scenario(
     let description = req.description.unwrap_or_default();
     let category = req.category.unwrap_or_else(|| "英语".into());
     let content = req.content.unwrap_or_default();
-    let status = if content.is_empty() {
-        "draft"
-    } else {
-        "ready"
-    };
+    let status = if content.is_empty() { "draft" } else { "ready" };
 
     if let Err(e) = db.execute(
         "INSERT INTO english_scenarios (id, user_id, title, title_en, description, icon, content, status, archived, created_at, updated_at, category, notes) VALUES (?1, ?2, ?3, '', ?4, ?5, ?6, ?7, 0, ?8, ?9, ?10, '')",

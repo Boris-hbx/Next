@@ -497,6 +497,36 @@ pub async fn share_item(
             )
             .ok()
         }
+        "routine" => {
+            db.query_row(
+                "SELECT id, text FROM routines WHERE id = ?1 AND user_id = ?2",
+                rusqlite::params![req.item_id, user_id.0],
+                |row| {
+                    Ok(json!({
+                        "id": row.get::<_, String>(0)?,
+                        "text": row.get::<_, String>(1)?
+                    }))
+                },
+            )
+            .ok()
+        }
+        "expense" => {
+            db.query_row(
+                "SELECT id, amount, date, notes, tags, currency FROM expense_entries WHERE id = ?1 AND user_id = ?2",
+                rusqlite::params![req.item_id, user_id.0],
+                |row| {
+                    Ok(json!({
+                        "id": row.get::<_, String>(0)?,
+                        "amount": row.get::<_, f64>(1)?,
+                        "date": row.get::<_, String>(2)?,
+                        "notes": row.get::<_, String>(3).unwrap_or_default(),
+                        "tags": row.get::<_, String>(4).unwrap_or_else(|_| "[]".into()),
+                        "currency": row.get::<_, String>(5).unwrap_or_else(|_| "CAD".into())
+                    }))
+                },
+            )
+            .ok()
+        }
         _ => {
             return (
                 StatusCode::BAD_REQUEST,
@@ -544,43 +574,64 @@ pub async fn share_item(
 pub async fn shared_inbox(
     State(state): State<AppState>,
     user_id: UserId,
+    Query(params): Query<HashMap<String, String>>,
 ) -> (StatusCode, Json<SharedItemsResponse>) {
     let db = state.db.lock();
+    let item_type_filter = params.get("type").cloned().unwrap_or_default();
 
-    let mut stmt = db
-        .prepare(
+    let (sql, use_filter) = if item_type_filter.is_empty() {
+        (
             "SELECT s.id, s.sender_id, u.display_name, u.username, s.recipient_id, s.item_type, s.item_id, s.item_snapshot, s.message, s.status, s.created_at
              FROM shared_items s
              JOIN users u ON s.sender_id = u.id
              WHERE s.recipient_id = ?1 AND s.status IN ('unread', 'read')
-             ORDER BY s.created_at DESC",
+             ORDER BY s.created_at DESC".to_string(),
+            false,
         )
-        .unwrap();
+    } else {
+        (
+            "SELECT s.id, s.sender_id, u.display_name, u.username, s.recipient_id, s.item_type, s.item_id, s.item_snapshot, s.message, s.status, s.created_at
+             FROM shared_items s
+             JOIN users u ON s.sender_id = u.id
+             WHERE s.recipient_id = ?1 AND s.status IN ('unread', 'read') AND s.item_type = ?2
+             ORDER BY s.created_at DESC".to_string(),
+            true,
+        )
+    };
 
-    let items: Vec<SharedItem> = stmt
-        .query_map([&user_id.0], |row| {
-            let display_name: Option<String> = row.get(2)?;
-            let username: String = row.get(3)?;
-            let snapshot_str: String = row.get(7)?;
-            let snapshot: serde_json::Value =
-                serde_json::from_str(&snapshot_str).unwrap_or(json!({}));
+    let mut stmt = db.prepare(&sql).unwrap();
 
-            Ok(SharedItem {
-                id: row.get(0)?,
-                sender_id: row.get(1)?,
-                sender_name: Some(display_name.unwrap_or(username)),
-                recipient_id: row.get(4)?,
-                item_type: row.get(5)?,
-                item_id: row.get(6)?,
-                item_snapshot: snapshot,
-                message: row.get::<_, String>(8).unwrap_or_default(),
-                status: row.get(9)?,
-                created_at: row.get(10)?,
-            })
+    let row_mapper = |row: &rusqlite::Row| -> rusqlite::Result<SharedItem> {
+        let display_name: Option<String> = row.get(2)?;
+        let username: String = row.get(3)?;
+        let snapshot_str: String = row.get(7)?;
+        let snapshot: serde_json::Value = serde_json::from_str(&snapshot_str).unwrap_or(json!({}));
+
+        Ok(SharedItem {
+            id: row.get(0)?,
+            sender_id: row.get(1)?,
+            sender_name: Some(display_name.unwrap_or(username)),
+            recipient_id: row.get(4)?,
+            item_type: row.get(5)?,
+            item_id: row.get(6)?,
+            item_snapshot: snapshot,
+            message: row.get::<_, String>(8).unwrap_or_default(),
+            status: row.get(9)?,
+            created_at: row.get(10)?,
         })
-        .unwrap()
-        .filter_map(|r| r.ok())
-        .collect();
+    };
+
+    let items: Vec<SharedItem> = if use_filter {
+        stmt.query_map(rusqlite::params![user_id.0, item_type_filter], &row_mapper)
+            .unwrap()
+            .filter_map(|r| r.ok())
+            .collect()
+    } else {
+        stmt.query_map([&user_id.0], &row_mapper)
+            .unwrap()
+            .filter_map(|r| r.ok())
+            .collect()
+    };
 
     (
         StatusCode::OK,
@@ -615,14 +666,14 @@ pub async fn shared_inbox_count(
     )
 }
 
+/// Accept shared item — returns new_id + item_type for navigation
 pub async fn accept_shared(
     State(state): State<AppState>,
     user_id: UserId,
     Path(id): Path<String>,
-) -> (StatusCode, Json<SimpleResponse>) {
+) -> (StatusCode, Json<serde_json::Value>) {
     let db = state.db.lock();
 
-    // Get the shared item
     let result = db.query_row(
         "SELECT item_type, item_snapshot FROM shared_items WHERE id = ?1 AND recipient_id = ?2 AND status IN ('unread', 'read')",
         rusqlite::params![id, user_id.0],
@@ -634,10 +685,7 @@ pub async fn accept_shared(
         Err(_) => {
             return (
                 StatusCode::NOT_FOUND,
-                Json(SimpleResponse {
-                    success: false,
-                    message: Some("分享不存在".into()),
-                }),
+                Json(json!({ "success": false, "message": "分享不存在" })),
             )
         }
     };
@@ -646,7 +694,6 @@ pub async fn accept_shared(
     let new_id = uuid::Uuid::new_v4().to_string()[..8].to_string();
     let now = chrono::Utc::now().to_rfc3339();
 
-    // Create copy in user's data
     match item_type.as_str() {
         "todo" => {
             let text = snapshot["text"].as_str().unwrap_or("(分享的任务)");
@@ -691,10 +738,29 @@ pub async fn accept_shared(
             )
             .ok();
         }
+        "routine" => {
+            let text = snapshot["text"].as_str().unwrap_or("(分享的例行)");
+            db.execute(
+                "INSERT INTO routines (id, user_id, text, completed_today, created_at) VALUES (?1, ?2, ?3, 0, ?4)",
+                rusqlite::params![new_id, user_id.0, text, now],
+            )
+            .ok();
+        }
+        "expense" => {
+            let amount = snapshot["amount"].as_f64().unwrap_or(0.0);
+            let date = snapshot["date"].as_str().unwrap_or(&now);
+            let notes = snapshot["notes"].as_str().unwrap_or("");
+            let tags = snapshot["tags"].as_str().unwrap_or("[]");
+            let currency = snapshot["currency"].as_str().unwrap_or("CAD");
+            db.execute(
+                "INSERT INTO expense_entries (id, user_id, amount, date, notes, tags, currency, ai_processed, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 0, ?8, ?9)",
+                rusqlite::params![new_id, user_id.0, amount, date, notes, tags, currency, now, now],
+            )
+            .ok();
+        }
         _ => {}
     }
 
-    // Mark as accepted
     db.execute(
         "UPDATE shared_items SET status = 'accepted' WHERE id = ?1",
         [&id],
@@ -703,10 +769,12 @@ pub async fn accept_shared(
 
     (
         StatusCode::OK,
-        Json(SimpleResponse {
-            success: true,
-            message: Some("已收下".into()),
-        }),
+        Json(json!({
+            "success": true,
+            "message": "已收下",
+            "new_id": new_id,
+            "item_type": item_type
+        })),
     )
 }
 

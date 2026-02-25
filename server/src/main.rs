@@ -95,16 +95,57 @@ pub fn build_app(state: AppState) -> Router {
 
     // Expense routes
     let expense_routes = Router::new()
-        .route("/", get(routes::expenses::list_entries).post(routes::expenses::create_entry))
+        .route(
+            "/",
+            get(routes::expenses::list_entries).post(routes::expenses::create_entry),
+        )
         .route("/summary", get(routes::expenses::get_summary))
+        .route("/analytics", get(routes::expenses::get_analytics))
         .route("/tags", get(routes::expenses::list_tags))
         .route("/rates", get(routes::expenses::get_rates))
         .route("/parse-preview", post(routes::expenses::parse_preview))
-        .route("/{id}", get(routes::expenses::get_entry).put(routes::expenses::update_entry).delete(routes::expenses::delete_entry))
+        .route(
+            "/{id}",
+            get(routes::expenses::get_entry)
+                .put(routes::expenses::update_entry)
+                .delete(routes::expenses::delete_entry),
+        )
         .route("/{id}/photos", post(routes::expenses::upload_photos))
         .route("/{id}/parse", post(routes::expenses::parse_receipts))
         .route("/photos/{photo_id}", delete(routes::expenses::delete_photo))
         .layer(DefaultBodyLimit::max(50_000_000)); // 50MB for base64 encoded photos
+
+    // Trip routes (差旅)
+    let trip_routes = Router::new()
+        .route(
+            "/",
+            get(routes::trips::list_trips).post(routes::trips::create_trip),
+        )
+        .route(
+            "/{id}",
+            get(routes::trips::get_trip)
+                .put(routes::trips::update_trip)
+                .delete(routes::trips::delete_trip),
+        )
+        .route("/{id}/items", post(routes::trips::create_item))
+        .route(
+            "/items/{item_id}",
+            put(routes::trips::update_item).delete(routes::trips::delete_item),
+        )
+        .route(
+            "/items/{item_id}/photos",
+            post(routes::trips::upload_item_photos),
+        )
+        .route("/photos/{photo_id}", delete(routes::trips::delete_photo))
+        .route("/{id}/collaborators", post(routes::trips::add_collaborator))
+        .route(
+            "/{id}/collaborators/{uid}",
+            delete(routes::trips::remove_collaborator),
+        )
+        .route("/{id}/export/csv", get(routes::trips::export_csv))
+        .route("/{id}/export/photos", get(routes::trips::export_photos))
+        .route("/analyze", post(routes::trips::analyze_item))
+        .layer(DefaultBodyLimit::max(50_000_000));
 
     // English scenario routes
     let english_routes = Router::new()
@@ -231,6 +272,7 @@ pub fn build_app(state: AppState) -> Router {
         .nest("/conversations", conversation_routes)
         .nest("/english", english_routes)
         .nest("/expenses", expense_routes)
+        .nest("/trips", trip_routes)
         .nest("/friends", friends_routes)
         .nest("/reminders", reminder_routes)
         .nest("/notifications", notification_routes)
@@ -238,8 +280,12 @@ pub fn build_app(state: AppState) -> Router {
         .nest("/share", share_routes)
         .nest("/contacts", contacts_routes)
         .nest("/collaborate", collaborate_routes)
+        .nest("/admin", Router::new().route("/dashboard", get(routes::admin::dashboard)))
         .route("/moment", get(routes::moment::get_moment))
-        .route("/uploads/{user_id}/{filename}", get(routes::expenses::serve_photo));
+        .route(
+            "/uploads/{user_id}/{filename}",
+            get(routes::expenses::serve_photo),
+        );
 
     Router::new()
         .route("/health", get(move || async move {

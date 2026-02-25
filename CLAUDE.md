@@ -20,6 +20,7 @@
 | 部署、Docker、Fly.io | `docs/ref/DEPLOYMENT.md` |
 | 数据库 schema、存储、备份 | `docs/ref/DATA.md` |
 | 某功能的设计细节 | `docs/specs/SPEC-{NNN}-*.md` |
+| 功能测试用例 | `docs/tests/TEST-{模块名}.md` |
 
 ## 项目结构
 
@@ -36,6 +37,7 @@ Next/
 ├── docs/
 │   ├── ref/                 # 参考文档（按需读取）
 │   ├── specs/               # 功能 Spec
+│   ├── tests/               # 测试用例
 │   └── archive/             # 已归档 Spec
 ├── Dockerfile
 ├── fly.toml
@@ -87,10 +89,12 @@ main 分支 → git merge dev → deploy production 发版 → git tag vX.Y.Z
 
 ## 新功能开发流程
 
-1. 后端: `server/src/routes/` 添加路由 → `main.rs` 注册
-2. 前端 HTML: `frontend/index.html`
-3. 前端 JS: `frontend/assets/js/*.js`
-4. 样式: `frontend/assets/css/style.css`
+1. **测试用例先行**: 在 `docs/tests/` 编写测试用例，明确预期行为
+2. 后端: `server/src/routes/` 添加路由 → `main.rs` 注册
+3. 前端 HTML: `frontend/index.html`
+4. 前端 JS: `frontend/assets/js/*.js`
+5. 样式: `frontend/assets/css/style.css`
+6. **对照测试用例验证**: 逐条检查，确认无遗漏
 
 ## Spec 文档规范
 
@@ -105,6 +109,19 @@ main 分支 → git merge dev → deploy production 发版 → git tag vX.Y.Z
 新建 spec 时查看 `docs/specs/` 下最大序号 +1（当前最大: 043）。
 
 ## 测试
+
+### 测试用例文档
+
+存放: `docs/tests/TEST-{模块名}.md`，每个模块一个文件。
+
+开发新功能或修 Bug 时，先写/补测试用例再动代码。改完代码后对照用例逐条验证。
+
+| 文件 | 覆盖范围 |
+|------|---------|
+| `TEST-life-expense.md` | 生活 Hub、记账（手动/AI/多日期/筛选/详情）、边界异常 |
+| `TEST-friends-sharing.md` | 好友管理、分享发送/接收、横幅/badge、异常边界 |
+
+### 自动化测试
 
 - 运行全部测试: `cd server && cargo test`
 - 运行单个测试: `cd server && cargo test test_name`

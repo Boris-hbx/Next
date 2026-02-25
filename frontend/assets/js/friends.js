@@ -31,9 +31,6 @@ var Friends = (function() {
             };
         }
 
-        // Share modal
-        var shareOverlay = document.getElementById('share-modal-overlay');
-        if (shareOverlay) shareOverlay.onclick = closeShareModal;
     }
 
     // ─── Friends Management (Settings page) ───
@@ -103,6 +100,7 @@ var Friends = (function() {
             var resp = await API.acceptFriend(id);
             if (resp.success) {
                 showToast('已接受', 'success');
+                if (typeof ShareModal !== 'undefined') ShareModal.invalidateCache();
                 loadFriendsData();
             } else {
                 showToast(resp.message || '操作失败', 'error');
@@ -131,6 +129,7 @@ var Friends = (function() {
             var resp = await API.deleteFriend(friendshipId);
             if (resp.success) {
                 showToast('已删除好友', 'success');
+                if (typeof ShareModal !== 'undefined') ShareModal.invalidateCache();
                 friends = friends.filter(function(f) { return f.friendship_id !== friendshipId; });
                 renderFriendsList();
             }
@@ -201,88 +200,17 @@ var Friends = (function() {
         }
     }
 
-    // ─── Share Modal ───
-
-    var shareContext = { itemType: '', itemId: '' };
+    // ─── Share Modal (delegated to ShareModal component) ───
 
     function openShareModal(itemType, itemId) {
-        shareContext.itemType = itemType;
-        shareContext.itemId = itemId;
-
-        var overlay = document.getElementById('share-modal-overlay');
-        if (overlay) overlay.style.display = 'flex';
-
-        renderShareFriendsList();
+        if (typeof ShareModal !== 'undefined') {
+            ShareModal.openShare(itemType, itemId);
+        }
     }
 
     function closeShareModal() {
-        var overlay = document.getElementById('share-modal-overlay');
-        if (overlay) overlay.style.display = 'none';
-    }
-
-    async function renderShareFriendsList() {
-        // Ensure friends are loaded
-        if (friends.length === 0) {
-            try {
-                var resp = await API.getFriends();
-                if (resp.success) friends = resp.items || [];
-            } catch (e) {}
-        }
-
-        var container = document.getElementById('share-friends-list');
-        if (!container) return;
-
-        if (friends.length === 0) {
-            container.innerHTML = '<div class="friends-empty">还没有好友，去设置页面添加吧</div>';
-            return;
-        }
-
-        // Check who already received this item
-        var sentMap = {};
-        try {
-            if (shareContext.itemType && shareContext.itemId) {
-                var sentResp = await API.getSharedSent(shareContext.itemType, shareContext.itemId);
-                if (sentResp.success && sentResp.items) {
-                    sentResp.items.forEach(function(s) {
-                        sentMap[s.recipient_id] = s.status;
-                    });
-                }
-            }
-        } catch (e) {}
-
-        container.innerHTML = friends.map(function(f) {
-            var name = f.display_name || f.username;
-            var initial = name.charAt(0).toUpperCase();
-            var alreadySent = sentMap[f.id];
-
-            if (alreadySent) {
-                var statusLabel = alreadySent === 'accepted' ? '已收下' :
-                                  alreadySent === 'dismissed' ? '已忽略' : '已分享';
-                return '<div class="share-friend-item share-friend-sent">' +
-                    '<div class="friend-avatar">' + initial + '</div>' +
-                    '<span class="friend-name">' + escapeHtml(name) + '</span>' +
-                    '<span class="share-sent-label">' + statusLabel + '</span>' +
-                '</div>';
-            }
-
-            return '<div class="share-friend-item" onclick="Friends.doShare(\'' + f.id + '\')">' +
-                '<div class="friend-avatar">' + initial + '</div>' +
-                '<span class="friend-name">' + escapeHtml(name) + '</span>' +
-            '</div>';
-        }).join('');
-    }
-
-    async function doShare(friendId) {
-        try {
-            var resp = await API.shareItem(friendId, shareContext.itemType, shareContext.itemId);
-            if (resp.success) {
-                showToast('分享成功', 'success');
-                closeShareModal();
-            } else {
-                showToast(resp.message || '分享失败', 'error');
-            }
-        } catch (e) {
-            showToast('分享失败', 'error');
+        if (typeof ShareModal !== 'undefined') {
+            ShareModal.close();
         }
     }
 
@@ -303,32 +231,87 @@ var Friends = (function() {
                     sharedSection.style.display = sharedItems.length > 0 ? '' : 'none';
                 }
 
-                // Render share banner on English page
-                renderEnglishShareBanner();
+                // Render share banners on all module pages
+                renderShareBanners();
             }
         } catch (e) {
             console.error('[Friends] inbox load failed:', e);
         }
     }
 
-    function renderEnglishShareBanner() {
-        var banner = document.getElementById('english-share-banner');
-        if (!banner) return;
+    var bannerConfig = {
+        scenario: { elementId: 'english-share-banner', label: '学习笔记' },
+        todo:     { elementId: 'todo-share-banner',    label: '待办事项' },
+        review:   { elementId: 'review-share-banner',  label: '例行审视' }
+    };
 
-        var scenarioItems = sharedItems.filter(function(item) {
-            return item.item_type === 'scenario';
+    function renderShareBanners() {
+        var counts = {};
+        sharedItems.forEach(function(item) {
+            counts[item.item_type] = (counts[item.item_type] || 0) + 1;
         });
 
-        if (scenarioItems.length === 0) {
-            banner.innerHTML = '';
-            return;
+        Object.keys(bannerConfig).forEach(function(type) {
+            var cfg = bannerConfig[type];
+            var banner = document.getElementById(cfg.elementId);
+            if (!banner) return;
+            var count = counts[type] || 0;
+            if (count === 0) {
+                banner.innerHTML = '';
+                return;
+            }
+            banner.innerHTML = '<div class="share-banner" onclick="Friends.openShareInbox()">' +
+                '<span class="share-banner-icon">📬</span>' +
+                '<span class="share-banner-text">你收到 ' + count + ' 条好友分享的' + cfg.label + '</span>' +
+                '<span class="share-banner-arrow">\u203A</span>' +
+            '</div>';
+        });
+    }
+
+    function openShareInbox() {
+        var isMobile = window.innerWidth <= 768;
+
+        if (isMobile) {
+            // On mobile: show right sidebar as full-screen inbox page
+            document.body.classList.add('page-inbox');
+
+            // Hide all main views
+            var views = ['todo-view', 'review-view', 'english-view', 'life-view', 'settings-view'];
+            views.forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
+
+            // Hide mobile FAB
+            var fab = document.getElementById('mobile-fab');
+            if (fab) fab.style.display = 'none';
+        } else {
+            // On desktop: navigate to todo page
+            if (typeof switchPage === 'function') switchPage('todo');
         }
 
-        banner.innerHTML = '<div class="share-banner">' +
-            '<span class="share-banner-icon">📬</span>' +
-            '<span class="share-banner-text">你收到 ' + scenarioItems.length + ' 条好友分享的学习笔记</span>' +
-            '<button class="share-banner-btn" onclick="switchPage(\'todo\')">查看</button>' +
-        '</div>';
+        // Expand and show shared section
+        var section = document.getElementById('shared-section');
+        if (section) {
+            section.style.display = '';
+            if (!section.classList.contains('expanded')) {
+                section.classList.add('expanded');
+            }
+            if (!isMobile) {
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+    }
+
+    function closeShareInbox() {
+        document.body.classList.remove('page-inbox');
+        // Restore current page view
+        if (typeof switchPage === 'function') {
+            var current = typeof currentPage !== 'undefined' ? currentPage : 'todo';
+            // Force re-render by resetting currentPage
+            if (typeof currentPage !== 'undefined') currentPage = '';
+            switchPage(current);
+        }
     }
 
     function renderSharedInbox() {
@@ -343,7 +326,16 @@ var Friends = (function() {
         var typeIcons = { todo: '✓', review: '🔄', scenario: '📖' };
         var typeLabels = { todo: '任务', review: '例行事项', scenario: '英语场景' };
 
-        var html = '<h4 class="shared-inbox-title">好友分享</h4>';
+        var isMobile = window.innerWidth <= 768;
+        var html = '';
+        if (isMobile) {
+            html += '<div class="shared-inbox-header">' +
+                '<button class="shared-inbox-back" onclick="Friends.closeShareInbox()">‹ 返回</button>' +
+                '<h4 class="shared-inbox-title">好友分享</h4>' +
+            '</div>';
+        } else {
+            html += '<h4 class="shared-inbox-title">好友分享</h4>';
+        }
         html += sharedItems.map(function(item) {
             var icon = typeIcons[item.item_type] || '📦';
             var label = typeLabels[item.item_type] || item.item_type;
@@ -378,9 +370,49 @@ var Friends = (function() {
                 sharedItems = sharedItems.filter(function(s) { return s.id !== id; });
                 renderSharedInbox();
                 updateInboxBadge();
+
+                // Navigate to the newly created item
+                if (resp.new_id && resp.item_type) {
+                    navigateToAcceptedItem(resp.item_type, resp.new_id);
+                }
             }
         } catch (e) {
             showToast('操作失败', 'error');
+        }
+    }
+
+    function navigateToAcceptedItem(itemType, newId) {
+        // Close share inbox overlay first
+        closeShareInbox();
+
+        switch (itemType) {
+            case 'todo':
+                if (typeof switchPage === 'function') switchPage('todo');
+                setTimeout(function() {
+                    if (typeof openTaskDetail === 'function') openTaskDetail(newId);
+                }, 300);
+                break;
+            case 'review':
+                if (typeof switchPage === 'function') switchPage('review');
+                break;
+            case 'routine':
+                if (typeof switchPage === 'function') switchPage('todo');
+                break;
+            case 'scenario':
+                if (typeof switchPage === 'function') switchPage('english');
+                setTimeout(function() {
+                    if (typeof English !== 'undefined') English.openDetail(newId);
+                }, 300);
+                break;
+            case 'expense':
+                if (typeof switchPage === 'function') switchPage('life');
+                setTimeout(function() {
+                    if (typeof Life !== 'undefined') Life.openFeature('expense');
+                    setTimeout(function() {
+                        if (typeof Expense !== 'undefined') Expense.openDetail(newId);
+                    }, 300);
+                }, 300);
+                break;
         }
     }
 
@@ -440,9 +472,10 @@ var Friends = (function() {
         sendRequest: sendRequest,
         openShareModal: openShareModal,
         closeShareModal: closeShareModal,
-        doShare: doShare,
         acceptShared: acceptShared,
         dismissShared: dismissShared,
-        updateInboxBadge: updateInboxBadge
+        updateInboxBadge: updateInboxBadge,
+        openShareInbox: openShareInbox,
+        closeShareInbox: closeShareInbox
     };
 })();

@@ -712,6 +712,57 @@ var Abao = (function() {
         }
     }
 
+    // ─── Page context for AI awareness ───
+    function getPageContext() {
+        // Detect which page is visible
+        var page = '';
+        var detailId = '';
+
+        if (typeof currentPage === 'string') {
+            page = currentPage;
+        } else {
+            // Fallback: detect by visible view
+            var views = ['todo', 'routine', 'review', 'english', 'life', 'settings'];
+            for (var i = 0; i < views.length; i++) {
+                var el = document.getElementById(views[i] + '-view');
+                if (el && el.style.display !== 'none' && el.offsetParent !== null) {
+                    page = views[i];
+                    break;
+                }
+            }
+        }
+
+        // Detect open detail/modal
+        if (page === 'life' || page === 'expense') {
+            var expDetail = document.getElementById('expense-detail-overlay');
+            if (expDetail && expDetail.style.display !== 'none') {
+                // Get current detail ID from Expense module
+                if (typeof Expense !== 'undefined' && Expense.getCurrentDetailId) {
+                    detailId = Expense.getCurrentDetailId() || '';
+                }
+            }
+            page = 'expense';
+        } else if (page === 'english') {
+            var detailView = document.querySelector('.english-detail-view');
+            if (detailView && detailView.style.display !== 'none') {
+                if (typeof English !== 'undefined' && English.getCurrentId) {
+                    detailId = English.getCurrentId() || '';
+                }
+            }
+        } else if (page === 'todo') {
+            var taskCard = document.getElementById('task-card-overlay');
+            if (taskCard && taskCard.style.display !== 'none') {
+                var idEl = document.getElementById('task-card-id');
+                if (idEl) detailId = idEl.textContent || '';
+            }
+        }
+
+        if (!page) return undefined;
+        var ctx = { page: page };
+        if (detailId) ctx.detail_id = detailId;
+        return ctx;
+    }
+
     // ─── Send message ───
     async function sendMessage() {
         if (!inputEl || isSending) return;
@@ -737,7 +788,8 @@ var Abao = (function() {
                 credentials: 'same-origin',
                 body: JSON.stringify({
                     message: text,
-                    conversation_id: conversationId || undefined
+                    conversation_id: conversationId || undefined,
+                    page_context: getPageContext()
                 })
             });
 
@@ -756,7 +808,7 @@ var Abao = (function() {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'same-origin',
-                    body: JSON.stringify({ message: text })
+                    body: JSON.stringify({ message: text, page_context: getPageContext() })
                 });
                 data = await retryResp.json();
             }
@@ -791,19 +843,42 @@ var Abao = (function() {
         }
     }
 
-    // ─── Refresh tasks if tool calls modified data ───
+    // ─── Refresh UI if tool calls modified data ───
     function refreshTasksIfNeeded(toolCalls) {
         if (!toolCalls) return;
-        var modifyingTools = ['create_todo', 'update_todo', 'delete_todo', 'restore_todo', 'batch_update_todos', 'create_reminder'];
+        var refreshed = {};
         for (var i = 0; i < toolCalls.length; i++) {
-            if (modifyingTools.indexOf(toolCalls[i].tool) >= 0) {
-                // Trigger task list refresh if the function exists
-                if (typeof window.loadTodos === 'function') {
-                    window.loadTodos();
-                } else if (typeof window.refreshTasks === 'function') {
-                    window.refreshTasks();
-                }
-                break;
+            var tool = toolCalls[i].tool || '';
+            // Todos
+            if (!refreshed.todo && (tool.indexOf('todo') >= 0 || tool === 'batch_update_todos' || tool === 'create_reminder')) {
+                refreshed.todo = true;
+                if (typeof window.loadTodos === 'function') window.loadTodos();
+                else if (typeof window.refreshTasks === 'function') window.refreshTasks();
+            }
+            // Routines
+            if (!refreshed.routine && tool.indexOf('routine') >= 0) {
+                refreshed.routine = true;
+                if (typeof window.loadRoutines === 'function') window.loadRoutines();
+            }
+            // Reviews
+            if (!refreshed.review && tool.indexOf('review') >= 0) {
+                refreshed.review = true;
+                if (typeof window.loadReviews === 'function') window.loadReviews();
+            }
+            // English/Learning
+            if (!refreshed.english && tool.indexOf('english_scenario') >= 0) {
+                refreshed.english = true;
+                if (typeof English !== 'undefined' && English.init) English.init();
+            }
+            // Expenses
+            if (!refreshed.expense && tool.indexOf('expense') >= 0) {
+                refreshed.expense = true;
+                if (typeof Expense !== 'undefined' && Expense.init) Expense.init();
+            }
+            // Trips
+            if (!refreshed.trip && tool.indexOf('trip') >= 0) {
+                refreshed.trip = true;
+                if (typeof Trip !== 'undefined' && Trip.init) Trip.init();
             }
         }
     }

@@ -138,6 +138,24 @@ function renderMatrix() {
     updateButtonAnimations();
     renderAssigneeFilter();
     renderPendingItems();
+
+    // 长按操作菜单 — 桌面端右键 (SPEC-047)
+    if (typeof ActionSheet !== 'undefined') {
+        var quadrants = ['important-urgent', 'important-not-urgent', 'not-important-urgent', 'not-important-not-urgent'];
+        quadrants.forEach(function(q) {
+            var container = document.getElementById('items-' + q);
+            if (container) {
+                ActionSheet.bindAll(container, '.task-item:not(.completed)', function(el) {
+                    var id = el.dataset.id;
+                    return [
+                        { icon: '📤', label: '分享给好友', action: function() { Friends.openShareModal('todo', id); } },
+                        { icon: '✏️', label: '编辑', action: function() { showTaskCard(id); } },
+                        { icon: '🗑️', label: '删除', action: function() { deleteTask(id); }, danger: true }
+                    ];
+                });
+            }
+        });
+    }
 }
 
 var _flatListShowCompleted = false;
@@ -211,6 +229,18 @@ function renderFlatList() {
     }
 
     flatView.innerHTML = html;
+
+    // 长按操作菜单 (SPEC-047)
+    if (typeof ActionSheet !== 'undefined') {
+        ActionSheet.bindAll(flatView, '.flat-task-item:not(.completed)', function(el) {
+            var id = el.dataset.id;
+            return [
+                { icon: '📤', label: '分享给好友', action: function() { Friends.openShareModal('todo', id); } },
+                { icon: '✏️', label: '编辑', action: function() { showTaskCard(id); } },
+                { icon: '🗑️', label: '删除', action: function() { deleteTask(id); }, danger: true }
+            ];
+        });
+    }
 
     // 同步右侧边栏数据
     var completedHtml = '';

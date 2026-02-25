@@ -121,6 +121,9 @@ function switchPage(page) {
     // 通过 body class 控制设置页面
     document.body.classList.toggle('page-settings', page === 'settings');
 
+    if (page === 'todo') {
+        if (typeof loadItems === 'function') loadItems();
+    }
     if (page === 'review' && typeof loadReviews === 'function') {
         loadReviews();
     }
@@ -136,10 +139,35 @@ function switchPage(page) {
         activateMobileNav(null);
     }
 
-    // Load shared inbox when switching to todo or english pages
-    if ((page === 'todo' || page === 'english') && typeof Friends !== 'undefined') {
+    // Load shared inbox when switching to content pages
+    if (page !== 'settings' && typeof Friends !== 'undefined') {
         Friends.loadSharedInbox();
     }
+}
+
+// 手动刷新当前页面数据
+function refreshCurrentPage() {
+    var btn = document.getElementById('header-refresh-btn');
+    if (btn) {
+        btn.classList.add('spinning');
+        setTimeout(function() { btn.classList.remove('spinning'); }, 600);
+    }
+    switch (currentPage) {
+        case 'todo':
+            if (typeof loadItems === 'function') loadItems();
+            if (typeof loadRoutines === 'function') loadRoutines();
+            break;
+        case 'review':
+            if (typeof loadReviews === 'function') loadReviews();
+            break;
+        case 'english':
+            if (typeof English !== 'undefined' && English.init) English.init();
+            break;
+        case 'life':
+            if (typeof Life !== 'undefined' && Life.init) Life.init();
+            break;
+    }
+    if (typeof showToast === 'function') showToast('已刷新');
 }
 
 // Mobile bottom nav activation (pass null to deactivate all)

@@ -1,0 +1,355 @@
+/* ========== Health Module Styles ========== */
+
+/* Health View Container */
+.health-view {
+    padding: 0;
+    height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Health Hub */
+.health-hub {
+    padding: 16px;
+}
+
+.health-hub-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.health-hub-header .health-back-btn {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+.health-hub-header h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.health-hub-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.health-hub-card {
+    background: var(--card-bg, #fff);
+    border-radius: 12px;
+    padding: 20px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.health-hub-card:active {
+    transform: scale(0.97);
+}
+
+.health-hub-card-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+}
+
+.health-hub-card-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.health-hub-card-desc {
+    font-size: 12px;
+    color: var(--text-secondary, #6b7280);
+}
+
+.health-hub-card-disabled {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+/* Category Detail View */
+.health-category-view {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+}
+
+.health-category-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    position: sticky;
+    top: 0;
+    background: var(--bg-primary, #fff);
+    z-index: 10;
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.health-category-header .health-back-btn {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+.health-category-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+/* Action Cards — horizontal scroll */
+.health-action-cards {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.health-action-cards::-webkit-scrollbar {
+    display: none;
+}
+
+.health-action-card {
+    flex: 0 0 auto;
+    min-width: 72px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: var(--card-bg, #fff);
+    border: 2px solid transparent;
+    text-align: center;
+    cursor: pointer;
+    scroll-snap-align: start;
+    transition: border-color 0.2s, background 0.2s;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.health-action-card.active {
+    border-color: var(--primary-color);
+    background: rgba(var(--primary-color-rgb, 102, 126, 234), 0.1);
+}
+
+.health-action-card-num {
+    font-size: 11px;
+    color: var(--text-secondary, #6b7280);
+    margin-bottom: 2px;
+}
+
+.health-action-card-name {
+    font-size: 13px;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 80px;
+}
+
+/* Canvas Container */
+.health-canvas-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    max-width: 400px;
+    margin: 0 auto;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* View Side Toggle */
+.health-side-toggle {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 16px;
+}
+
+.health-side-btn {
+    padding: 6px 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color, #e5e7eb);
+    background: var(--card-bg, #fff);
+    color: var(--text-primary, #1f2937);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.health-side-btn.active {
+    background: var(--primary-color);
+    color: #fff;
+    border-color: var(--primary-color);
+}
+
+/* Video Player */
+.health-video-wrap {
+    padding: 0 16px;
+    margin-bottom: 12px;
+}
+
+.health-video {
+    width: 100%;
+    border-radius: 12px;
+    background: #000;
+    max-height: 240px;
+}
+
+/* Exercise Detail */
+.health-detail {
+    padding: 0 16px 24px;
+}
+
+.health-detail-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 8px;
+}
+
+.health-detail-desc {
+    font-size: 14px;
+    color: var(--text-secondary, #6b7280);
+    line-height: 1.6;
+    margin-bottom: 16px;
+}
+
+.health-detail-section {
+    margin-bottom: 16px;
+}
+
+.health-detail-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-primary, #1f2937);
+}
+
+.health-detail-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.health-detail-list li {
+    font-size: 13px;
+    color: var(--text-secondary, #6b7280);
+    padding: 3px 0;
+    padding-left: 16px;
+    position: relative;
+}
+
+.health-detail-list li::before {
+    content: '·';
+    position: absolute;
+    left: 4px;
+    font-weight: bold;
+}
+
+/* Meridian Tags */
+.health-meridian-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.health-meridian-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 14px;
+    font-size: 12px;
+    background: var(--card-bg, #f3f4f6);
+    border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.health-meridian-tag-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.health-meridian-tag-primary {
+    font-weight: 600;
+}
+
+.health-meridian-tag-secondary {
+    opacity: 0.7;
+}
+
+/* Acupoint Tags */
+.health-acupoint-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.health-acupoint-tag {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    background: rgba(var(--primary-color-rgb, 102, 126, 234), 0.1);
+    color: var(--primary-color);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.health-acupoint-tag:active {
+    background: rgba(var(--primary-color-rgb, 102, 126, 234), 0.2);
+}
+
+/* Disclaimer */
+.health-disclaimer {
+    margin-top: 16px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    font-size: 12px;
+    color: var(--text-secondary, #6b7280);
+    line-height: 1.5;
+}
+
+/* Pose label overlay */
+.health-pose-label {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 5;
+}
+
+/* Desktop */
+@media (min-width: 768px) {
+    .health-canvas-wrap {
+        max-width: 380px;
+    }
+
+    .health-hub-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}

@@ -73,6 +73,21 @@ function renderReviews() {
             }).join('');
         }
     });
+
+    // 长按操作菜单 (SPEC-047)
+    if (typeof ActionSheet !== 'undefined') {
+        var reviewContainer = document.getElementById('review-view');
+        if (reviewContainer) {
+            ActionSheet.bindAll(reviewContainer, '.review-item:not(.completed):not(.paused)', function(el) {
+                var id = el.dataset.id;
+                return [
+                    { icon: '📤', label: '分享给好友', action: function() { Friends.openShareModal('review', id); } },
+                    { icon: '✏️', label: '编辑', action: function() { openReviewModal('edit', id); } },
+                    { icon: '🗑️', label: '删除', action: function() { deleteReviewItem(id); }, danger: true }
+                ];
+            });
+        }
+    }
 }
 
 function renderReviewItem(item, isDueSection) {

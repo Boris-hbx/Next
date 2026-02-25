@@ -117,7 +117,7 @@ var English = (function() {
 
             var timeStr = formatTimeAgo(s.updated_at);
 
-            return '<div class="learn-entry" onclick="English.openDetail(\'' + s.id + '\')">' +
+            return '<div class="learn-entry" data-id="' + s.id + '" onclick="English.openDetail(\'' + s.id + '\')">' +
                 '<div class="learn-entry-body">' +
                     '<div class="learn-entry-title">' + escapeHtml(s.title) + '</div>' +
                     (preview ? '<div class="learn-entry-preview">' + escapeHtml(preview) + '</div>' : '') +
@@ -128,6 +128,18 @@ var English = (function() {
                 '</div>' +
             '</div>';
         }).join('');
+
+        // 长按操作菜单 (SPEC-047)
+        if (typeof ActionSheet !== 'undefined') {
+            ActionSheet.bindAll(container, '.learn-entry', function(el) {
+                var id = el.dataset.id;
+                return [
+                    { icon: '📤', label: '分享给好友', action: function() { Friends.openShareModal('scenario', id); } },
+                    { icon: '✏️', label: '编辑', action: function() { openDetail(id); } },
+                    { icon: '🗑️', label: '删除', action: function() { deleteScenarioById(id); }, danger: true }
+                ];
+            });
+        }
     }
 
     function renderCategoryFilters() {
@@ -473,12 +485,16 @@ var English = (function() {
 
     async function deleteCurrentScenario() {
         if (!currentScenario) return;
+        deleteScenarioById(currentScenario.id);
+    }
+
+    async function deleteScenarioById(id) {
         if (!confirm('确定删除这条笔记吗？')) return;
 
         try {
-            var resp = await API.deleteScenario(currentScenario.id);
+            var resp = await API.deleteScenario(id);
             if (resp.success) {
-                scenarios = scenarios.filter(function(s) { return s.id !== currentScenario.id; });
+                scenarios = scenarios.filter(function(s) { return s.id !== id; });
                 showList();
                 showToast('已删除', 'success');
             }
@@ -627,7 +643,8 @@ var English = (function() {
         retryGenerate: retryGenerate,
         filterCategory: filterCategory,
         selectModalCategory: selectModalCategory,
-        selectDetailCategory: selectDetailCategory
+        selectDetailCategory: selectDetailCategory,
+        getCurrentId: function() { return currentScenario ? currentScenario.id : ''; }
     };
 })();
 

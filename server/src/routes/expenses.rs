@@ -147,9 +147,10 @@ pub async fn list_entries(
         }
     };
 
-    let entries: Vec<ExpenseEntry> = match stmt.query_map(rusqlite::params![user_id.0, from, to], |row| {
-        row_to_entry(row)
-    }) {
+    let entries: Vec<ExpenseEntry> = match stmt
+        .query_map(rusqlite::params![user_id.0, from, to], |row| {
+            row_to_entry(row)
+        }) {
         Ok(rows) => rows.filter_map(|r| r.ok()).collect(),
         Err(e) => {
             eprintln!("[Expense] query error: {}", e);
@@ -425,7 +426,10 @@ pub async fn update_entry(
     maybe_set!(req.date, "date");
     maybe_set!(req.notes, "notes");
 
-    let tags_json = req.tags.as_ref().map(|t| serde_json::to_string(t).unwrap_or_else(|_| "[]".into()));
+    let tags_json = req
+        .tags
+        .as_ref()
+        .map(|t| serde_json::to_string(t).unwrap_or_else(|_| "[]".into()));
     if tags_json.is_some() {
         sets.push(format!("tags = ?{}", idx));
         idx += 1;
@@ -594,7 +598,8 @@ pub async fn get_summary(
         .unwrap_or(0);
 
     // Compute tag totals
-    let mut tag_map: std::collections::HashMap<String, (f64, i64)> = std::collections::HashMap::new();
+    let mut tag_map: std::collections::HashMap<String, (f64, i64)> =
+        std::collections::HashMap::new();
     if let Ok(mut stmt) = db.prepare(
         "SELECT tags, amount FROM expense_entries WHERE user_id = ?1 AND date >= ?2 AND date <= ?3",
     ) {
@@ -616,7 +621,11 @@ pub async fn get_summary(
         .into_iter()
         .map(|(tag, (amount, count))| TagTotal { tag, amount, count })
         .collect();
-    tag_totals.sort_by(|a, b| b.amount.partial_cmp(&a.amount).unwrap_or(std::cmp::Ordering::Equal));
+    tag_totals.sort_by(|a, b| {
+        b.amount
+            .partial_cmp(&a.amount)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
 
     (
         StatusCode::OK,
@@ -642,12 +651,10 @@ pub async fn list_tags(
     let db = state.db.lock();
     let mut all_tags: Vec<String> = Vec::new();
 
-    if let Ok(mut stmt) =
-        db.prepare("SELECT tags FROM expense_entries WHERE user_id = ?1")
-    {
-        if let Ok(rows) = stmt.query_map(rusqlite::params![user_id.0], |row| {
-            row.get::<_, String>(0)
-        }) {
+    if let Ok(mut stmt) = db.prepare("SELECT tags FROM expense_entries WHERE user_id = ?1") {
+        if let Ok(rows) =
+            stmt.query_map(rusqlite::params![user_id.0], |row| row.get::<_, String>(0))
+        {
             for row in rows.flatten() {
                 let tags: Vec<String> = serde_json::from_str(&row).unwrap_or_default();
                 for tag in tags {
@@ -708,14 +715,8 @@ pub async fn upload_photos(
     let mut uploaded: Vec<ExpensePhoto> = Vec::new();
 
     while let Ok(Some(field)) = multipart.next_field().await {
-        let filename = field
-            .file_name()
-            .unwrap_or("photo.jpg")
-            .to_string();
-        let content_type = field
-            .content_type()
-            .unwrap_or("image/jpeg")
-            .to_string();
+        let filename = field.file_name().unwrap_or("photo.jpg").to_string();
+        let content_type = field.content_type().unwrap_or("image/jpeg").to_string();
 
         // Validate mime type
         if !content_type.starts_with("image/") {
@@ -732,11 +733,7 @@ pub async fn upload_photos(
         }
 
         let photo_id = uuid::Uuid::new_v4().to_string();
-        let ext = filename
-            .rsplit('.')
-            .next()
-            .unwrap_or("jpg")
-            .to_lowercase();
+        let ext = filename.rsplit('.').next().unwrap_or("jpg").to_lowercase();
         let storage_name = format!("{}.{}", photo_id, ext);
         let storage_path = format!("{}/{}", upload_dir, storage_name);
 
@@ -826,13 +823,27 @@ pub async fn delete_photo(
 
 // ===== Serve photo =====
 pub async fn serve_photo(
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
     user_id: UserId,
     Path((path_user_id, filename)): Path<(String, String)>,
 ) -> impl IntoResponse {
-    // Auth check: user can only access their own photos
+    // Auth check: user can access their own photos, or trip collaborator photos
     if user_id.0 != path_user_id {
-        return (StatusCode::FORBIDDEN, "Access denied").into_response();
+        // Fallback: check if user is a trip collaborator for any trip owned by path_user_id
+        let db = state.db.lock();
+        let is_trip_collab: bool = db
+            .query_row(
+                "SELECT COUNT(*) FROM trip_collaborators tc
+                 JOIN trips t ON t.id = tc.trip_id
+                 WHERE tc.user_id = ?1 AND t.user_id = ?2",
+                rusqlite::params![user_id.0, path_user_id],
+                |row| row.get::<_, i64>(0),
+            )
+            .unwrap_or(0)
+            > 0;
+        if !is_trip_collab {
+            return (StatusCode::FORBIDDEN, "Access denied").into_response();
+        }
     }
 
     let upload_dir = format!(
@@ -950,14 +961,19 @@ pub async fn parse_receipts(
         "请解析这张收据/账单。"
     };
 
-    match client.vision_generate(RECEIPT_PARSE_PROMPT, images, user_msg, 8192).await {
+    match client
+        .vision_generate(RECEIPT_PARSE_PROMPT, images, user_msg, 8192)
+        .await
+    {
         Ok(text) => {
             // Parse the JSON response
             let parsed = parse_ai_receipt_response(&text);
             let db = state.db.lock();
 
             let now = chrono::Utc::now().to_rfc3339();
-            let tags_json = parsed.tags.as_ref()
+            let tags_json = parsed
+                .tags
+                .as_ref()
                 .map(|t| serde_json::to_string(t).unwrap_or_else(|_| "[]".into()))
                 .unwrap_or_else(|| "[]".into());
 
@@ -1165,9 +1181,11 @@ fn parse_ai_receipt_response(text: &str) -> ParsedReceipt {
     let merchant = parsed["merchant"].as_str().map(|s| s.to_string());
     let date = parsed["date"].as_str().map(|s| s.to_string());
     let currency = parsed["currency"].as_str().map(|s| s.to_string());
-    let tags = parsed["tags"]
-        .as_array()
-        .map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect());
+    let tags = parsed["tags"].as_array().map(|arr| {
+        arr.iter()
+            .filter_map(|v| v.as_str().map(|s| s.to_string()))
+            .collect()
+    });
     let subtotal = parsed["subtotal"].as_f64();
     let tax = parsed["tax"].as_f64();
     let tip = parsed["tip"].as_f64();
@@ -1246,10 +1264,168 @@ async fn auto_tag_from_text(state: &AppState, entry_id: &str, amount: f64, notes
     }
 }
 
-// ===== Exchange rate proxy =====
-pub async fn get_rates(
-    _user_id: UserId,
+// ===== Analytics =====
+
+fn tag_to_category(tag: &str) -> &'static str {
+    match tag {
+        "超市" | "杂货" | "肉类" | "蔬菜" | "水果" | "海鲜" | "零食" | "饮料" | "奶制品"
+        | "调料" | "面包" | "生鲜" | "食材" => "食品杂货",
+        "餐饮" | "外卖" | "餐厅" | "咖啡" | "奶茶" | "早餐" | "午餐" | "晚餐" | "火锅"
+        | "快餐" | "甜点" | "酒吧" => "餐饮",
+        "交通" | "加油" | "停车" | "公交" | "地铁" | "打车" | "出租车" | "高铁" | "机票"
+        | "油费" | "租车" => "交通",
+        "购物" | "衣服" | "鞋子" | "电子" | "数码" | "家居" | "家电" | "日用品" | "化妆品" => {
+            "购物"
+        }
+        "住房" | "房租" | "水电" | "网费" | "物业" | "维修" | "家具" | "电话费" => "住房",
+        "娱乐" | "电影" | "游戏" | "旅游" | "景点" | "KTV" | "运动" | "健身" => "娱乐",
+        "医疗" | "药品" | "看病" | "体检" | "牙科" | "保健" => "医疗",
+        "教育" | "书籍" | "课程" | "培训" | "文具" => "教育",
+        _ => "其他",
+    }
+}
+
+fn entry_category(tags_json: &str) -> &'static str {
+    let tags: Vec<String> = serde_json::from_str(tags_json).unwrap_or_default();
+    for tag in &tags {
+        let cat = tag_to_category(tag);
+        if cat != "其他" {
+            return cat;
+        }
+    }
+    "其他"
+}
+
+pub async fn get_analytics(
+    State(state): State<AppState>,
+    user_id: UserId,
+    Query(query): Query<crate::models::expense::ExpenseAnalyticsQuery>,
 ) -> (StatusCode, Json<serde_json::Value>) {
+    let db = state.db.lock();
+    let today = chrono::Local::now().date_naive();
+    let ref_date = query
+        .date
+        .as_ref()
+        .and_then(|d| chrono::NaiveDate::parse_from_str(d, "%Y-%m-%d").ok())
+        .unwrap_or(today);
+
+    let (from_date, to_date) = match query.period.as_str() {
+        "week" => {
+            let weekday = ref_date.weekday().num_days_from_monday();
+            let start = ref_date - chrono::Duration::days(weekday as i64);
+            let end = start + chrono::Duration::days(6);
+            (start, end)
+        }
+        "month" => {
+            let start = chrono::NaiveDate::from_ymd_opt(ref_date.year(), ref_date.month(), 1)
+                .unwrap_or(ref_date);
+            let end = if ref_date.month() == 12 {
+                chrono::NaiveDate::from_ymd_opt(ref_date.year() + 1, 1, 1)
+            } else {
+                chrono::NaiveDate::from_ymd_opt(ref_date.year(), ref_date.month() + 1, 1)
+            }
+            .map(|d| d - chrono::Duration::days(1))
+            .unwrap_or(ref_date);
+            (start, end)
+        }
+        _ => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({ "success": false, "message": "period must be week or month" })),
+            );
+        }
+    };
+
+    let from = from_date.to_string();
+    let to = to_date.to_string();
+
+    // Query all entries in range
+    let mut cat_map: std::collections::HashMap<&str, (f64, i64)> =
+        std::collections::HashMap::new();
+    let mut day_map: std::collections::HashMap<String, f64> = std::collections::HashMap::new();
+    let mut total_amount: f64 = 0.0;
+    let mut entry_count: i64 = 0;
+
+    if let Ok(mut stmt) = db.prepare(
+        "SELECT amount, date, tags FROM expense_entries WHERE user_id = ?1 AND date >= ?2 AND date <= ?3",
+    ) {
+        if let Ok(rows) = stmt.query_map(rusqlite::params![user_id.0, from, to], |row| {
+            Ok((
+                row.get::<_, f64>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+            ))
+        }) {
+            for row in rows.flatten() {
+                let (amount, date, tags_json) = row;
+                total_amount += amount;
+                entry_count += 1;
+
+                let cat = entry_category(&tags_json);
+                let e = cat_map.entry(cat).or_insert((0.0, 0));
+                e.0 += amount;
+                e.1 += 1;
+
+                *day_map.entry(date).or_insert(0.0) += amount;
+            }
+        }
+    }
+
+    // Build categories sorted by amount desc
+    let mut categories: Vec<crate::models::expense::CategoryTotal> = cat_map
+        .into_iter()
+        .map(|(cat, (amount, count))| {
+            let percentage = if total_amount > 0.0 {
+                (amount / total_amount * 1000.0).round() / 10.0
+            } else {
+                0.0
+            };
+            crate::models::expense::CategoryTotal {
+                category: cat.to_string(),
+                amount,
+                count,
+                percentage,
+            }
+        })
+        .collect();
+    categories.sort_by(|a, b| {
+        b.amount
+            .partial_cmp(&a.amount)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+
+    // Build daily totals — every date in range, 0 for missing
+    let mut daily: Vec<crate::models::expense::DailyTotal> = Vec::new();
+    let mut d = from_date;
+    while d <= to_date {
+        let ds = d.to_string();
+        let amt = day_map.get(&ds).copied().unwrap_or(0.0);
+        daily.push(crate::models::expense::DailyTotal {
+            date: ds,
+            amount: amt,
+        });
+        d += chrono::Duration::days(1);
+    }
+
+    (
+        StatusCode::OK,
+        Json(json!({
+            "success": true,
+            "analytics": {
+                "period": query.period,
+                "from": from,
+                "to": to,
+                "total_amount": total_amount,
+                "entry_count": entry_count,
+                "categories": categories,
+                "daily": daily,
+            }
+        })),
+    )
+}
+
+// ===== Exchange rate proxy =====
+pub async fn get_rates(_user_id: UserId) -> (StatusCode, Json<serde_json::Value>) {
     let client = reqwest::Client::new();
     let resp = client
         .get("https://open.er-api.com/v6/latest/CAD")

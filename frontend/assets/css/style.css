@@ -8359,6 +8359,114 @@ textarea.ocr-text:focus {
     font-size: 14px;
 }
 
+/* ─── Action Sheet (SPEC-047) ─── */
+.action-sheet-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(0,0,0,0.4);
+}
+.action-sheet {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg-card, #fff);
+    border-radius: 16px 16px 0 0;
+    padding: 8px 0 env(safe-area-inset-bottom, 16px);
+    transform: translateY(100%);
+    transition: transform 0.25s ease;
+    z-index: 2001;
+    -webkit-touch-callout: none;
+    user-select: none;
+}
+.action-sheet.visible {
+    transform: translateY(0);
+}
+.action-sheet-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    font-size: 1rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+.action-sheet-item:active {
+    background: rgba(0,0,0,0.06);
+}
+.action-sheet-item.danger {
+    color: var(--danger-color, #f85149);
+}
+.action-sheet-icon {
+    font-size: 1.1rem;
+    width: 24px;
+    text-align: center;
+}
+.action-sheet-cancel {
+    text-align: center;
+    padding: 14px;
+    margin-top: 4px;
+    border-top: 1px solid var(--border-color, #e0e0e0);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 1rem;
+}
+.action-sheet-cancel:active {
+    background: rgba(0,0,0,0.06);
+}
+
+/* Desktop: context menu style */
+@media (min-width: 769px) {
+    .action-sheet-overlay {
+        background: transparent;
+    }
+    .action-sheet.desktop-mode {
+        position: fixed;
+        bottom: auto;
+        left: auto;
+        right: auto;
+        width: 180px;
+        border-radius: 10px;
+        padding: 6px 0;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+        transform: none;
+        opacity: 0;
+        animation: actionSheetDesktopIn 0.15s ease forwards;
+    }
+    .action-sheet.desktop-mode.visible {
+        transform: none;
+    }
+    .action-sheet.desktop-mode .action-sheet-item {
+        padding: 10px 14px;
+        font-size: 0.875rem;
+        gap: 10px;
+    }
+    .action-sheet.desktop-mode .action-sheet-item:hover {
+        background: rgba(0,0,0,0.06);
+    }
+    .action-sheet.desktop-mode .action-sheet-cancel {
+        display: none;
+    }
+}
+@keyframes actionSheetDesktopIn {
+    from { opacity: 0; transform: scale(0.92); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* Dark mode overrides */
+body.dark-mode .action-sheet {
+    background: var(--bg-card, #1e1e1e);
+}
+body.dark-mode .action-sheet-item:active,
+body.dark-mode .action-sheet.desktop-mode .action-sheet-item:hover {
+    background: rgba(255,255,255,0.08);
+}
+body.dark-mode .action-sheet-cancel {
+    border-top-color: var(--border-color, #333);
+}
+
 /* 应用图标增强 */
 .touch-icon {
     position: relative;
@@ -8901,6 +9009,96 @@ textarea.ocr-text:focus {
     opacity: 0.6;
 }
 
+/* ========== Admin Dashboard ========== */
+.admin-loading {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 20px 0;
+}
+.admin-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+.admin-card-title {
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+.admin-stats-row {
+    display: flex;
+    gap: 12px;
+}
+.admin-stats-wrap {
+    flex-wrap: wrap;
+}
+.admin-stat-box {
+    flex: 1;
+    min-width: 80px;
+    text-align: center;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 10px 6px;
+}
+.admin-stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+.admin-stat-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    margin-top: 10px;
+}
+.admin-table th {
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: left;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+.admin-table td {
+    color: var(--text-primary);
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+.admin-trend-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+}
+.admin-trend-box {
+    flex: 1;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 10px 6px;
+    text-align: center;
+}
+.admin-trend-period {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+.admin-trend-tokens {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
 /* ========== Living Line 已由 Canvas 实现，旧样式已移除 ==========*/
 
 /* ========== 小屏幕适配（笔记本 1366x768 等） ========== */
@@ -9177,12 +9375,12 @@ textarea.ocr-text:focus {
     text-align: right;
 }
 
-/* Share modal */
+/* Share modal (unified component) */
 .share-modal-overlay {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.6);
-    z-index: 1000;
+    z-index: 2000;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -9194,17 +9392,20 @@ textarea.ocr-text:focus {
     border: 1px solid var(--border-color, #30363d);
     border-radius: 14px;
     width: 100%;
-    max-width: 380px;
+    max-width: 400px;
     padding: 24px;
+    max-height: 80vh;
+    overflow-y: auto;
 }
 
 .share-modal h3 {
     margin: 0 0 14px;
     color: var(--text-primary);
+    font-size: 1.1rem;
 }
 
 .share-friends-list {
-    max-height: 300px;
+    max-height: 260px;
     overflow-y: auto;
 }
 
@@ -9227,17 +9428,118 @@ textarea.ocr-text:focus {
     cursor: default;
     pointer-events: none;
 }
+
 .share-sent-label {
     margin-left: auto;
     font-size: 0.75rem;
     color: var(--text-muted, #8b949e);
 }
+
 .share-modal-close {
     margin-top: 12px;
     text-align: right;
 }
 
+.share-loading,
+.share-empty {
+    text-align: center;
+    color: var(--text-muted, #8b949e);
+    padding: 20px 0;
+    font-size: 0.9rem;
+}
+
+/* Collaborate mode */
+.share-collab-section {
+    margin-bottom: 14px;
+}
+
+.share-collab-label {
+    font-size: 0.8rem;
+    color: var(--text-muted, #8b949e);
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.share-collab-list {
+    margin-bottom: 8px;
+}
+
+.share-collab-item {
+    cursor: default;
+}
+
+.share-collab-item:hover {
+    background: transparent;
+}
+
+.share-role-label {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: var(--text-muted, #8b949e);
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(102, 126, 234, 0.12);
+}
+
+.share-remove-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted, #8b949e);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.share-remove-btn:hover {
+    color: #ef4444;
+}
+
+.share-role-picker {
+    margin-top: 10px;
+}
+
+.share-role-picker label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-muted, #8b949e);
+    margin-bottom: 4px;
+    font-weight: 500;
+}
+
+.share-role-picker select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color, #30363d);
+    border-radius: 8px;
+    background: var(--bg-input, #fff);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
 /* Shared inbox items */
+.shared-inbox-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0 6px;
+}
+.shared-inbox-header .shared-inbox-title {
+    margin: 0;
+}
+.shared-inbox-back {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+.shared-inbox-back:active {
+    background: var(--bg-secondary);
+}
 .shared-inbox-title {
     color: var(--text-primary);
     font-size: 0.95rem;
@@ -9318,7 +9620,39 @@ textarea.ocr-text:focus {
     color: var(--text-secondary, #8b949e);
 }
 
-/* Share banner (English page) */
+/* Header refresh button */
+.header-refresh-btn {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+.header-refresh-btn svg {
+    color: var(--text-secondary, #8b949e);
+    transition: transform 0.3s ease;
+}
+.header-refresh-btn:hover {
+    background: var(--hover-bg, rgba(0,0,0,0.06));
+}
+.header-refresh-btn:hover svg {
+    color: var(--text-primary);
+}
+.header-refresh-btn:active svg {
+    transform: rotate(-30deg);
+}
+.header-refresh-btn.spinning svg {
+    animation: refreshSpin 0.6s ease-in-out;
+}
+@keyframes refreshSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Share banner (module pages) */
 .share-banner {
     display: flex;
     align-items: center;
@@ -9328,9 +9662,13 @@ textarea.ocr-text:focus {
     border: 1px solid var(--primary-color, #58a6ff);
     border-radius: 8px;
     margin: 8px 16px;
+    cursor: pointer;
+    transition: background 0.15s;
 }
+.share-banner:hover { background: var(--bg-hover, #1c2333); }
 .share-banner-icon { font-size: 1.1rem; }
 .share-banner-text { flex: 1; font-size: 0.9rem; color: var(--text-primary); }
+.share-banner-arrow { font-size: 1.2rem; color: var(--text-secondary); font-weight: bold; }
 .share-banner-btn {
     background: var(--primary-color, #58a6ff);
     color: #fff;
@@ -9364,3 +9702,15 @@ textarea.ocr-text:focus {
 .collab-picker-item { padding: 10px 12px; border-radius: 8px; cursor: pointer; color: var(--text-primary); font-size: 14px; transition: background 0.15s; }
 .collab-picker-item:hover { background: var(--hover-bg, #21262d); }
 .collab-picker-close { margin-top: 12px; width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 8px; background: transparent; color: var(--text-secondary); cursor: pointer; }
+
+/* ========== Trip AI multi-item preview (SPEC) ========== */
+.trip-multi-modal { max-width: 420px; }
+.trip-multi-hint { font-size: 13px; color: var(--text-secondary); margin: -4px 0 12px; }
+.trip-multi-list { display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow-y: auto; margin-bottom: 16px; }
+.trip-multi-item { background: var(--bg-secondary, #f5f5f5); border-radius: 8px; padding: 10px 12px; border: 1px solid var(--border-color, #e0e0e0); }
+.trip-multi-check { display: flex; align-items: center; gap: 8px; cursor: pointer; width: 100%; }
+.trip-multi-check input[type="checkbox"] { width: 16px; height: 16px; flex-shrink: 0; accent-color: var(--primary-color); }
+.trip-multi-label { font-size: 13px; font-weight: 600; color: var(--text-primary); flex-shrink: 0; }
+.trip-multi-desc { flex: 1; font-size: 13px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trip-multi-amt { font-size: 13px; font-weight: 600; color: var(--primary-color); flex-shrink: 0; }
+.trip-multi-date { display: block; font-size: 11px; color: var(--text-muted, #aaa); margin-top: 4px; padding-left: 24px; }

@@ -255,8 +255,10 @@ var API = (function() {
             return await request('GET', '/share/sent?item_type=' + encodeURIComponent(itemType) + '&item_id=' + encodeURIComponent(itemId));
         },
 
-        getSharedInbox: async function() {
-            return await request('GET', '/share/inbox');
+        getSharedInbox: async function(type) {
+            var path = '/share/inbox';
+            if (type) path += '?type=' + encodeURIComponent(type);
+            return await request('GET', path);
         },
 
         getSharedInboxCount: async function() {
@@ -421,8 +423,85 @@ var API = (function() {
             return await request('POST', '/expenses/' + encodeURIComponent(id) + '/parse');
         },
 
+        getExpenseAnalytics: async function(period, date) {
+            var params = 'period=' + encodeURIComponent(period);
+            if (date) params += '&date=' + encodeURIComponent(date);
+            return await request('GET', '/expenses/analytics?' + params);
+        },
+
         parseExpensePreview: async function(images) {
             return await request('POST', '/expenses/parse-preview', { images: images });
+        },
+
+        // ===== Trip APIs (差旅) =====
+        getTrips: async function() {
+            return await request('GET', '/trips');
+        },
+
+        createTrip: async function(data) {
+            return await request('POST', '/trips', data);
+        },
+
+        getTrip: async function(id) {
+            return await request('GET', '/trips/' + encodeURIComponent(id));
+        },
+
+        updateTrip: async function(id, data) {
+            return await request('PUT', '/trips/' + encodeURIComponent(id), data);
+        },
+
+        deleteTrip: async function(id) {
+            return await request('DELETE', '/trips/' + encodeURIComponent(id));
+        },
+
+        createTripItem: async function(tripId, data) {
+            return await request('POST', '/trips/' + encodeURIComponent(tripId) + '/items', data);
+        },
+
+        updateTripItem: async function(itemId, data) {
+            return await request('PUT', '/trips/items/' + encodeURIComponent(itemId), data);
+        },
+
+        deleteTripItem: async function(itemId) {
+            return await request('DELETE', '/trips/items/' + encodeURIComponent(itemId));
+        },
+
+        uploadTripItemPhotos: async function(itemId, files) {
+            var formData = new FormData();
+            for (var i = 0; i < files.length; i++) {
+                formData.append('photos', files[i]);
+            }
+            var resp = await fetch(BASE + '/trips/items/' + encodeURIComponent(itemId) + '/photos', {
+                method: 'POST',
+                credentials: 'same-origin',
+                body: formData
+            });
+            return await resp.json();
+        },
+
+        deleteTripPhoto: async function(photoId) {
+            return await request('DELETE', '/trips/photos/' + encodeURIComponent(photoId));
+        },
+
+        // AI分析：图片(base64数组) + 可选文字 → 差旅条目数组
+        analyzeTripItem: async function(data) {
+            return await request('POST', '/trips/analyze', data);
+        },
+
+        addTripCollaborator: async function(tripId, friendId, role) {
+            return await request('POST', '/trips/' + encodeURIComponent(tripId) + '/collaborators', {
+                friend_id: friendId,
+                role: role || 'viewer'
+            });
+        },
+
+        removeTripCollaborator: async function(tripId, userId) {
+            return await request('DELETE', '/trips/' + encodeURIComponent(tripId) + '/collaborators/' + encodeURIComponent(userId));
+        },
+
+        // ===== Admin APIs =====
+        getAdminDashboard: async function() {
+            return await request('GET', '/admin/dashboard');
         },
 
         // 环境检测 (always web now)

@@ -32,6 +32,8 @@ sha2 = "0.10"
 base64 = "0.22"
 url = "2"
 parking_lot = "0.12"
+zip = { version = "2", default-features = false, features = ["deflate"] }
+urlencoding = "2"
 
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }

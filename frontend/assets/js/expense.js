@@ -15,6 +15,7 @@ var Expense = (function() {
     var _progressTimer = null;
     var _splitMode = false;
     var _dateGroups = {};
+    var _analyticsMode = false;
     var _currency = 'CAD'; // 'CAD' | 'CNY'
     var _rates = null; // { CNY: number }
     var _ratesTimestamp = 0;
@@ -226,7 +227,7 @@ var Expense = (function() {
                 }
                 var photoIcon = e.photo_count > 0 ? '<span class="expense-entry-photo-indicator">📷</span>' : '';
                 var notes = e.notes || '未备注';
-                html += '<div class="expense-entry-card" onclick="Expense.openDetail(\'' + e.id + '\')">';
+                html += '<div class="expense-entry-card" data-id="' + e.id + '" onclick="Expense.openDetail(\'' + e.id + '\')">';
                 html += '<div class="expense-entry-info">';
                 html += '<div class="expense-entry-notes">' + escapeHtml(notes) + '</div>';
                 html += tagsHtml;
@@ -239,6 +240,18 @@ var Expense = (function() {
         });
 
         container.innerHTML = html;
+
+        // 长按操作菜单 (SPEC-047)
+        if (typeof ActionSheet !== 'undefined') {
+            ActionSheet.bindAll(container, '.expense-entry-card', function(el) {
+                var id = el.dataset.id;
+                return [
+                    { icon: '📤', label: '分享给好友', action: function() { Friends.openShareModal('expense', id); } },
+                    { icon: '✏️', label: '编辑', action: function() { _currentDetailId = id; editEntry(); } },
+                    { icon: '🗑️', label: '删除', action: function() { _currentDetailId = id; deleteEntry(); }, danger: true }
+                ];
+            });
+        }
     }
 
     function renderTagsFilter() {
@@ -1138,6 +1151,81 @@ var Expense = (function() {
         return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
+    // ===== Currency =====
+
+    function currencySymbol(c) {
+        if (c === 'CNY') return '¥';
+        if (c === 'CAD') return 'CA$';
+        return '$';
+    }
+
+    function renderCurrencyToggle() {
+        var container = document.getElementById('expense-currency-toggle');
+        if (!container) return;
+        container.innerHTML = ['CAD', 'CNY'].map(function(c) {
+            return '<button class="expense-currency-btn' + (c === _currency ? ' active' : '') +
+                '" onclick="Expense.setCurrency(\'' + c + '\')">' + c + '</button>';
+        }).join('');
+        // Update amount prefix
+        var prefix = document.getElementById('expense-amount-prefix');
+        if (prefix) prefix.textContent = currencySymbol(_currency);
+    }
+
+    function setCurrency(c) {
+        _currency = c;
+        renderCurrencyToggle();
+    }
+
+    async function loadRates() {
+        if (_rates && Date.now() - _ratesTimestamp < 3600000) return;
+        try {
+            var rateResp = await fetch('/api/expenses/rates', { credentials: 'same-origin' });
+            var data = await rateResp.json();
+            if (data.success && data.rates) {
+                _rates = data.rates;
+                _ratesTimestamp = Date.now();
+            }
+        } catch (e) {
+            _rates = { CAD: 1, CNY: 5.05 };
+        }
+    }
+
+    function toggleAnalytics() {
+        _analyticsMode = !_analyticsMode;
+        log('toggleAnalytics', _analyticsMode);
+
+        var btn = document.getElementById('expense-analytics-btn');
+        var summary = document.getElementById('expense-summary');
+        var tagsFilter = document.getElementById('expense-tags-filter');
+        var list = document.getElementById('expense-list');
+        var fab = document.getElementById('expense-fab');
+        var periodTabs = document.querySelector('.expense-period-tabs');
+        var dateNav = document.querySelector('.expense-date-nav');
+        var analyticsView = document.getElementById('expense-analytics-view');
+
+        if (_analyticsMode) {
+            if (btn) btn.classList.add('active');
+            if (summary) summary.style.display = 'none';
+            if (tagsFilter) tagsFilter.style.display = 'none';
+            if (list) list.style.display = 'none';
+            if (fab) fab.style.display = 'none';
+            if (periodTabs) periodTabs.style.display = 'none';
+            if (dateNav) dateNav.style.display = 'none';
+            if (analyticsView) analyticsView.style.display = '';
+            if (typeof ExpenseAnalytics !== 'undefined') ExpenseAnalytics.init();
+        } else {
+            if (btn) btn.classList.remove('active');
+            if (summary) summary.style.display = '';
+            if (tagsFilter) tagsFilter.style.display = '';
+            if (list) list.style.display = '';
+            if (fab) fab.style.display = '';
+            if (periodTabs) periodTabs.style.display = '';
+            if (dateNav) dateNav.style.display = '';
+            if (analyticsView) analyticsView.style.display = 'none';
+            if (typeof ExpenseAnalytics !== 'undefined') ExpenseAnalytics.dispose();
+        }
+    }
+
     return {
         init: init,
         switchPeriod: switchPeriod,
@@ -1156,5 +1244,8 @@ var Expense = (function() {
         savePreview: savePreview,
         retakePhotos: retakePhotos,
         setSplitMode: setSplitMode,
+        setCurrency: setCurrency,
+        toggleAnalytics: toggleAnalytics,
+        getCurrentDetailId: function() { return _currentDetailId; },
     };
 })();

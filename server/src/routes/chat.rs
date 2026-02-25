@@ -11,6 +11,8 @@ pub struct ChatRequest {
     pub message: String,
     #[serde(default)]
     pub conversation_id: Option<String>,
+    #[serde(default)]
+    pub page_context: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Serialize)]
@@ -189,10 +191,10 @@ pub async fn chat_handler(
     // Add current message to history
     history_messages.push(json!({"role": "user", "content": message}));
 
-    // Build system prompt
+    // Build system prompt with page context
     let system_prompt = {
         let db = state.db.lock();
-        context::build_system_prompt(&db, &user_id.0)
+        context::build_system_prompt_with_page(&db, &user_id.0, req.page_context.as_ref())
     };
 
     let tools = tool_executor::tool_definitions();

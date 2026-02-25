@@ -70,15 +70,37 @@ pub fn execute_tool(db: &Connection, user_id: &str, tool_name: &str, input: &Val
         "query_todos" => tool_query_todos(db, user_id, input),
         "batch_update_todos" => tool_batch_update_todos(db, user_id, input),
         "create_routine" => tool_create_routine(db, user_id, input),
+        "query_routines" => tool_query_routines(db, user_id, input),
+        "update_routine" => tool_update_routine(db, user_id, input),
+        "delete_routine" => tool_delete_routine(db, user_id, input),
         "create_review" => tool_create_review(db, user_id, input),
+        "query_reviews" => tool_query_reviews(db, user_id, input),
+        "update_review" => tool_update_review(db, user_id, input),
+        "delete_review" => tool_delete_review(db, user_id, input),
         "get_statistics" => tool_get_statistics(db, user_id, input),
         "get_current_datetime" => tool_get_current_datetime(),
         "create_english_scenario" => tool_create_english_scenario(db, user_id, input),
         "query_english_scenarios" => tool_query_english_scenarios(db, user_id, input),
+        "update_english_scenario" => tool_update_english_scenario(db, user_id, input),
+        "delete_english_scenario" => tool_delete_english_scenario(db, user_id, input),
+        "create_expense" => tool_create_expense(db, user_id, input),
+        "query_expenses" => tool_query_expenses(db, user_id, input),
+        "update_expense" => tool_update_expense(db, user_id, input),
+        "delete_expense" => tool_delete_expense(db, user_id, input),
+        "get_expense_summary" => tool_get_expense_summary(db, user_id, input),
         "create_reminder" => tool_create_reminder(db, user_id, input),
         "query_reminders" => tool_query_reminders(db, user_id, input),
         "cancel_reminder" => tool_cancel_reminder(db, user_id, input),
         "snooze_reminder" => tool_snooze_reminder(db, user_id, input),
+        "query_trips" => tool_query_trips(db, user_id, input),
+        "get_trip_detail" => tool_get_trip_detail(db, user_id, input),
+        "create_trip" => tool_create_trip(db, user_id, input),
+        "update_trip" => tool_update_trip(db, user_id, input),
+        "delete_trip" => tool_delete_trip(db, user_id, input),
+        "create_trip_item" => tool_create_trip_item(db, user_id, input),
+        "update_trip_item" => tool_update_trip_item(db, user_id, input),
+        "delete_trip_item" => tool_delete_trip_item(db, user_id, input),
+        "get_trip_summary" => tool_get_trip_summary(db, user_id, input),
         _ => json!({"error": format!("Unknown tool: {}", tool_name)}),
     }
 }
@@ -240,11 +262,12 @@ pub fn tool_definitions() -> Vec<Value> {
         }),
         json!({
             "name": "query_english_scenarios",
-            "description": "查询用户的学习场景列表",
+            "description": "查询用户的学习场景列表。需要修改内容时请传 include_content: true 获取完整内容",
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "keyword": {"type": "string", "description": "按关键词搜索场景标题"}
+                    "keyword": {"type": "string", "description": "按关键词搜索场景标题"},
+                    "include_content": {"type": "boolean", "description": "是否返回完整内容（修改内容时需要）"}
                 }
             }
         }),
@@ -293,6 +316,296 @@ pub fn tool_definitions() -> Vec<Value> {
                     "minutes": {"type": "integer", "description": "推迟分钟数，默认5分钟", "minimum": 1, "maximum": 120}
                 },
                 "required": ["id"]
+            }
+        }),
+        // ─── Routine tools ───
+        json!({
+            "name": "query_routines",
+            "description": "查询例行任务列表",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "keyword": {"type": "string", "description": "按关键词搜索"}
+                }
+            }
+        }),
+        json!({
+            "name": "update_routine",
+            "description": "更新例行任务的文本",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string", "description": "例行任务ID"},
+                    "text": {"type": "string", "description": "新的文本内容"}
+                },
+                "required": ["id", "text"]
+            }
+        }),
+        json!({
+            "name": "delete_routine",
+            "description": "删除一个例行任务",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string", "description": "例行任务ID"}
+                },
+                "required": ["id"]
+            }
+        }),
+        // ─── Review tools ───
+        json!({
+            "name": "query_reviews",
+            "description": "查询审视项列表",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "keyword": {"type": "string", "description": "按关键词搜索"},
+                    "frequency": {"type": "string", "enum": ["daily", "weekly", "monthly", "yearly"], "description": "按频率过滤"}
+                }
+            }
+        }),
+        json!({
+            "name": "update_review",
+            "description": "更新一个审视项",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string", "description": "审视项ID"},
+                    "text": {"type": "string", "description": "新文本"},
+                    "frequency": {"type": "string", "enum": ["daily", "weekly", "monthly", "yearly"]},
+                    "frequency_config": {"type": "object", "description": "频率配置，如 {\"day_of_week\": 1}"},
+                    "notes": {"type": "string", "description": "备注"},
+                    "category": {"type": "string", "description": "分类"}
+                },
+                "required": ["id"]
+            }
+        }),
+        json!({
+            "name": "delete_review",
+            "description": "删除一个审视项",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string", "description": "审视项ID"}
+                },
+                "required": ["id"]
+            }
+        }),
+        // ─── English scenario tools ───
+        json!({
+            "name": "update_english_scenario",
+            "description": "更新学习笔记的标题、内容、备注或分类",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string", "description": "学习笔记ID"},
+                    "title": {"type": "string", "description": "新标题"},
+                    "content": {"type": "string", "description": "新的正文内容（Markdown 格式）"},
+                    "notes": {"type": "string", "description": "备注"},
+                    "category": {"type": "string", "enum": ["英语", "编程", "职场", "生活", "其他"]}
+                },
+                "required": ["id"]
+            }
+        }),
+        json!({
+            "name": "delete_english_scenario",
+            "description": "删除一条学习笔记",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string", "description": "学习笔记ID"}
+                },
+                "required": ["id"]
+            }
+        }),
+        // ─── Expense tools ───
+        json!({
+            "name": "create_expense",
+            "description": "创建一条记账记录",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "amount": {"type": "number", "description": "金额"},
+                    "date": {"type": "string", "description": "日期 YYYY-MM-DD，默认今天"},
+                    "notes": {"type": "string", "description": "备注/描述"},
+                    "tags": {"type": "array", "items": {"type": "string"}, "description": "标签，如 [\"餐饮\", \"交通\"]"},
+                    "currency": {"type": "string", "enum": ["CAD", "CNY"], "description": "币种，默认 CAD"}
+                },
+                "required": ["amount"]
+            }
+        }),
+        json!({
+            "name": "query_expenses",
+            "description": "查询记账记录列表",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "date_from": {"type": "string", "description": "起始日期 YYYY-MM-DD"},
+                    "date_to": {"type": "string", "description": "结束日期 YYYY-MM-DD"},
+                    "tag": {"type": "string", "description": "按标签过滤"},
+                    "keyword": {"type": "string", "description": "按备注关键词搜索"},
+                    "limit": {"type": "integer", "description": "返回条数，默认20，最大50"}
+                }
+            }
+        }),
+        json!({
+            "name": "update_expense",
+            "description": "更新一条记账记录",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string", "description": "记账记录ID"},
+                    "amount": {"type": "number"},
+                    "date": {"type": "string"},
+                    "notes": {"type": "string"},
+                    "tags": {"type": "array", "items": {"type": "string"}},
+                    "currency": {"type": "string", "enum": ["CAD", "CNY"]}
+                },
+                "required": ["id"]
+            }
+        }),
+        json!({
+            "name": "delete_expense",
+            "description": "删除一条记账记录",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string", "description": "记账记录ID"}
+                },
+                "required": ["id"]
+            }
+        }),
+        json!({
+            "name": "get_expense_summary",
+            "description": "获取记账统计汇总（总额、笔数、按标签分组）",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "period": {"type": "string", "enum": ["week", "month", "year"], "description": "统计周期"}
+                },
+                "required": ["period"]
+            }
+        }),
+        // ─── Trip tools ───
+        json!({
+            "name": "query_trips",
+            "description": "查询用户的差旅行程列表",
+            "input_schema": {
+                "type": "object",
+                "properties": {}
+            }
+        }),
+        json!({
+            "name": "get_trip_detail",
+            "description": "获取某个差旅行程的详细信息（包含所有条目和协作者）",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string", "description": "行程ID"}
+                },
+                "required": ["id"]
+            }
+        }),
+        json!({
+            "name": "create_trip",
+            "description": "创建一个新的差旅行程",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string", "description": "行程标题"},
+                    "destination": {"type": "string", "description": "目的地"},
+                    "date_from": {"type": "string", "description": "开始日期 YYYY-MM-DD"},
+                    "date_to": {"type": "string", "description": "结束日期 YYYY-MM-DD"},
+                    "purpose": {"type": "string", "description": "出差目的"},
+                    "currency": {"type": "string", "enum": ["CAD", "CNY"], "description": "默认币种"}
+                },
+                "required": ["title", "date_from", "date_to"]
+            }
+        }),
+        json!({
+            "name": "update_trip",
+            "description": "更新差旅行程信息",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string", "description": "行程ID"},
+                    "title": {"type": "string"},
+                    "destination": {"type": "string"},
+                    "date_from": {"type": "string"},
+                    "date_to": {"type": "string"},
+                    "purpose": {"type": "string"},
+                    "notes": {"type": "string"},
+                    "currency": {"type": "string"}
+                },
+                "required": ["id"]
+            }
+        }),
+        json!({
+            "name": "delete_trip",
+            "description": "删除差旅行程（会级联删除所有条目和照片）",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string", "description": "行程ID"}
+                },
+                "required": ["id"]
+            }
+        }),
+        json!({
+            "name": "create_trip_item",
+            "description": "为差旅行程添加一个费用条目（如机票、酒店、餐饮等）",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "trip_id": {"type": "string", "description": "行程ID"},
+                    "type": {"type": "string", "enum": ["flight", "train", "hotel", "taxi", "meal", "meeting", "telecom", "misc"], "description": "费用类型"},
+                    "date": {"type": "string", "description": "日期 YYYY-MM-DD"},
+                    "description": {"type": "string", "description": "描述"},
+                    "amount": {"type": "number", "description": "金额"},
+                    "currency": {"type": "string", "enum": ["CAD", "CNY"]},
+                    "reimburse_status": {"type": "string", "enum": ["pending", "submitted", "approved", "rejected", "na"], "description": "报销状态"},
+                    "notes": {"type": "string"}
+                },
+                "required": ["trip_id", "date"]
+            }
+        }),
+        json!({
+            "name": "update_trip_item",
+            "description": "更新差旅条目（如金额、报销状态等）",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string", "description": "条目ID"},
+                    "type": {"type": "string", "enum": ["flight", "train", "hotel", "taxi", "meal", "meeting", "telecom", "misc"]},
+                    "date": {"type": "string"},
+                    "description": {"type": "string"},
+                    "amount": {"type": "number"},
+                    "currency": {"type": "string"},
+                    "reimburse_status": {"type": "string", "enum": ["pending", "submitted", "approved", "rejected", "na"]},
+                    "notes": {"type": "string"}
+                },
+                "required": ["id"]
+            }
+        }),
+        json!({
+            "name": "delete_trip_item",
+            "description": "删除差旅条目",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string", "description": "条目ID"}
+                },
+                "required": ["id"]
+            }
+        }),
+        json!({
+            "name": "get_trip_summary",
+            "description": "获取差旅费用汇总（总额、报销状态统计）",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "trip_id": {"type": "string", "description": "行程ID（不填则返回所有行程汇总）"}
+                }
             }
         }),
     ]
@@ -813,15 +1126,140 @@ fn tool_create_english_scenario(db: &Connection, user_id: &str, input: &Value) -
 
 fn tool_query_english_scenarios(db: &Connection, user_id: &str, input: &Value) -> Value {
     let keyword = input["keyword"].as_str();
+    let include_content = input["include_content"].as_bool().unwrap_or(false);
+
+    let select_cols = if include_content {
+        "id, title, title_en, status, icon, COALESCE(category, '英语'), content, notes"
+    } else {
+        "id, title, title_en, status, icon, COALESCE(category, '英语'), '', ''"
+    };
 
     let (sql, params): (String, Vec<Box<dyn rusqlite::types::ToSql>>) = if let Some(kw) = keyword {
         (
-            "SELECT id, title, title_en, status, icon, COALESCE(category, '英语') FROM english_scenarios WHERE user_id=?1 AND archived=0 AND title LIKE ?2 ORDER BY updated_at DESC LIMIT 20".into(),
+            format!("SELECT {} FROM english_scenarios WHERE user_id=?1 AND archived=0 AND title LIKE ?2 ORDER BY updated_at DESC LIMIT 20", select_cols),
             vec![Box::new(user_id.to_string()), Box::new(format!("%{}%", kw))],
         )
     } else {
         (
-            "SELECT id, title, title_en, status, icon, COALESCE(category, '英语') FROM english_scenarios WHERE user_id=?1 AND archived=0 ORDER BY updated_at DESC LIMIT 20".into(),
+            format!("SELECT {} FROM english_scenarios WHERE user_id=?1 AND archived=0 ORDER BY updated_at DESC LIMIT 20", select_cols),
+            vec![Box::new(user_id.to_string())],
+        )
+    };
+
+    let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+    let mut stmt = match db.prepare(&sql) {
+        Ok(s) => s,
+        Err(e) => return json!({"error": format!("Query failed: {}", e)}),
+    };
+
+    let rows = match stmt.query_map(param_refs.as_slice(), |row| {
+        let mut item = json!({
+            "id": row.get::<_, String>(0)?,
+            "title": row.get::<_, String>(1)?,
+            "title_en": row.get::<_, String>(2).unwrap_or_default(),
+            "status": row.get::<_, String>(3)?,
+            "icon": row.get::<_, String>(4).unwrap_or_else(|_| "📖".into()),
+            "category": row.get::<_, String>(5).unwrap_or_else(|_| "英语".into())
+        });
+        if include_content {
+            item["content"] = json!(row.get::<_, String>(6).unwrap_or_default());
+            item["notes"] = json!(row.get::<_, String>(7).unwrap_or_default());
+        }
+        Ok(item)
+    }) {
+        Ok(r) => r,
+        Err(e) => return json!({"error": format!("Query failed: {}", e)}),
+    };
+
+    let items: Vec<Value> = rows.flatten().collect();
+    json!({"success": true, "count": items.len(), "items": items})
+}
+
+fn tool_update_english_scenario(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let id = match input["id"].as_str() {
+        Some(i) => i,
+        None => return json!({"error": "id is required"}),
+    };
+
+    let mut sets = Vec::new();
+    let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
+    let mut idx = 1;
+
+    if let Some(v) = input["title"].as_str() {
+        idx += 1;
+        sets.push(format!("title=?{}", idx));
+        params.push(Box::new(v.to_string()));
+    }
+    if let Some(v) = input["content"].as_str() {
+        idx += 1;
+        sets.push(format!("content=?{}", idx));
+        params.push(Box::new(v.to_string()));
+    }
+    if let Some(v) = input["notes"].as_str() {
+        idx += 1;
+        sets.push(format!("notes=?{}", idx));
+        params.push(Box::new(v.to_string()));
+    }
+    if let Some(v) = input["category"].as_str() {
+        idx += 1;
+        sets.push(format!("category=?{}", idx));
+        params.push(Box::new(v.to_string()));
+    }
+
+    if sets.is_empty() {
+        return json!({"error": "No fields to update"});
+    }
+
+    let now = chrono::Utc::now().to_rfc3339();
+    idx += 1;
+    sets.push(format!("updated_at=?{}", idx));
+    params.push(Box::new(now));
+
+    let sql = format!(
+        "UPDATE english_scenarios SET {} WHERE id=?1 AND user_id=?{}",
+        sets.join(", "),
+        idx + 1
+    );
+    params.insert(0, Box::new(id.to_string()));
+    params.push(Box::new(user_id.to_string()));
+
+    let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+    match db.execute(&sql, param_refs.as_slice()) {
+        Ok(0) => json!({"error": "Scenario not found or not owned by you"}),
+        Ok(_) => json!({"success": true, "id": id}),
+        Err(e) => json!({"error": format!("Update failed: {}", e)}),
+    }
+}
+
+fn tool_delete_english_scenario(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let id = match input["id"].as_str() {
+        Some(i) => i,
+        None => return json!({"error": "id is required"}),
+    };
+
+    match db.execute(
+        "DELETE FROM english_scenarios WHERE id=?1 AND user_id=?2",
+        rusqlite::params![id, user_id],
+    ) {
+        Ok(0) => json!({"error": "Scenario not found or not owned by you"}),
+        Ok(_) => json!({"success": true, "id": id}),
+        Err(e) => json!({"error": format!("Delete failed: {}", e)}),
+    }
+}
+
+// ─── Routine query/update/delete ───
+
+fn tool_query_routines(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let keyword = input["keyword"].as_str();
+
+    let (sql, params): (String, Vec<Box<dyn rusqlite::types::ToSql>>) = if let Some(kw) = keyword {
+        (
+            "SELECT id, text, completed_today, last_completed_date FROM routines WHERE user_id=?1 AND text LIKE ?2 ORDER BY created_at ASC".into(),
+            vec![Box::new(user_id.to_string()), Box::new(format!("%{}%", kw))],
+        )
+    } else {
+        (
+            "SELECT id, text, completed_today, last_completed_date FROM routines WHERE user_id=?1 ORDER BY created_at ASC".into(),
             vec![Box::new(user_id.to_string())],
         )
     };
@@ -835,11 +1273,101 @@ fn tool_query_english_scenarios(db: &Connection, user_id: &str, input: &Value) -
     let rows = match stmt.query_map(param_refs.as_slice(), |row| {
         Ok(json!({
             "id": row.get::<_, String>(0)?,
-            "title": row.get::<_, String>(1)?,
-            "title_en": row.get::<_, String>(2).unwrap_or_default(),
-            "status": row.get::<_, String>(3)?,
-            "icon": row.get::<_, String>(4).unwrap_or_else(|_| "📖".into()),
-            "category": row.get::<_, String>(5).unwrap_or_else(|_| "英语".into())
+            "text": row.get::<_, String>(1)?,
+            "completed_today": row.get::<_, bool>(2)?,
+            "last_completed_date": row.get::<_, Option<String>>(3)?
+        }))
+    }) {
+        Ok(r) => r,
+        Err(e) => return json!({"error": format!("Query failed: {}", e)}),
+    };
+
+    let items: Vec<Value> = rows.flatten().collect();
+    let done = items
+        .iter()
+        .filter(|i| i["completed_today"].as_bool().unwrap_or(false))
+        .count();
+    json!({"success": true, "count": items.len(), "completed_today": done, "items": items})
+}
+
+fn tool_update_routine(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let id = match input["id"].as_str() {
+        Some(i) => i,
+        None => return json!({"error": "id is required"}),
+    };
+    let text = match input["text"].as_str() {
+        Some(t) if !t.is_empty() => t,
+        _ => return json!({"error": "text is required"}),
+    };
+
+    match db.execute(
+        "UPDATE routines SET text=?1 WHERE id=?2 AND user_id=?3",
+        rusqlite::params![text, id, user_id],
+    ) {
+        Ok(0) => json!({"error": "Routine not found or not owned by you"}),
+        Ok(_) => json!({"success": true, "id": id, "text": text}),
+        Err(e) => json!({"error": format!("Update failed: {}", e)}),
+    }
+}
+
+fn tool_delete_routine(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let id = match input["id"].as_str() {
+        Some(i) => i,
+        None => return json!({"error": "id is required"}),
+    };
+
+    match db.execute(
+        "DELETE FROM routines WHERE id=?1 AND user_id=?2",
+        rusqlite::params![id, user_id],
+    ) {
+        Ok(0) => json!({"error": "Routine not found or not owned by you"}),
+        Ok(_) => json!({"success": true, "id": id}),
+        Err(e) => json!({"error": format!("Delete failed: {}", e)}),
+    }
+}
+
+// ─── Review query/update/delete ───
+
+fn tool_query_reviews(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let keyword = input["keyword"].as_str();
+    let frequency = input["frequency"].as_str();
+
+    let mut conditions = vec!["user_id=?1".to_string()];
+    let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = vec![Box::new(user_id.to_string())];
+    let mut idx = 1;
+
+    if let Some(kw) = keyword {
+        idx += 1;
+        conditions.push(format!("text LIKE ?{}", idx));
+        params.push(Box::new(format!("%{}%", kw)));
+    }
+    if let Some(freq) = frequency {
+        idx += 1;
+        conditions.push(format!("frequency=?{}", idx));
+        params.push(Box::new(freq.to_string()));
+    }
+
+    let sql = format!(
+        "SELECT id, text, frequency, frequency_config, notes, category, last_completed, paused FROM reviews WHERE {} ORDER BY created_at ASC",
+        conditions.join(" AND ")
+    );
+
+    let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+    let mut stmt = match db.prepare(&sql) {
+        Ok(s) => s,
+        Err(e) => return json!({"error": format!("Query failed: {}", e)}),
+    };
+
+    let rows = match stmt.query_map(param_refs.as_slice(), |row| {
+        Ok(json!({
+            "id": row.get::<_, String>(0)?,
+            "text": row.get::<_, String>(1)?,
+            "frequency": row.get::<_, String>(2)?,
+            "frequency_config": row.get::<_, String>(3).unwrap_or_else(|_| "{}".into()),
+            "notes": row.get::<_, String>(4).unwrap_or_default(),
+            "category": row.get::<_, String>(5).unwrap_or_default(),
+            "last_completed": row.get::<_, Option<String>>(6)?,
+            "paused": row.get::<_, bool>(7)?
         }))
     }) {
         Ok(r) => r,
@@ -848,6 +1376,353 @@ fn tool_query_english_scenarios(db: &Connection, user_id: &str, input: &Value) -
 
     let items: Vec<Value> = rows.flatten().collect();
     json!({"success": true, "count": items.len(), "items": items})
+}
+
+fn tool_update_review(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let id = match input["id"].as_str() {
+        Some(i) => i,
+        None => return json!({"error": "id is required"}),
+    };
+
+    let mut sets = Vec::new();
+    let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
+    let mut idx = 1;
+
+    if let Some(v) = input["text"].as_str() {
+        idx += 1;
+        sets.push(format!("text=?{}", idx));
+        params.push(Box::new(v.to_string()));
+    }
+    if let Some(v) = input["frequency"].as_str() {
+        idx += 1;
+        sets.push(format!("frequency=?{}", idx));
+        params.push(Box::new(v.to_string()));
+    }
+    if let Some(v) = input.get("frequency_config") {
+        idx += 1;
+        sets.push(format!("frequency_config=?{}", idx));
+        params.push(Box::new(
+            serde_json::to_string(v).unwrap_or_else(|_| "{}".into()),
+        ));
+    }
+    if let Some(v) = input["notes"].as_str() {
+        idx += 1;
+        sets.push(format!("notes=?{}", idx));
+        params.push(Box::new(v.to_string()));
+    }
+    if let Some(v) = input["category"].as_str() {
+        idx += 1;
+        sets.push(format!("category=?{}", idx));
+        params.push(Box::new(v.to_string()));
+    }
+
+    if sets.is_empty() {
+        return json!({"error": "No fields to update"});
+    }
+
+    let now = chrono::Utc::now().to_rfc3339();
+    idx += 1;
+    sets.push(format!("updated_at=?{}", idx));
+    params.push(Box::new(now));
+
+    let sql = format!(
+        "UPDATE reviews SET {} WHERE id=?1 AND user_id=?{}",
+        sets.join(", "),
+        idx + 1
+    );
+    params.insert(0, Box::new(id.to_string()));
+    params.push(Box::new(user_id.to_string()));
+
+    let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+    match db.execute(&sql, param_refs.as_slice()) {
+        Ok(0) => json!({"error": "Review not found or not owned by you"}),
+        Ok(_) => json!({"success": true, "id": id}),
+        Err(e) => json!({"error": format!("Update failed: {}", e)}),
+    }
+}
+
+fn tool_delete_review(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let id = match input["id"].as_str() {
+        Some(i) => i,
+        None => return json!({"error": "id is required"}),
+    };
+
+    match db.execute(
+        "DELETE FROM reviews WHERE id=?1 AND user_id=?2",
+        rusqlite::params![id, user_id],
+    ) {
+        Ok(0) => json!({"error": "Review not found or not owned by you"}),
+        Ok(_) => json!({"success": true, "id": id}),
+        Err(e) => json!({"error": format!("Delete failed: {}", e)}),
+    }
+}
+
+// ─── Expense tools ───
+
+fn tool_create_expense(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let amount = match input["amount"].as_f64() {
+        Some(a) if a > 0.0 => a,
+        _ => return json!({"error": "amount is required and must be positive"}),
+    };
+    let date = input["date"]
+        .as_str()
+        .unwrap_or(&chrono::Local::now().format("%Y-%m-%d").to_string())
+        .to_string();
+    let notes = input["notes"].as_str().unwrap_or("").to_string();
+    let currency = input["currency"].as_str().unwrap_or("CAD").to_string();
+    let tags = input["tags"]
+        .as_array()
+        .map(|arr| {
+            let strs: Vec<String> = arr
+                .iter()
+                .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                .collect();
+            serde_json::to_string(&strs).unwrap_or_else(|_| "[]".into())
+        })
+        .unwrap_or_else(|| "[]".into());
+
+    let id = uuid::Uuid::new_v4().to_string()[..8].to_string();
+    let now = chrono::Utc::now().to_rfc3339();
+
+    match db.execute(
+        "INSERT INTO expense_entries (id, user_id, amount, date, notes, tags, currency, ai_processed, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 0, ?8, ?9)",
+        rusqlite::params![id, user_id, amount, date, notes, tags, currency, now, now],
+    ) {
+        Ok(_) => json!({"success": true, "id": id, "amount": amount, "date": date, "notes": notes, "currency": currency}),
+        Err(e) => json!({"error": format!("Failed to create expense: {}", e)}),
+    }
+}
+
+fn tool_query_expenses(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let mut conditions = vec!["user_id=?1".to_string()];
+    let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = vec![Box::new(user_id.to_string())];
+    let mut idx = 1;
+
+    if let Some(d) = input["date_from"].as_str() {
+        idx += 1;
+        conditions.push(format!("date >= ?{}", idx));
+        params.push(Box::new(d.to_string()));
+    }
+    if let Some(d) = input["date_to"].as_str() {
+        idx += 1;
+        conditions.push(format!("date <= ?{}", idx));
+        params.push(Box::new(d.to_string()));
+    }
+    if let Some(kw) = input["keyword"].as_str() {
+        idx += 1;
+        conditions.push(format!("notes LIKE ?{}", idx));
+        params.push(Box::new(format!("%{}%", kw)));
+    }
+    if let Some(tag) = input["tag"].as_str() {
+        idx += 1;
+        conditions.push(format!("tags LIKE ?{}", idx));
+        params.push(Box::new(format!("%\"{}\"%", tag)));
+    }
+
+    let limit = input["limit"].as_i64().unwrap_or(20).min(50);
+    let sql = format!(
+        "SELECT id, amount, date, notes, tags, COALESCE(currency, 'CAD') FROM expense_entries WHERE {} ORDER BY date DESC, created_at DESC LIMIT {}",
+        conditions.join(" AND "),
+        limit
+    );
+
+    let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+    let mut stmt = match db.prepare(&sql) {
+        Ok(s) => s,
+        Err(e) => return json!({"error": format!("Query failed: {}", e)}),
+    };
+
+    let rows = match stmt.query_map(param_refs.as_slice(), |row| {
+        let tags_str = row.get::<_, String>(4).unwrap_or_else(|_| "[]".into());
+        let tags: Value = serde_json::from_str(&tags_str).unwrap_or(json!([]));
+        Ok(json!({
+            "id": row.get::<_, String>(0)?,
+            "amount": row.get::<_, f64>(1)?,
+            "date": row.get::<_, String>(2)?,
+            "notes": row.get::<_, String>(3).unwrap_or_default(),
+            "tags": tags,
+            "currency": row.get::<_, String>(5)?
+        }))
+    }) {
+        Ok(r) => r,
+        Err(e) => return json!({"error": format!("Query failed: {}", e)}),
+    };
+
+    let items: Vec<Value> = rows.flatten().collect();
+    json!({"success": true, "count": items.len(), "items": items})
+}
+
+fn tool_update_expense(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let id = match input["id"].as_str() {
+        Some(i) => i,
+        None => return json!({"error": "id is required"}),
+    };
+
+    let mut sets = Vec::new();
+    let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
+    let mut idx = 1;
+
+    if let Some(v) = input["amount"].as_f64() {
+        idx += 1;
+        sets.push(format!("amount=?{}", idx));
+        params.push(Box::new(v));
+    }
+    if let Some(v) = input["date"].as_str() {
+        idx += 1;
+        sets.push(format!("date=?{}", idx));
+        params.push(Box::new(v.to_string()));
+    }
+    if let Some(v) = input["notes"].as_str() {
+        idx += 1;
+        sets.push(format!("notes=?{}", idx));
+        params.push(Box::new(v.to_string()));
+    }
+    if let Some(v) = input["currency"].as_str() {
+        idx += 1;
+        sets.push(format!("currency=?{}", idx));
+        params.push(Box::new(v.to_string()));
+    }
+    if let Some(arr) = input["tags"].as_array() {
+        idx += 1;
+        sets.push(format!("tags=?{}", idx));
+        let strs: Vec<String> = arr
+            .iter()
+            .filter_map(|v| v.as_str().map(|s| s.to_string()))
+            .collect();
+        params.push(Box::new(
+            serde_json::to_string(&strs).unwrap_or_else(|_| "[]".into()),
+        ));
+    }
+
+    if sets.is_empty() {
+        return json!({"error": "No fields to update"});
+    }
+
+    let now = chrono::Utc::now().to_rfc3339();
+    idx += 1;
+    sets.push(format!("updated_at=?{}", idx));
+    params.push(Box::new(now));
+
+    let sql = format!(
+        "UPDATE expense_entries SET {} WHERE id=?1 AND user_id=?{}",
+        sets.join(", "),
+        idx + 1
+    );
+    params.insert(0, Box::new(id.to_string()));
+    params.push(Box::new(user_id.to_string()));
+
+    let param_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+    match db.execute(&sql, param_refs.as_slice()) {
+        Ok(0) => json!({"error": "Expense not found or not owned by you"}),
+        Ok(_) => json!({"success": true, "id": id}),
+        Err(e) => json!({"error": format!("Update failed: {}", e)}),
+    }
+}
+
+fn tool_delete_expense(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let id = match input["id"].as_str() {
+        Some(i) => i,
+        None => return json!({"error": "id is required"}),
+    };
+
+    match db.execute(
+        "DELETE FROM expense_entries WHERE id=?1 AND user_id=?2",
+        rusqlite::params![id, user_id],
+    ) {
+        Ok(0) => json!({"error": "Expense not found or not owned by you"}),
+        Ok(_) => json!({"success": true, "id": id}),
+        Err(e) => json!({"error": format!("Delete failed: {}", e)}),
+    }
+}
+
+fn tool_get_expense_summary(db: &Connection, user_id: &str, input: &Value) -> Value {
+    use chrono::Datelike;
+    let period = input["period"].as_str().unwrap_or("month");
+
+    let today = chrono::Local::now();
+    let date_from = match period {
+        "week" => (today - chrono::Duration::days(today.weekday().num_days_from_monday() as i64))
+            .format("%Y-%m-%d")
+            .to_string(),
+        "month" => format!("{}-{:02}-01", today.format("%Y"), today.format("%m")),
+        "year" => format!("{}-01-01", today.format("%Y")),
+        _ => format!("{}-{:02}-01", today.format("%Y"), today.format("%m")),
+    };
+    let date_to = today.format("%Y-%m-%d").to_string();
+
+    // Total by currency
+    let mut summary = json!({
+        "period": period,
+        "date_from": date_from,
+        "date_to": date_to
+    });
+
+    if let Ok(mut stmt) = db.prepare(
+        "SELECT COALESCE(currency, 'CAD'), SUM(amount), COUNT(*) FROM expense_entries WHERE user_id=?1 AND date >= ?2 AND date <= ?3 GROUP BY COALESCE(currency, 'CAD')",
+    ) {
+        let mut by_currency = json!({});
+        if let Ok(rows) = stmt.query_map(
+            rusqlite::params![user_id, date_from, date_to],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, f64>(1)?,
+                    row.get::<_, i64>(2)?,
+                ))
+            },
+        ) {
+            let mut total_count = 0i64;
+            for r in rows.flatten() {
+                by_currency[&r.0] = json!({"total": (r.1 * 100.0).round() / 100.0, "count": r.2});
+                total_count += r.2;
+            }
+            summary["by_currency"] = by_currency;
+            summary["total_count"] = json!(total_count);
+        }
+    }
+
+    // Top tags
+    if let Ok(mut stmt) = db
+        .prepare("SELECT tags FROM expense_entries WHERE user_id=?1 AND date >= ?2 AND date <= ?3")
+    {
+        let mut tag_totals: std::collections::HashMap<String, (f64, i64)> =
+            std::collections::HashMap::new();
+        if let Ok(rows) = stmt.query_map(rusqlite::params![user_id, date_from, date_to], |row| {
+            row.get::<_, String>(0)
+        }) {
+            // We need amount too, let's use a different query
+            drop(rows);
+        }
+        // Simpler: query with amount
+        if let Ok(mut stmt2) = db.prepare(
+            "SELECT tags, amount FROM expense_entries WHERE user_id=?1 AND date >= ?2 AND date <= ?3",
+        ) {
+            if let Ok(rows) = stmt2.query_map(
+                rusqlite::params![user_id, date_from, date_to],
+                |row| Ok((row.get::<_, String>(0)?, row.get::<_, f64>(1)?)),
+            ) {
+                for r in rows.flatten() {
+                    if let Ok(tags) = serde_json::from_str::<Vec<String>>(&r.0) {
+                        for tag in tags {
+                            let entry = tag_totals.entry(tag).or_insert((0.0, 0));
+                            entry.0 += r.1;
+                            entry.1 += 1;
+                        }
+                    }
+                }
+            }
+        }
+        if !tag_totals.is_empty() {
+            let mut by_tag = json!({});
+            for (tag, (total, count)) in &tag_totals {
+                by_tag[tag] = json!({"total": (*total * 100.0).round() / 100.0, "count": count});
+            }
+            summary["by_tag"] = by_tag;
+        }
+    }
+
+    summary["success"] = json!(true);
+    summary
 }
 
 // ─── Reminder helpers ───
@@ -1134,5 +2009,472 @@ fn tool_snooze_reminder(db: &Connection, user_id: &str, input: &Value) -> Value 
             })
         }
         Err(e) => json!({"error": format!("Snooze failed: {}", e)}),
+    }
+}
+
+// ─── Trip tools ───
+
+fn tool_query_trips(db: &Connection, user_id: &str, _input: &Value) -> Value {
+    let mut trips: Vec<Value> = Vec::new();
+
+    let sql = "
+        SELECT t.id, t.title, t.destination, t.date_from, t.date_to, t.currency,
+               (SELECT COUNT(*) FROM trip_items WHERE trip_id = t.id),
+               (SELECT COALESCE(SUM(amount), 0) FROM trip_items WHERE trip_id = t.id),
+               1 as is_owner
+        FROM trips t WHERE t.user_id = ?1
+        UNION ALL
+        SELECT t.id, t.title, t.destination, t.date_from, t.date_to, t.currency,
+               (SELECT COUNT(*) FROM trip_items WHERE trip_id = t.id),
+               (SELECT COALESCE(SUM(amount), 0) FROM trip_items WHERE trip_id = t.id),
+               0 as is_owner
+        FROM trips t JOIN trip_collaborators tc ON tc.trip_id = t.id WHERE tc.user_id = ?1
+        ORDER BY date_from DESC
+    ";
+
+    if let Ok(mut stmt) = db.prepare(sql) {
+        if let Ok(rows) = stmt.query_map(rusqlite::params![user_id], |row| {
+            Ok(json!({
+                "id": row.get::<_, String>(0)?,
+                "title": row.get::<_, String>(1)?,
+                "destination": row.get::<_, String>(2)?,
+                "date_from": row.get::<_, String>(3)?,
+                "date_to": row.get::<_, String>(4)?,
+                "currency": row.get::<_, String>(5)?,
+                "item_count": row.get::<_, i64>(6)?,
+                "total_amount": row.get::<_, f64>(7)?,
+                "is_owner": row.get::<_, i64>(8)? != 0
+            }))
+        }) {
+            trips = rows.filter_map(|r| r.ok()).collect();
+        }
+    }
+
+    json!({"trips": trips, "count": trips.len()})
+}
+
+fn tool_get_trip_detail(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let id = match input["id"].as_str() {
+        Some(s) => s,
+        None => return json!({"error": "id is required"}),
+    };
+
+    // Check access
+    let is_owner: bool = db
+        .query_row(
+            "SELECT COUNT(*) FROM trips WHERE id=?1 AND user_id=?2",
+            rusqlite::params![id, user_id],
+            |r| r.get::<_, i64>(0),
+        )
+        .unwrap_or(0)
+        > 0;
+    let is_collab: bool = db
+        .query_row(
+            "SELECT COUNT(*) FROM trip_collaborators WHERE trip_id=?1 AND user_id=?2",
+            rusqlite::params![id, user_id],
+            |r| r.get::<_, i64>(0),
+        )
+        .unwrap_or(0)
+        > 0;
+
+    if !is_owner && !is_collab {
+        return json!({"error": "Trip not found or access denied"});
+    }
+
+    let trip = db.query_row(
+        "SELECT title, destination, date_from, date_to, purpose, notes, currency FROM trips WHERE id=?1",
+        rusqlite::params![id],
+        |r| Ok(json!({
+            "id": id,
+            "title": r.get::<_, String>(0)?,
+            "destination": r.get::<_, String>(1)?,
+            "date_from": r.get::<_, String>(2)?,
+            "date_to": r.get::<_, String>(3)?,
+            "purpose": r.get::<_, String>(4)?,
+            "notes": r.get::<_, String>(5)?,
+            "currency": r.get::<_, String>(6)?
+        })),
+    );
+
+    let trip = match trip {
+        Ok(t) => t,
+        Err(_) => return json!({"error": "Trip not found"}),
+    };
+
+    let mut items: Vec<Value> = Vec::new();
+    if let Ok(mut stmt) = db.prepare(
+        "SELECT id, type, date, description, amount, currency, reimburse_status, notes FROM trip_items WHERE trip_id=?1 ORDER BY date, sort_order"
+    ) {
+        if let Ok(rows) = stmt.query_map(rusqlite::params![id], |row| {
+            Ok(json!({
+                "id": row.get::<_, String>(0)?,
+                "type": row.get::<_, String>(1)?,
+                "date": row.get::<_, String>(2)?,
+                "description": row.get::<_, String>(3)?,
+                "amount": row.get::<_, f64>(4)?,
+                "currency": row.get::<_, String>(5)?,
+                "reimburse_status": row.get::<_, String>(6)?,
+                "notes": row.get::<_, String>(7)?
+            }))
+        }) {
+            items = rows.filter_map(|r| r.ok()).collect();
+        }
+    }
+
+    json!({"trip": trip, "items": items, "item_count": items.len()})
+}
+
+fn tool_create_trip(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let title = input["title"].as_str().unwrap_or("").to_string();
+    if title.is_empty() {
+        return json!({"error": "title is required"});
+    }
+    let date_from = input["date_from"].as_str().unwrap_or("").to_string();
+    let date_to = input["date_to"].as_str().unwrap_or("").to_string();
+    if date_from.is_empty() || date_to.is_empty() {
+        return json!({"error": "date_from and date_to are required"});
+    }
+
+    let id = uuid::Uuid::new_v4().to_string()[..8].to_string();
+    let now = chrono::Utc::now().to_rfc3339();
+    let destination = input["destination"].as_str().unwrap_or("");
+    let purpose = input["purpose"].as_str().unwrap_or("");
+    let currency = input["currency"].as_str().unwrap_or("CAD");
+
+    match db.execute(
+        "INSERT INTO trips (id, user_id, title, destination, date_from, date_to, purpose, notes, currency, created_at, updated_at) VALUES (?1,?2,?3,?4,?5,?6,?7,'',?8,?9,?9)",
+        rusqlite::params![id, user_id, title, destination, date_from, date_to, purpose, currency, now],
+    ) {
+        Ok(_) => json!({"success": true, "id": id, "title": title}),
+        Err(e) => json!({"error": format!("Failed to create trip: {}", e)}),
+    }
+}
+
+fn tool_update_trip(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let id = match input["id"].as_str() {
+        Some(s) => s,
+        None => return json!({"error": "id is required"}),
+    };
+
+    let owns: bool = db
+        .query_row(
+            "SELECT COUNT(*) FROM trips WHERE id=?1 AND user_id=?2",
+            rusqlite::params![id, user_id],
+            |r| r.get::<_, i64>(0),
+        )
+        .unwrap_or(0)
+        > 0;
+    if !owns {
+        return json!({"error": "Trip not found or not owned by you"});
+    }
+
+    let now = chrono::Utc::now().to_rfc3339();
+    let mut sets = vec!["updated_at=?1".to_string()];
+    let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = vec![Box::new(now)];
+    let mut idx = 2u32;
+
+    macro_rules! maybe {
+        ($key:expr, $col:expr) => {
+            if let Some(v) = input[$key].as_str() {
+                sets.push(format!("{}=?{}", $col, idx));
+                params.push(Box::new(v.to_string()));
+                idx += 1;
+            }
+        };
+    }
+    maybe!("title", "title");
+    maybe!("destination", "destination");
+    maybe!("date_from", "date_from");
+    maybe!("date_to", "date_to");
+    maybe!("purpose", "purpose");
+    maybe!("notes", "notes");
+    maybe!("currency", "currency");
+
+    let sql = format!(
+        "UPDATE trips SET {} WHERE id=?{} AND user_id=?{}",
+        sets.join(","),
+        idx,
+        idx + 1
+    );
+    params.push(Box::new(id.to_string()));
+    params.push(Box::new(user_id.to_string()));
+    let refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+
+    match db.execute(&sql, refs.as_slice()) {
+        Ok(0) => json!({"error": "Trip not found"}),
+        Ok(_) => json!({"success": true}),
+        Err(e) => json!({"error": format!("Update failed: {}", e)}),
+    }
+}
+
+fn tool_delete_trip(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let id = match input["id"].as_str() {
+        Some(s) => s,
+        None => return json!({"error": "id is required"}),
+    };
+    match db.execute(
+        "DELETE FROM trips WHERE id=?1 AND user_id=?2",
+        rusqlite::params![id, user_id],
+    ) {
+        Ok(0) => json!({"error": "Trip not found or not owned by you"}),
+        Ok(_) => json!({"success": true, "message": "行程已删除"}),
+        Err(e) => json!({"error": format!("Delete failed: {}", e)}),
+    }
+}
+
+fn tool_create_trip_item(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let trip_id = match input["trip_id"].as_str() {
+        Some(s) => s,
+        None => return json!({"error": "trip_id is required"}),
+    };
+
+    // Check access (owner or editor)
+    let owns: bool = db
+        .query_row(
+            "SELECT COUNT(*) FROM trips WHERE id=?1 AND user_id=?2",
+            rusqlite::params![trip_id, user_id],
+            |r| r.get::<_, i64>(0),
+        )
+        .unwrap_or(0)
+        > 0;
+    let is_editor: bool = db
+        .query_row(
+            "SELECT role FROM trip_collaborators WHERE trip_id=?1 AND user_id=?2",
+            rusqlite::params![trip_id, user_id],
+            |r| r.get::<_, String>(0),
+        )
+        .map(|r| r == "editor")
+        .unwrap_or(false);
+
+    if !owns && !is_editor {
+        return json!({"error": "No permission to add items to this trip"});
+    }
+
+    let date = input["date"].as_str().unwrap_or("").to_string();
+    if date.is_empty() {
+        return json!({"error": "date is required"});
+    }
+
+    let id = uuid::Uuid::new_v4().to_string()[..8].to_string();
+    let now = chrono::Utc::now().to_rfc3339();
+    let item_type = input["type"].as_str().unwrap_or("misc");
+    let description = input["description"].as_str().unwrap_or("");
+    let amount = input["amount"].as_f64().unwrap_or(0.0);
+    let currency = input["currency"].as_str().unwrap_or("CAD");
+    let reimburse_status = input["reimburse_status"].as_str().unwrap_or("pending");
+    let notes = input["notes"].as_str().unwrap_or("");
+
+    match db.execute(
+        "INSERT INTO trip_items (id, trip_id, type, date, description, amount, currency, reimburse_status, notes, sort_order, created_at, updated_at)
+         VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,0,?10,?10)",
+        rusqlite::params![id, trip_id, item_type, date, description, amount, currency, reimburse_status, notes, now],
+    ) {
+        Ok(_) => json!({"success": true, "id": id}),
+        Err(e) => json!({"error": format!("Failed to create item: {}", e)}),
+    }
+}
+
+fn tool_update_trip_item(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let id = match input["id"].as_str() {
+        Some(s) => s,
+        None => return json!({"error": "id is required"}),
+    };
+
+    // Check access
+    let trip_id: Option<String> = db
+        .query_row(
+            "SELECT trip_id FROM trip_items WHERE id=?1",
+            rusqlite::params![id],
+            |r| r.get(0),
+        )
+        .ok();
+    let trip_id = match trip_id {
+        Some(t) => t,
+        None => return json!({"error": "Item not found"}),
+    };
+
+    let owns: bool = db
+        .query_row(
+            "SELECT COUNT(*) FROM trips WHERE id=?1 AND user_id=?2",
+            rusqlite::params![trip_id, user_id],
+            |r| r.get::<_, i64>(0),
+        )
+        .unwrap_or(0)
+        > 0;
+    let collab_role: Option<String> = db
+        .query_row(
+            "SELECT role FROM trip_collaborators WHERE trip_id=?1 AND user_id=?2",
+            rusqlite::params![trip_id, user_id],
+            |r| r.get(0),
+        )
+        .ok();
+
+    if !owns && collab_role.is_none() {
+        return json!({"error": "No permission"});
+    }
+
+    let now = chrono::Utc::now().to_rfc3339();
+    let mut sets = vec!["updated_at=?1".to_string()];
+    let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = vec![Box::new(now)];
+    let mut idx = 2u32;
+
+    // Editor can only update reimburse_status
+    if owns {
+        macro_rules! maybe {
+            ($key:expr, $col:expr) => {
+                if let Some(v) = input[$key].as_str() {
+                    sets.push(format!("{}=?{}", $col, idx));
+                    params.push(Box::new(v.to_string()));
+                    idx += 1;
+                }
+            };
+        }
+        maybe!("type", "type");
+        maybe!("date", "date");
+        maybe!("description", "description");
+        maybe!("currency", "currency");
+        maybe!("reimburse_status", "reimburse_status");
+        maybe!("notes", "notes");
+        if let Some(v) = input["amount"].as_f64() {
+            sets.push(format!("amount=?{}", idx));
+            params.push(Box::new(v));
+            idx += 1;
+        }
+    } else {
+        // Collaborator: only reimburse_status
+        if let Some(v) = input["reimburse_status"].as_str() {
+            sets.push(format!("reimburse_status=?{}", idx));
+            params.push(Box::new(v.to_string()));
+            idx += 1;
+        }
+    }
+    let _ = idx;
+
+    let sql = format!("UPDATE trip_items SET {} WHERE id=?{}", sets.join(","), idx);
+    params.push(Box::new(id.to_string()));
+    let refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+
+    match db.execute(&sql, refs.as_slice()) {
+        Ok(0) => json!({"error": "Item not found"}),
+        Ok(_) => json!({"success": true}),
+        Err(e) => json!({"error": format!("Update failed: {}", e)}),
+    }
+}
+
+fn tool_delete_trip_item(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let id = match input["id"].as_str() {
+        Some(s) => s,
+        None => return json!({"error": "id is required"}),
+    };
+
+    // Only owner can delete
+    let trip_id: Option<String> = db
+        .query_row(
+            "SELECT trip_id FROM trip_items WHERE id=?1",
+            rusqlite::params![id],
+            |r| r.get(0),
+        )
+        .ok();
+    let trip_id = match trip_id {
+        Some(t) => t,
+        None => return json!({"error": "Item not found"}),
+    };
+
+    let owns: bool = db
+        .query_row(
+            "SELECT COUNT(*) FROM trips WHERE id=?1 AND user_id=?2",
+            rusqlite::params![trip_id, user_id],
+            |r| r.get::<_, i64>(0),
+        )
+        .unwrap_or(0)
+        > 0;
+    if !owns {
+        return json!({"error": "Only trip owner can delete items"});
+    }
+
+    match db.execute("DELETE FROM trip_items WHERE id=?1", rusqlite::params![id]) {
+        Ok(0) => json!({"error": "Item not found"}),
+        Ok(_) => json!({"success": true, "message": "条目已删除"}),
+        Err(e) => json!({"error": format!("Delete failed: {}", e)}),
+    }
+}
+
+fn tool_get_trip_summary(db: &Connection, user_id: &str, input: &Value) -> Value {
+    let trip_id = input["trip_id"].as_str();
+
+    if let Some(tid) = trip_id {
+        // Single trip summary
+        let owns: bool = db
+            .query_row(
+                "SELECT COUNT(*) FROM trips WHERE id=?1 AND user_id=?2",
+                rusqlite::params![tid, user_id],
+                |r| r.get::<_, i64>(0),
+            )
+            .unwrap_or(0)
+            > 0;
+        let is_collab: bool = db
+            .query_row(
+                "SELECT COUNT(*) FROM trip_collaborators WHERE trip_id=?1 AND user_id=?2",
+                rusqlite::params![tid, user_id],
+                |r| r.get::<_, i64>(0),
+            )
+            .unwrap_or(0)
+            > 0;
+        if !owns && !is_collab {
+            return json!({"error": "Trip not found"});
+        }
+
+        let total: f64 = db
+            .query_row(
+                "SELECT COALESCE(SUM(amount), 0) FROM trip_items WHERE trip_id=?1",
+                rusqlite::params![tid],
+                |r| r.get(0),
+            )
+            .unwrap_or(0.0);
+        let count: i64 = db
+            .query_row(
+                "SELECT COUNT(*) FROM trip_items WHERE trip_id=?1",
+                rusqlite::params![tid],
+                |r| r.get(0),
+            )
+            .unwrap_or(0);
+
+        let mut status_counts = json!({});
+        if let Ok(mut stmt) = db.prepare("SELECT reimburse_status, COUNT(*) FROM trip_items WHERE trip_id=?1 GROUP BY reimburse_status") {
+            if let Ok(rows) = stmt.query_map(rusqlite::params![tid], |r| {
+                Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?))
+            }) {
+                for r in rows.flatten() {
+                    status_counts[r.0] = json!(r.1);
+                }
+            }
+        }
+
+        json!({
+            "trip_id": tid,
+            "total_amount": total,
+            "item_count": count,
+            "reimburse_status": status_counts
+        })
+    } else {
+        // All trips summary
+        let trip_count: i64 = db
+            .query_row(
+                "SELECT COUNT(*) FROM trips WHERE user_id=?1",
+                rusqlite::params![user_id],
+                |r| r.get(0),
+            )
+            .unwrap_or(0);
+        let total: f64 = db
+            .query_row(
+                "SELECT COALESCE(SUM(ti.amount), 0) FROM trip_items ti JOIN trips t ON t.id = ti.trip_id WHERE t.user_id=?1",
+                rusqlite::params![user_id], |r| r.get(0),
+            )
+            .unwrap_or(0.0);
+
+        json!({
+            "trip_count": trip_count,
+            "total_amount": total
+        })
     }
 }
