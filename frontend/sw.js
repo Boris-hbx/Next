@@ -1,4 +1,4 @@
-const CACHE_NAME = 'next-v13';
+const CACHE_NAME = 'next-v14';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -22,6 +22,9 @@ const STATIC_ASSETS = [
     '/assets/js/notifications.js',
     '/assets/js/life.js',
     '/assets/js/expense.js',
+    '/assets/js/trip.js',
+    '/assets/js/utils.js',
+    '/assets/js/health.js',
 ];
 
 // Install: cache static assets
