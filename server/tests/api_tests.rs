@@ -922,3 +922,72 @@ async fn test_approve_creates_user_notification() {
         .any(|n| n["title"].as_str().unwrap_or("").contains("通过"));
     assert!(has_approval, "User should have an approval notification");
 }
+
+// ──────────────────── Routine Toggle ────────────────────
+
+#[tokio::test]
+async fn test_routine_toggle_and_list() {
+    let state = test_state();
+    let (_uid, token) = create_test_user(&state, "routineuser", "pass123");
+
+    // Create a routine
+    let app = build_app(state.clone());
+    let req = Request::post("/api/routines")
+        .header("cookie", auth_cookie(&token))
+        .header("content-type", "application/json")
+        .body(Body::from(r#"{"text":"Morning exercise"}"#))
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(body["success"].as_bool().unwrap());
+    let routine_id = body["item"]["id"].as_str().unwrap().to_string();
+    assert!(!body["item"]["completed_today"].as_bool().unwrap());
+
+    // Toggle to complete
+    let app = build_app(state.clone());
+    let req = Request::post(format!("/api/routines/{}/toggle", routine_id))
+        .header("cookie", auth_cookie(&token))
+        .body(Body::empty())
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(body["success"].as_bool().unwrap());
+    assert!(body["item"]["completed_today"].as_bool().unwrap());
+
+    // List routines — should show completed_today = true
+    let app = build_app(state.clone());
+    let req = Request::get("/api/routines")
+        .header("cookie", auth_cookie(&token))
+        .body(Body::empty())
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::OK);
+    let items = body["items"].as_array().unwrap();
+    assert_eq!(items.len(), 1);
+    assert!(
+        items[0]["completed_today"].as_bool().unwrap(),
+        "Routine should show completed_today=true after toggle. Got: {:?}",
+        items[0]
+    );
+
+    // Toggle again to un-complete
+    let app = build_app(state.clone());
+    let req = Request::post(format!("/api/routines/{}/toggle", routine_id))
+        .header("cookie", auth_cookie(&token))
+        .body(Body::empty())
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(!body["item"]["completed_today"].as_bool().unwrap());
+
+    // List again — should be uncompleted
+    let app = build_app(state.clone());
+    let req = Request::get("/api/routines")
+        .header("cookie", auth_cookie(&token))
+        .body(Body::empty())
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::OK);
+    let items = body["items"].as_array().unwrap();
+    assert!(!items[0]["completed_today"].as_bool().unwrap());
+}

@@ -144,11 +144,34 @@ function addRoutine() {
 }
 
 function toggleRoutine(id) {
+    // Optimistic UI: immediately toggle the local state
+    var idx = routines.findIndex(function(r) { return r.id === id; });
+    if (idx !== -1) {
+        routines[idx].completed_today = !routines[idx].completed_today;
+        renderRoutines();
+    }
+
     API.toggleRoutine(id)
         .then(data => {
             if (data.success) {
+                // Update from server response to ensure consistency
+                if (data.item) {
+                    var si = routines.findIndex(function(r) { return r.id === id; });
+                    if (si !== -1) {
+                        routines[si] = data.item;
+                        renderRoutines();
+                    }
+                }
+            } else {
+                // Revert optimistic update on failure
                 loadRoutines();
+                showToast(data.message || '操作失败', 'error');
             }
+        })
+        .catch(err => {
+            // Revert optimistic update on error
+            loadRoutines();
+            console.error('toggleRoutine error:', err);
         });
 }
 
