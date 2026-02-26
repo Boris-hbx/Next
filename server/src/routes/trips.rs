@@ -990,22 +990,22 @@ pub async fn remove_collaborator(
     }
 }
 
-// ===== Export CSV =====
-pub async fn export_csv(
+// ===== Export XLSX =====
+pub async fn export_xlsx(
     State(state): State<AppState>,
     user_id: UserId,
     Path(id): Path<String>,
 ) -> impl axum::response::IntoResponse {
+    use rust_xlsxwriter::{Format, Workbook};
+
     let db = state.db.lock();
 
     let (has_access, _, _) = check_trip_access(&db, &id, &user_id.0);
     if !has_access {
-        return (
-            StatusCode::NOT_FOUND,
-            [(http::header::CONTENT_TYPE, "text/plain; charset=utf-8")],
-            "行程不存在".to_string(),
-        )
-            .into_response();
+        return axum::response::Response::builder()
+            .status(StatusCode::NOT_FOUND)
+            .body(axum::body::Body::from("行程不存在"))
+            .unwrap();
     }
 
     let title: String = db
@@ -1016,71 +1016,96 @@ pub async fn export_csv(
         )
         .unwrap_or_else(|_| "trip".to_string());
 
-    let mut csv = String::from("\u{FEFF}日期,类型,描述,金额,币种,报销状态,备注\n");
+    // Collect rows (only items with amount > 0)
+    let rows: Vec<(String, String, String, f64, String, String, String)> = db
+        .prepare(
+            "SELECT date, type, description, amount, currency, reimburse_status, notes
+             FROM trip_items WHERE trip_id = ?1 AND amount > 0 ORDER BY date, sort_order",
+        )
+        .and_then(|mut stmt| {
+            stmt.query_map(rusqlite::params![id], |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, f64>(3)?,
+                    row.get::<_, String>(4)?,
+                    row.get::<_, String>(5)?,
+                    row.get::<_, String>(6)?,
+                ))
+            })
+            .map(|r| r.filter_map(|x| x.ok()).collect())
+        })
+        .unwrap_or_default();
 
-    if let Ok(mut stmt) = db.prepare(
-        "SELECT date, type, description, amount, currency, reimburse_status, notes
-         FROM trip_items WHERE trip_id = ?1 ORDER BY date, sort_order",
-    ) {
-        if let Ok(rows) = stmt.query_map(rusqlite::params![id], |row| {
-            Ok((
-                row.get::<_, String>(0)?,
-                row.get::<_, String>(1)?,
-                row.get::<_, String>(2)?,
-                row.get::<_, f64>(3)?,
-                row.get::<_, String>(4)?,
-                row.get::<_, String>(5)?,
-                row.get::<_, String>(6)?,
-            ))
-        }) {
-            for r in rows.flatten() {
-                let type_label = match r.1.as_str() {
-                    "flight" => "机票",
-                    "train" => "火车",
-                    "hotel" => "酒店",
-                    "taxi" => "出租/打车",
-                    "meal" => "餐饮",
-                    "meeting" => "会议",
-                    "telecom" => "通讯",
-                    _ => "其他",
-                };
-                let status_label = match r.5.as_str() {
-                    "pending" => "待提交",
-                    "submitted" => "已提交",
-                    "approved" => "已批准",
-                    "rejected" => "已拒绝",
-                    "na" => "无需报销",
-                    _ => &r.5,
-                };
-                csv.push_str(&format!(
-                    "{},{},\"{}\",{:.2},{},{},\"{}\"\n",
-                    r.0,
-                    type_label,
-                    r.2.replace('"', "\"\""),
-                    r.3,
-                    r.4,
-                    status_label,
-                    r.6.replace('"', "\"\"")
-                ));
-            }
-        }
+    let mut workbook = Workbook::new();
+    let sheet = workbook.add_worksheet();
+
+    // Header row with bold format
+    let bold = Format::new().set_bold();
+    let headers = ["日期", "类型", "描述", "金额", "币种", "报销状态", "备注"];
+    for (col, h) in headers.iter().enumerate() {
+        sheet.write_with_format(0, col as u16, *h, &bold).ok();
     }
 
-    let filename = format!("{}-报销清单.csv", title);
-    let encoded = urlencoding::encode(&filename);
+    // Set column widths
+    sheet.set_column_width(0, 12).ok();
+    sheet.set_column_width(2, 32).ok();
+    sheet.set_column_width(6, 20).ok();
 
-    (
-        StatusCode::OK,
-        [
-            (http::header::CONTENT_TYPE, "text/csv; charset=utf-8"),
-            (
-                http::header::CONTENT_DISPOSITION,
-                &format!("attachment; filename*=UTF-8''{}", encoded),
-            ),
-        ],
-        csv,
-    )
-        .into_response()
+    for (row_idx, r) in rows.iter().enumerate() {
+        let row = (row_idx + 1) as u32;
+        let type_label = match r.1.as_str() {
+            "flight" => "机票",
+            "train" => "火车",
+            "hotel" => "酒店",
+            "taxi" => "出租/打车",
+            "meal" => "餐饮",
+            "meeting" => "会议",
+            "telecom" => "通讯",
+            _ => "其他",
+        };
+        let status_label = match r.5.as_str() {
+            "pending" => "待提交",
+            "submitted" => "已提交",
+            "approved" => "已批准",
+            "rejected" => "已拒绝",
+            "na" => "无需报销",
+            _ => r.5.as_str(),
+        };
+        sheet.write(row, 0, r.0.as_str()).ok();
+        sheet.write(row, 1, type_label).ok();
+        sheet.write(row, 2, r.2.as_str()).ok();
+        sheet.write(row, 3, r.3).ok();
+        sheet.write(row, 4, r.4.as_str()).ok();
+        sheet.write(row, 5, status_label).ok();
+        sheet.write(row, 6, r.6.as_str()).ok();
+    }
+
+    let xlsx_data = match workbook.save_to_buffer() {
+        Ok(d) => d,
+        Err(e) => {
+            eprintln!("[Trip] xlsx error: {}", e);
+            return axum::response::Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(axum::body::Body::from("生成失败"))
+                .unwrap();
+        }
+    };
+
+    let filename = format!("{}-报销清单.xlsx", title);
+    let encoded = urlencoding::encode(&filename).into_owned();
+    let disposition = format!("attachment; filename*=UTF-8''{}", encoded);
+
+    axum::response::Response::builder()
+        .status(StatusCode::OK)
+        .header(
+            http::header::CONTENT_TYPE,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        .header(http::header::CONTENT_DISPOSITION, disposition)
+        .body(axum::body::Body::from(xlsx_data))
+        .unwrap()
 }
 
 // ===== Export photos zip =====
@@ -1096,16 +1121,22 @@ pub async fn export_photos(
         return (StatusCode::NOT_FOUND, "行程不存在").into_response();
     }
 
-    // Collect all photos
-    let photos: Vec<(String, String)> = db
+    // Collect all photos with item info (storage_path, filename, date, description)
+    let photos: Vec<(String, String, String, String)> = db
         .prepare(
-            "SELECT tp.storage_path, tp.filename FROM trip_photos tp
+            "SELECT tp.storage_path, tp.filename, ti.date, COALESCE(ti.description, '')
+             FROM trip_photos tp
              JOIN trip_items ti ON ti.id = tp.item_id
-             WHERE ti.trip_id = ?1 ORDER BY ti.date, tp.created_at",
+             WHERE ti.trip_id = ?1 ORDER BY ti.date, ti.sort_order, tp.created_at",
         )
         .and_then(|mut stmt| {
             stmt.query_map(rusqlite::params![id], |row| {
-                Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                ))
             })
             .map(|rows| rows.filter_map(|r| r.ok()).collect())
         })
@@ -1115,17 +1146,46 @@ pub async fn export_photos(
         return (StatusCode::OK, "没有票据照片").into_response();
     }
 
-    // Create zip in memory
+    // Create zip in memory, organized by date folder
     let mut buf = std::io::Cursor::new(Vec::new());
     {
         let mut zip = zip::ZipWriter::new(&mut buf);
         let options = zip::write::SimpleFileOptions::default()
-            .compression_method(zip::CompressionMethod::Stored);
+            .compression_method(zip::CompressionMethod::Deflated);
 
-        for (i, (path, filename)) in photos.iter().enumerate() {
+        // Track per-date counters for duplicate handling
+        let mut date_counters: std::collections::HashMap<String, usize> =
+            std::collections::HashMap::new();
+
+        for (path, orig_filename, date, desc) in &photos {
             if let Ok(data) = std::fs::read(path) {
-                let name = format!("{:03}_{}", i + 1, filename);
-                zip.start_file(name, options).ok();
+                let ext = orig_filename.rsplit('.').next().unwrap_or("jpg");
+                // Sanitize description for filename (keep CJK + alphanumeric + basic punctuation)
+                let clean_desc: String = desc
+                    .chars()
+                    .map(|c| {
+                        if c.is_alphanumeric() || c == '-' || c == '_' {
+                            c
+                        } else {
+                            '_'
+                        }
+                    })
+                    .collect::<String>()
+                    .trim_matches('_')
+                    .chars()
+                    .take(40)
+                    .collect();
+
+                let counter = date_counters.entry(date.clone()).or_insert(0);
+                *counter += 1;
+
+                let name_in_zip = if clean_desc.is_empty() {
+                    format!("{}/{:02}.{}", date, counter, ext)
+                } else {
+                    format!("{}/{:02}_{}.{}", date, counter, clean_desc, ext)
+                };
+
+                zip.start_file(&name_in_zip, options).ok();
                 use std::io::Write;
                 zip.write_all(&data).ok();
             }

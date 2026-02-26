@@ -34,6 +34,7 @@ url = "2"
 parking_lot = "0.12"
 zip = { version = "2", default-features = false, features = ["deflate"] }
 urlencoding = "2"
+rust_xlsxwriter = "0"
 
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }

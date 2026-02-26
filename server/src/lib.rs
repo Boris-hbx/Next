@@ -126,7 +126,7 @@ pub fn build_app(state: state::AppState) -> Router {
             "/{id}/collaborators/{uid}",
             delete(routes::trips::remove_collaborator),
         )
-        .route("/{id}/export/csv", get(routes::trips::export_csv))
+        .route("/{id}/export/xlsx", get(routes::trips::export_xlsx))
         .route("/{id}/export/photos", get(routes::trips::export_photos))
         .layer(DefaultBodyLimit::max(50_000_000));
 

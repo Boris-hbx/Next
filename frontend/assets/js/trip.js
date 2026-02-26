@@ -209,7 +209,7 @@ var Trip = (function() {
                 + '<div class="trip-detail-actions">'
                 + (trip.is_owner ? '<button class="trip-action-btn" onclick="Trip.openShareModal()">👥</button>' : '')
                 + (trip.is_owner ? '<button class="trip-action-btn" onclick="Trip.openTripModal(\'' + escapeAttr(trip.id) + '\')">✏️</button>' : '')
-                + '<button class="trip-action-btn" onclick="Trip.exportCSV()">📊</button>'
+                + '<button class="trip-action-btn" onclick="Trip.showExportMenu()" title="下载导出">⬇️</button>'
                 + '</div>'
                 + '</div>'
                 + '<h2 class="trip-detail-title">' + escapeHtml(trip.title) + ownerTag + '</h2>'
@@ -899,9 +899,61 @@ var Trip = (function() {
     }
 
     // ─── Export ───
-    function exportCSV() {
+    function showExportMenu() {
         if (!_currentTrip) return;
-        window.open('/api/trips/' + encodeURIComponent(_currentTrip.id) + '/export/csv', '_blank');
+        var trip = _currentTrip;
+        var hasPhotos = (trip.items || []).some(function(iw) {
+            return (iw.photos || []).length > 0;
+        });
+
+        var overlay = document.getElementById('trip-modal-overlay');
+        if (!overlay) return;
+
+        overlay.innerHTML = '<div class="trip-modal" onclick="event.stopPropagation()" style="max-width:320px">'
+            + '<h3>📥 下载导出</h3>'
+            + '<p style="color:var(--text-secondary);font-size:0.9em;margin:0 0 16px">选择要下载的内容：</p>'
+            + '<div style="display:flex;flex-direction:column;gap:10px">'
+            + '<button class="btn btn-primary" onclick="Trip.exportXLSX()" style="justify-content:flex-start;gap:10px;padding:12px 16px;text-align:left">'
+            + '📊 <span><strong>报销清单 (.xlsx)</strong><br><small style="opacity:.7;font-weight:normal">Excel 直接打开，按日期分类</small></span>'
+            + '</button>'
+            + (hasPhotos
+                ? '<button class="btn btn-secondary" onclick="Trip.exportPhotos()" style="justify-content:flex-start;gap:10px;padding:12px 16px;text-align:left">'
+                  + '🖼️ <span><strong>全部票据照片 (.zip)</strong><br><small style="opacity:.7;font-weight:normal">按日期分文件夹打包</small></span>'
+                  + '</button>'
+                : '<button class="btn btn-secondary" disabled style="justify-content:flex-start;gap:10px;padding:12px 16px;text-align:left;opacity:.5;cursor:not-allowed">'
+                  + '🖼️ <span><strong>全部票据照片 (.zip)</strong><br><small style="font-weight:normal">暂无票据照片</small></span>'
+                  + '</button>')
+            + '</div>'
+            + '<div class="trip-modal-actions" style="margin-top:16px">'
+            + '<span></span><button class="btn btn-secondary" onclick="Trip.closeTripModal()">取消</button>'
+            + '</div>'
+            + '</div>';
+
+        overlay.style.display = 'flex';
+        overlay.onclick = function() { closeTripModal(); };
+    }
+
+    function exportXLSX() {
+        if (!_currentTrip) return;
+        closeTripModal();
+        var a = document.createElement('a');
+        a.href = '/api/trips/' + encodeURIComponent(_currentTrip.id) + '/export/xlsx';
+        a.download = '';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    function exportPhotos() {
+        if (!_currentTrip) return;
+        closeTripModal();
+        showToast('正在打包票据，请稍候...');
+        var a = document.createElement('a');
+        a.href = '/api/trips/' + encodeURIComponent(_currentTrip.id) + '/export/photos';
+        a.download = '';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     }
 
     // ─── Photo viewer ───
@@ -952,7 +1004,9 @@ var Trip = (function() {
         deleteItem: deleteItem,
         openShareModal: openShareModal,
         closeShareModal: closeShareModal,
-        exportCSV: exportCSV,
+        showExportMenu: showExportMenu,
+        exportXLSX: exportXLSX,
+        exportPhotos: exportPhotos,
         viewPhoto: viewPhoto,
         analyzeText: analyzeText,
         fillFirstItem: fillFirstItem,
