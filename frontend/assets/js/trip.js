@@ -746,6 +746,9 @@ var Trip = (function() {
         var overlay = document.getElementById('trip-item-modal-overlay');
         if (!overlay) return;
 
+        // 先存数据，onclick 中通过 window._tripMultiItems 引用
+        window._tripMultiItems = items;
+
         overlay.innerHTML = '<div class="trip-modal trip-multi-modal" onclick="event.stopPropagation()">'
             + '<h3>🔍 检测到 ' + items.length + ' 条差旅记录</h3>'
             + '<p class="trip-multi-hint">多张图/一张图蕴含多个事件，可选择要创建的条目：</p>'
@@ -753,13 +756,10 @@ var Trip = (function() {
             + '<div class="trip-modal-actions">'
             + '<button class="btn btn-secondary" onclick="Trip.closeItemModal()">取消</button>'
             + '<div>'
-            + '<button class="btn btn-secondary" onclick="Trip.fillFirstItem(' + JSON.stringify(items) + ')">只填第1条</button>'
-            + '<button class="btn btn-primary" onclick="Trip.createAllItems(' + JSON.stringify(items) + ')">全部创建</button>'
+            + '<button class="btn btn-secondary" onclick="Trip.fillFirstItem(window._tripMultiItems)">只填第1条</button>'
+            + '<button class="btn btn-primary" onclick="Trip.createAllItems(window._tripMultiItems)">全部创建</button>'
             + '</div>'
             + '</div></div>';
-
-        // 存多条数据供 createAllItems 用
-        window._tripMultiItems = items;
     }
 
     function _fillFormFromAI(parsed) {
