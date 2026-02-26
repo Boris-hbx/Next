@@ -5,7 +5,7 @@ use axum::{
 };
 use serde::Serialize;
 
-use crate::auth::UserId;
+use crate::auth::{ActiveUserId, UserId};
 use crate::models::contact::*;
 use crate::state::AppState;
 
@@ -85,7 +85,7 @@ pub async fn list_contacts(
 
 pub async fn create_contact(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Json(req): Json<CreateContactPayload>,
 ) -> (StatusCode, Json<ContactResponse>) {
     if req.name.trim().is_empty() {
@@ -158,7 +158,7 @@ pub async fn create_contact(
 
 pub async fn update_contact(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(id): Path<String>,
     Json(req): Json<UpdateContactPayload>,
 ) -> (StatusCode, Json<SimpleResponse>) {
@@ -233,7 +233,7 @@ pub async fn update_contact(
 
 pub async fn delete_contact(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
     let db = state.db.lock();

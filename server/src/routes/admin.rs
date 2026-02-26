@@ -1,4 +1,9 @@
-use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
+use axum::{
+    extract::{Path, State},
+    http::StatusCode,
+    response::IntoResponse,
+    Json,
+};
 use serde_json::json;
 
 use crate::auth::UserId;
@@ -32,6 +37,14 @@ pub async fn dashboard(
 
     let total_users: i64 = db
         .query_row("SELECT COUNT(*) FROM users", [], |r| r.get(0))
+        .unwrap_or(0);
+
+    let pending_count: i64 = db
+        .query_row(
+            "SELECT COUNT(*) FROM users WHERE status = 'pending'",
+            [],
+            |r| r.get(0),
+        )
         .unwrap_or(0);
 
     let dau: i64 = db
@@ -185,6 +198,7 @@ pub async fn dashboard(
                 "total": total_users,
                 "dau": dau,
                 "wau": wau,
+                "pending_count": pending_count,
                 "list": user_list
             },
             "features": features,
@@ -197,6 +211,129 @@ pub async fn dashboard(
             }
         })),
     )
+}
+
+/// Helper: check if user is admin
+fn require_admin(
+    db: &rusqlite::Connection,
+    user_id: &str,
+) -> Result<(), (StatusCode, Json<serde_json::Value>)> {
+    let is_admin: bool = db
+        .query_row(
+            "SELECT role FROM users WHERE id = ?1",
+            [user_id],
+            |r| r.get::<_, String>(0),
+        )
+        .map(|role| role == "admin")
+        .unwrap_or(false);
+    if !is_admin {
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(json!({"success": false, "message": "无权限"})),
+        ));
+    }
+    Ok(())
+}
+
+/// GET /api/admin/pending-users
+pub async fn pending_users(
+    State(state): State<AppState>,
+    user_id: UserId,
+) -> impl IntoResponse {
+    let db = state.db.lock();
+    if let Err(e) = require_admin(&db, &user_id.0) {
+        return e;
+    }
+
+    let mut stmt = db
+        .prepare(
+            "SELECT id, username, display_name, created_at FROM users WHERE status = 'pending' ORDER BY created_at ASC",
+        )
+        .unwrap();
+    let rows: Vec<serde_json::Value> = stmt
+        .query_map([], |r| {
+            Ok(json!({
+                "id": r.get::<_, String>(0)?,
+                "username": r.get::<_, String>(1)?,
+                "display_name": r.get::<_, Option<String>>(2)?,
+                "created_at": r.get::<_, String>(3)?
+            }))
+        })
+        .unwrap()
+        .flatten()
+        .collect();
+
+    (StatusCode::OK, Json(json!({ "success": true, "users": rows })))
+}
+
+/// POST /api/admin/users/{id}/approve
+pub async fn approve_user(
+    State(state): State<AppState>,
+    user_id: UserId,
+    Path(target_id): Path<String>,
+) -> impl IntoResponse {
+    let db = state.db.lock();
+    if let Err(e) = require_admin(&db, &user_id.0) {
+        return e;
+    }
+
+    let now = chrono::Utc::now().to_rfc3339();
+    let affected = db
+        .execute(
+            "UPDATE users SET status = 'active', updated_at = ?1 WHERE id = ?2 AND status = 'pending'",
+            rusqlite::params![now, target_id],
+        )
+        .unwrap_or(0);
+
+    if affected == 0 {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(json!({"success": false, "message": "用户不存在或非待审批状态"})),
+        );
+    }
+
+    // Notify the user
+    let notif_id = uuid::Uuid::new_v4().to_string();
+    db.execute(
+        "INSERT INTO notifications (id, user_id, type, title, body, created_at) VALUES (?1, ?2, 'system', ?3, ?4, ?5)",
+        rusqlite::params![notif_id, target_id, "账户已通过审核", "你的账户已通过审核，现在可以正常使用所有功能了。", now],
+    )
+    .ok();
+
+    (StatusCode::OK, Json(json!({"success": true, "message": "已通过"})))
+}
+
+/// POST /api/admin/users/{id}/reject
+pub async fn reject_user(
+    State(state): State<AppState>,
+    user_id: UserId,
+    Path(target_id): Path<String>,
+) -> impl IntoResponse {
+    let db = state.db.lock();
+    if let Err(e) = require_admin(&db, &user_id.0) {
+        return e;
+    }
+
+    let now = chrono::Utc::now().to_rfc3339();
+    let affected = db
+        .execute(
+            "UPDATE users SET status = 'rejected', updated_at = ?1 WHERE id = ?2 AND status = 'pending'",
+            rusqlite::params![now, target_id],
+        )
+        .unwrap_or(0);
+
+    if affected == 0 {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(json!({"success": false, "message": "用户不存在或非待审批状态"})),
+        );
+    }
+
+    // Invalidate all sessions for the rejected user
+    db.execute("DELETE FROM sessions WHERE user_id = ?1", [&target_id])
+        .ok();
+
+    (StatusCode::OK, Json(json!({"success": true, "message": "已拒绝"})))
 }
 
 fn query_ai_period(db: &rusqlite::Connection, since: &str) -> serde_json::Value {

@@ -5,7 +5,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::auth::UserId;
+use crate::auth::{ActiveUserId, UserId};
 use crate::models::reminder::*;
 use crate::state::AppState;
 
@@ -100,7 +100,7 @@ pub async fn list_reminders(
 // POST /api/reminders
 pub async fn create_reminder(
     State(state): State<AppState>,
-    UserId(user_id): UserId,
+    ActiveUserId(user_id): ActiveUserId,
     Json(req): Json<CreateReminderRequest>,
 ) -> Result<Json<ReminderResponse>, StatusCode> {
     if req.text.trim().is_empty() {
@@ -184,7 +184,7 @@ pub async fn create_reminder(
 // PUT /api/reminders/:id
 pub async fn update_reminder(
     State(state): State<AppState>,
-    UserId(user_id): UserId,
+    ActiveUserId(user_id): ActiveUserId,
     Path(id): Path<String>,
     Json(req): Json<UpdateReminderRequest>,
 ) -> Result<Json<SimpleResponse>, StatusCode> {
@@ -248,7 +248,7 @@ pub async fn update_reminder(
 // DELETE /api/reminders/:id
 pub async fn cancel_reminder(
     State(state): State<AppState>,
-    UserId(user_id): UserId,
+    ActiveUserId(user_id): ActiveUserId,
     Path(id): Path<String>,
 ) -> Result<Json<SimpleResponse>, StatusCode> {
     let db = state.db.lock();
@@ -275,7 +275,7 @@ pub async fn cancel_reminder(
 // POST /api/reminders/:id/acknowledge
 pub async fn acknowledge_reminder(
     State(state): State<AppState>,
-    UserId(user_id): UserId,
+    ActiveUserId(user_id): ActiveUserId,
     Path(id): Path<String>,
 ) -> Result<Json<SimpleResponse>, StatusCode> {
     let db = state.db.lock();
@@ -309,7 +309,7 @@ pub async fn acknowledge_reminder(
 // POST /api/reminders/:id/snooze
 pub async fn snooze_reminder(
     State(state): State<AppState>,
-    UserId(user_id): UserId,
+    ActiveUserId(user_id): ActiveUserId,
     Path(id): Path<String>,
     Json(req): Json<SnoozeRequest>,
 ) -> Result<Json<ReminderResponse>, StatusCode> {

@@ -6,7 +6,7 @@ use axum::{
 use rusqlite::Connection;
 use serde::Serialize;
 
-use crate::auth::UserId;
+use crate::auth::{ActiveUserId, UserId};
 use crate::models::routine::*;
 use crate::state::AppState;
 
@@ -187,7 +187,7 @@ pub async fn list_routines(
 
 pub async fn create_routine(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Json(req): Json<CreateRoutineRequest>,
 ) -> (StatusCode, Json<RoutineResponse>) {
     let db = state.db.lock();
@@ -223,7 +223,7 @@ pub async fn create_routine(
 
 pub async fn toggle_routine(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<RoutineResponse>) {
     let db = state.db.lock();
@@ -402,7 +402,7 @@ pub async fn toggle_routine(
 
 pub async fn delete_routine(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
     let db = state.db.lock();

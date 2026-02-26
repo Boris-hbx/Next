@@ -6,7 +6,7 @@ use axum::{
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 
-use crate::auth::UserId;
+use crate::auth::ActiveUserId;
 use crate::state::AppState;
 
 #[derive(Debug, Serialize)]
@@ -45,7 +45,7 @@ fn get_user_display_name(db: &Connection, user_id: &str) -> Option<String> {
 /// POST /api/collaborate/routines/:id - Set a collaborator on a routine
 pub async fn set_routine_collaborator(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(id): Path<String>,
     Json(req): Json<SetCollaboratorRequest>,
 ) -> (StatusCode, Json<SimpleResponse>) {
@@ -112,7 +112,7 @@ pub async fn set_routine_collaborator(
 /// DELETE /api/collaborate/routines/:id - Remove all collaborators
 pub async fn remove_routine_collaborator(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
     let db = state.db.lock();

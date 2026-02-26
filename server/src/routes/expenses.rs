@@ -9,7 +9,7 @@ use chrono::Datelike;
 use serde::Serialize;
 use serde_json::json;
 
-use crate::auth::UserId;
+use crate::auth::{ActiveUserId, UserId};
 use crate::models::expense::*;
 use crate::state::AppState;
 
@@ -181,7 +181,7 @@ pub async fn list_entries(
 // ===== Create entry =====
 pub async fn create_entry(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Json(req): Json<CreateExpenseRequest>,
 ) -> (StatusCode, Json<ExpenseSimpleResponse>) {
     if req.amount <= 0.0 {
@@ -382,7 +382,7 @@ pub async fn get_entry(
 // ===== Update entry =====
 pub async fn update_entry(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(id): Path<String>,
     Json(req): Json<UpdateExpenseRequest>,
 ) -> (StatusCode, Json<SimpleResponse>) {
@@ -489,7 +489,7 @@ pub async fn update_entry(
 // ===== Delete entry =====
 pub async fn delete_entry(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
     let db = state.db.lock();
@@ -678,7 +678,7 @@ pub async fn list_tags(
 // ===== Upload photos =====
 pub async fn upload_photos(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(entry_id): Path<String>,
     mut multipart: Multipart,
 ) -> (StatusCode, Json<serde_json::Value>) {
@@ -779,7 +779,7 @@ pub async fn upload_photos(
 // ===== Delete photo =====
 pub async fn delete_photo(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(photo_id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
     let db = state.db.lock();
@@ -827,6 +827,13 @@ pub async fn serve_photo(
     user_id: UserId,
     Path((path_user_id, filename)): Path<(String, String)>,
 ) -> impl IntoResponse {
+    // Path traversal protection
+    if path_user_id.contains("..") || path_user_id.contains('/') || path_user_id.contains('\\')
+        || filename.contains("..") || filename.contains('/') || filename.contains('\\')
+    {
+        return StatusCode::BAD_REQUEST.into_response();
+    }
+
     // Auth check: user can access their own photos, or trip collaborator photos
     if user_id.0 != path_user_id {
         // Fallback: check if user is a trip collaborator for any trip owned by path_user_id
@@ -885,7 +892,7 @@ pub async fn serve_photo(
 // ===== Parse receipts (AI) =====
 pub async fn parse_receipts(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(entry_id): Path<String>,
 ) -> (StatusCode, Json<serde_json::Value>) {
     // Get photos for this entry
@@ -1035,7 +1042,7 @@ pub async fn parse_receipts(
 
 // ===== Parse Preview (AI, no DB write) =====
 pub async fn parse_preview(
-    _user_id: UserId,
+    _user_id: ActiveUserId,
     Json(req): Json<ParsePreviewRequest>,
 ) -> (StatusCode, Json<ParsePreviewResponse>) {
     if req.images.is_empty() {

@@ -6,7 +6,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use crate::auth::UserId;
+use crate::auth::{ActiveUserId, UserId};
 use crate::models::english::*;
 use crate::services::claude::ClaudeClient;
 use crate::state::AppState;
@@ -127,7 +127,7 @@ pub async fn list_scenarios(
 
 pub async fn create_scenario(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Json(req): Json<CreateScenarioRequest>,
 ) -> (StatusCode, Json<ScenarioResponse>) {
     if req.title.trim().is_empty() {
@@ -243,7 +243,7 @@ pub async fn get_scenario(
 
 pub async fn update_scenario(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(id): Path<String>,
     Json(req): Json<UpdateScenarioRequest>,
 ) -> (StatusCode, Json<ScenarioResponse>) {
@@ -322,7 +322,7 @@ pub async fn update_scenario(
 
 pub async fn delete_scenario(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
     let db = state.db.lock();
@@ -355,7 +355,7 @@ pub async fn delete_scenario(
 
 pub async fn archive_scenario(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
     let db = state.db.lock();
@@ -390,7 +390,7 @@ pub async fn archive_scenario(
 /// POST /api/english/scenarios/:id/generate — call Claude to generate content
 pub async fn generate_scenario(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<ScenarioResponse>) {
     // Rate limit: 1 generation per 30 seconds per user

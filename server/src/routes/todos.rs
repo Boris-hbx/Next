@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use serde_json::json;
 
-use crate::auth::UserId;
+use crate::auth::{ActiveUserId, UserId};
 use crate::models::todo::*;
 use crate::services::collaboration;
 use crate::state::AppState;
@@ -246,7 +246,7 @@ pub async fn get_todo(
 
 pub async fn create_todo(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Json(req): Json<CreateTodoRequest>,
 ) -> (StatusCode, Json<TodoResponse>) {
     // Input length validation
@@ -338,7 +338,7 @@ pub async fn create_todo(
 
 pub async fn update_todo(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(id): Path<String>,
     Json(update): Json<TodoUpdate>,
 ) -> (StatusCode, Json<TodoResponse>) {
@@ -621,7 +621,7 @@ fn insert_changelog(
 
 pub async fn delete_todo(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
     let db = state.db.lock();
@@ -674,7 +674,7 @@ pub async fn delete_todo(
 
 pub async fn restore_todo(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<TodoResponse>) {
     let db = state.db.lock();
@@ -732,7 +732,7 @@ pub async fn restore_todo(
 
 pub async fn permanent_delete_todo(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
     let db = state.db.lock();
@@ -765,7 +765,7 @@ pub async fn permanent_delete_todo(
 
 pub async fn batch_update_todos(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Json(updates): Json<Vec<BatchUpdateItem>>,
 ) -> (StatusCode, Json<SimpleResponse>) {
     if updates.len() > 200 {

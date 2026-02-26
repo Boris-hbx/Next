@@ -5,7 +5,7 @@ use axum::{
 };
 use serde::Serialize;
 
-use crate::auth::UserId;
+use crate::auth::{ActiveUserId, UserId};
 use crate::models::review::*;
 use crate::state::AppState;
 
@@ -118,7 +118,7 @@ pub async fn list_reviews(
 
 pub async fn create_review(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Json(req): Json<CreateReviewRequest>,
 ) -> (StatusCode, Json<ReviewResponse>) {
     if req.text.len() > 500 {
@@ -185,7 +185,7 @@ pub async fn create_review(
 
 pub async fn update_review(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(id): Path<String>,
     Json(req): Json<UpdateReviewRequest>,
 ) -> (StatusCode, Json<ReviewResponse>) {
@@ -268,7 +268,7 @@ pub async fn update_review(
 
 pub async fn complete_review(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<ReviewResponse>) {
     let db = state.db.lock();
@@ -313,7 +313,7 @@ pub async fn complete_review(
 
 pub async fn uncomplete_review(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<ReviewResponse>) {
     let db = state.db.lock();
@@ -358,7 +358,7 @@ pub async fn uncomplete_review(
 
 pub async fn delete_review(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
     let db = state.db.lock();

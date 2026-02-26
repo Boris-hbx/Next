@@ -2,7 +2,7 @@ use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use crate::auth::UserId;
+use crate::auth::ActiveUserId;
 use crate::services::{claude::ClaudeClient, context, tool_executor};
 use crate::state::AppState;
 
@@ -31,7 +31,7 @@ pub struct ChatResponse {
 /// POST /api/chat — send message, get SSE stream response
 pub async fn chat_handler(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Json(req): Json<ChatRequest>,
 ) -> impl IntoResponse {
     // Input validation

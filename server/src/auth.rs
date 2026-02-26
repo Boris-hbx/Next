@@ -55,6 +55,8 @@ pub struct UserInfo {
     pub display_name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub avatar: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -91,6 +93,63 @@ impl FromRequestParts<AppState> for UserId {
 
         match result {
             Ok(user_id) => Ok(UserId(user_id)),
+            Err(_) => Err(unauthorized()),
+        }
+    }
+}
+
+// ─── ActiveUserId: like UserId but rejects pending/rejected accounts ───
+
+#[derive(Debug, Clone)]
+pub struct ActiveUserId(pub String);
+
+impl FromRequestParts<AppState> for ActiveUserId {
+    type Rejection = (StatusCode, Json<serde_json::Value>);
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        // Extract cookie jar
+        let jar = CookieJar::from_request_parts(parts, state)
+            .await
+            .map_err(|_| unauthorized())?;
+
+        let token = jar
+            .get("session")
+            .map(|c| c.value().to_string())
+            .ok_or_else(unauthorized)?;
+
+        // Validate session + check user status
+        let db = state.db.lock();
+        let result = db.query_row(
+            "SELECT s.user_id, COALESCE(u.status, 'active')
+             FROM sessions s JOIN users u ON u.id = s.user_id
+             WHERE s.token = ?1 AND s.expires_at > datetime('now')",
+            [&token],
+            |row: &rusqlite::Row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)),
+        );
+
+        match result {
+            Ok((user_id, status)) => match status.as_str() {
+                "active" => Ok(ActiveUserId(user_id)),
+                "pending" => Err((
+                    StatusCode::FORBIDDEN,
+                    Json(serde_json::json!({
+                        "success": false,
+                        "error": "ACCOUNT_PENDING",
+                        "message": "账户审核中，暂时无法操作"
+                    })),
+                )),
+                _ => Err((
+                    StatusCode::FORBIDDEN,
+                    Json(serde_json::json!({
+                        "success": false,
+                        "error": "ACCOUNT_REJECTED",
+                        "message": "账户已被拒绝"
+                    })),
+                )),
+            },
             Err(_) => Err(unauthorized()),
         }
     }
@@ -316,11 +375,48 @@ pub async fn register(
     let now = chrono::Utc::now().to_rfc3339();
     let display_name = req.display_name.unwrap_or_else(|| req.username.clone());
 
+    // Check daily registration count to decide status
+    let today_count: i64 = db
+        .query_row(
+            "SELECT COUNT(*) FROM users WHERE created_at >= date('now')",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap_or(0);
+
+    let status = if today_count < 10 { "active" } else { "pending" };
+
     db.execute(
-        "INSERT INTO users (id, username, password_hash, display_name, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-        rusqlite::params![user_id, req.username, password_hash, display_name, now, now],
+        "INSERT INTO users (id, username, password_hash, display_name, status, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        rusqlite::params![user_id, req.username, password_hash, display_name, status, now, now],
     )
     .unwrap();
+
+    // If pending, notify all admins
+    if status == "pending" {
+        let mut admin_stmt = db
+            .prepare("SELECT id FROM users WHERE role = 'admin'")
+            .unwrap();
+        let admin_ids: Vec<String> = admin_stmt
+            .query_map([], |row| row.get(0))
+            .unwrap()
+            .flatten()
+            .collect();
+        for admin_id in admin_ids {
+            let notif_id = uuid::Uuid::new_v4().to_string();
+            db.execute(
+                "INSERT INTO notifications (id, user_id, type, title, body, created_at) VALUES (?1, ?2, 'system', ?3, ?4, ?5)",
+                rusqlite::params![
+                    notif_id,
+                    admin_id,
+                    "新用户待审批",
+                    format!("用户 {} 注册待审批", req.username),
+                    now
+                ],
+            )
+            .ok();
+        }
+    }
 
     // Auto-login: create session
     let token = generate_session_token();
@@ -333,6 +429,12 @@ pub async fn register(
 
     let jar = jar.add(make_session_cookie(token));
 
+    let message = if status == "pending" {
+        "注册成功，账户待审核"
+    } else {
+        "注册成功"
+    };
+
     (
         jar,
         (
@@ -344,8 +446,9 @@ pub async fn register(
                     username: req.username,
                     display_name: Some(display_name),
                     avatar: None,
+                    status: Some(status.to_string()),
                 }),
-                message: Some("注册成功".into()),
+                message: Some(message.into()),
             }),
         ),
     )
@@ -394,7 +497,7 @@ pub async fn login(
 
     // Find user
     let user_row = db.query_row(
-        "SELECT id, username, password_hash, display_name, COALESCE(avatar,'') FROM users WHERE username = ?1",
+        "SELECT id, username, password_hash, display_name, COALESCE(avatar,''), COALESCE(status,'active') FROM users WHERE username = ?1",
         [&req.username],
         |row: &rusqlite::Row| {
             Ok((
@@ -403,11 +506,12 @@ pub async fn login(
                 row.get::<_, String>(2)?,
                 row.get::<_, Option<String>>(3)?,
                 row.get::<_, String>(4)?,
+                row.get::<_, String>(5)?,
             ))
         },
     );
 
-    let (user_id, username, password_hash, display_name, avatar) = match user_row {
+    let (user_id, username, password_hash, display_name, avatar, status) = match user_row {
         Ok(r) => r,
         Err(_) => {
             // Timing attack mitigation: run dummy hash even when user not found
@@ -465,6 +569,21 @@ pub async fn login(
 
     let jar = jar.add(make_session_cookie(token));
 
+    // Reject login for rejected users
+    if status == "rejected" {
+        return (
+            jar,
+            (
+                StatusCode::FORBIDDEN,
+                Json(AuthResponse {
+                    success: false,
+                    user: None,
+                    message: Some("账户已被拒绝，无法登录".into()),
+                }),
+            ),
+        );
+    }
+
     (
         jar,
         (
@@ -480,6 +599,7 @@ pub async fn login(
                     } else {
                         Some(avatar)
                     },
+                    status: Some(status),
                 }),
                 message: Some("登录成功".into()),
             }),
@@ -504,15 +624,17 @@ pub async fn me(State(state): State<AppState>, user_id: UserId) -> impl IntoResp
     let db = state.db.lock();
 
     let result = db.query_row(
-        "SELECT id, username, display_name, COALESCE(avatar,'') FROM users WHERE id = ?1",
+        "SELECT id, username, display_name, COALESCE(avatar,''), COALESCE(status,'active') FROM users WHERE id = ?1",
         [&user_id.0],
         |row: &rusqlite::Row| {
             let av: String = row.get(3)?;
+            let st: String = row.get(4)?;
             Ok(UserInfo {
                 id: row.get(0)?,
                 username: row.get(1)?,
                 display_name: row.get(2)?,
                 avatar: if av.is_empty() { None } else { Some(av) },
+                status: Some(st),
             })
         },
     );
@@ -539,7 +661,7 @@ pub async fn me(State(state): State<AppState>, user_id: UserId) -> impl IntoResp
 
 pub async fn change_password(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     jar: CookieJar,
     Json(req): Json<ChangePasswordRequest>,
 ) -> impl IntoResponse {
@@ -635,7 +757,7 @@ pub async fn change_password(
 
 pub async fn update_avatar(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Json(req): Json<UpdateAvatarRequest>,
 ) -> impl IntoResponse {
     // Limit avatar data size (256KB max for base64 images)

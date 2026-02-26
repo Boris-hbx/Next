@@ -8,7 +8,7 @@ use rusqlite::Connection;
 use serde::Deserialize;
 use serde_json::json;
 
-use crate::auth::UserId;
+use crate::auth::{ActiveUserId, UserId};
 use crate::models::trip::*;
 use crate::services::claude::ClaudeClient;
 use crate::state::AppState;
@@ -160,7 +160,7 @@ pub async fn list_trips(
 // ===== Create trip =====
 pub async fn create_trip(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Json(req): Json<CreateTripRequest>,
 ) -> (StatusCode, Json<serde_json::Value>) {
     if req.title.trim().is_empty() {
@@ -357,7 +357,7 @@ pub async fn get_trip(
 // ===== Update trip =====
 pub async fn update_trip(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(id): Path<String>,
     Json(req): Json<UpdateTripRequest>,
 ) -> (StatusCode, Json<serde_json::Value>) {
@@ -440,7 +440,7 @@ pub async fn update_trip(
 // ===== Delete trip =====
 pub async fn delete_trip(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<serde_json::Value>) {
     let db = state.db.lock();
@@ -496,7 +496,7 @@ pub async fn delete_trip(
 // ===== Create item =====
 pub async fn create_item(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(trip_id): Path<String>,
     Json(req): Json<CreateTripItemRequest>,
 ) -> (StatusCode, Json<serde_json::Value>) {
@@ -568,7 +568,7 @@ pub async fn create_item(
 // ===== Update item =====
 pub async fn update_item(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(item_id): Path<String>,
     Json(req): Json<UpdateTripItemRequest>,
 ) -> (StatusCode, Json<serde_json::Value>) {
@@ -674,7 +674,7 @@ pub async fn update_item(
 // ===== Delete item =====
 pub async fn delete_item(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(item_id): Path<String>,
 ) -> (StatusCode, Json<serde_json::Value>) {
     let db = state.db.lock();
@@ -729,7 +729,7 @@ pub async fn delete_item(
 // ===== Upload item photos =====
 pub async fn upload_item_photos(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(item_id): Path<String>,
     mut multipart: Multipart,
 ) -> (StatusCode, Json<serde_json::Value>) {
@@ -830,7 +830,7 @@ pub async fn upload_item_photos(
 // ===== Delete photo =====
 pub async fn delete_photo(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(photo_id): Path<String>,
 ) -> (StatusCode, Json<serde_json::Value>) {
     let db = state.db.lock();
@@ -875,7 +875,7 @@ pub async fn delete_photo(
 // ===== Add collaborator =====
 pub async fn add_collaborator(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(trip_id): Path<String>,
     Json(req): Json<AddCollaboratorRequest>,
 ) -> (StatusCode, Json<serde_json::Value>) {
@@ -952,7 +952,7 @@ pub async fn add_collaborator(
 // ===== Remove collaborator =====
 pub async fn remove_collaborator(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path((trip_id, uid)): Path<(String, String)>,
 ) -> (StatusCode, Json<serde_json::Value>) {
     let db = state.db.lock();
@@ -1238,7 +1238,7 @@ pub struct AnalyzeItemRequest {
 /// 一图多事件→拆分多条；多图同一事件→合并一条
 pub async fn analyze_item(
     State(_state): State<AppState>,
-    _user_id: UserId,
+    _user_id: ActiveUserId,
     Json(req): Json<AnalyzeItemRequest>,
 ) -> (StatusCode, Json<serde_json::Value>) {
     let has_images = !req.images.is_empty();

@@ -1,3 +1,23 @@
+/* Pending account banner */
+.pending-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    background: #e6a817;
+    color: #fff;
+    text-align: center;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.pending-banner ~ .container {
+    margin-top: 44px;
+}
+
 /* Base styles (reset is in base.css) */
 
 body {
@@ -8954,6 +8974,13 @@ body.dark-mode .action-sheet-cancel {
 
 .settings-change-pwd-btn:hover {
     opacity: 0.9;
+}
+
+.settings-password-hint {
+    font-size: 12px;
+    color: #f85149;
+    margin-top: 12px;
+    line-height: 1.5;
 }
 
 /* 推送设置按钮 */

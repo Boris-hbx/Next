@@ -24,6 +24,21 @@
                 localStorage.setItem('userAvatar', data.user.avatar);
             }
             if (typeof applyAvatar === 'function') applyAvatar();
+
+            // Handle pending account status
+            window._userStatus = data.user.status || 'active';
+            if (window._userStatus === 'pending') {
+                // Show pending banner
+                var banner = document.getElementById('pending-banner');
+                if (banner) banner.style.display = '';
+                // Hide FAB and 阿宝 entry
+                var fab = document.getElementById('mobile-fab');
+                if (fab) fab.style.display = 'none';
+                var abaoBtn = document.querySelector('.nav-link[onclick*="abao"], .sidebar-btn[onclick*="toggleAbao"]');
+                if (abaoBtn) abaoBtn.style.display = 'none';
+                var mobileAbao = document.querySelector('.mobile-nav-item[onclick*="toggleAbao"]');
+                if (mobileAbao) mobileAbao.style.display = 'none';
+            }
         }
     } catch(e) {
         // Network error — stay on page, will work offline with cached data

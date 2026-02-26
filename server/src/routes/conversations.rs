@@ -6,7 +6,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use crate::auth::UserId;
+use crate::auth::{ActiveUserId, UserId};
 use crate::state::AppState;
 
 #[derive(Debug, Serialize)]
@@ -133,7 +133,7 @@ pub async fn get_messages(
 /// DELETE /api/conversations/:id — delete a conversation
 pub async fn delete_conversation(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(conv_id): Path<String>,
 ) -> impl axum::response::IntoResponse {
     let db = state.db.lock();
@@ -158,7 +158,7 @@ pub async fn delete_conversation(
 /// POST /api/conversations/:id/rename — rename a conversation
 pub async fn rename_conversation(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(conv_id): Path<String>,
     Json(req): Json<RenameRequest>,
 ) -> impl axum::response::IntoResponse {

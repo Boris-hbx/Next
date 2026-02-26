@@ -4,7 +4,9 @@ use http_body_util::BodyExt;
 use tower::ServiceExt;
 
 use next_server::build_app;
-use next_server::test_helpers::{auth_cookie, create_test_user, test_state};
+use next_server::test_helpers::{
+    auth_cookie, create_admin_user, create_test_user, create_test_user_with_status, test_state,
+};
 
 /// Helper: send a request and return (status, body as serde_json::Value).
 async fn send(app: axum::Router, req: Request<Body>) -> (StatusCode, serde_json::Value) {
@@ -360,4 +362,563 @@ async fn test_batch_limit() {
         .unwrap();
     let (status, _) = send(app, req).await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
+}
+
+// ──────────────────── Registration: status field ────────────────────
+
+#[tokio::test]
+async fn test_register_returns_active_status() {
+    let app = build_app(test_state());
+    let req = Request::post("/api/auth/register")
+        .header("content-type", "application/json")
+        .body(Body::from(
+            serde_json::to_string(&serde_json::json!({
+                "username": "status_user",
+                "password": "Status1x"
+            }))
+            .unwrap(),
+        ))
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["success"], true);
+    assert_eq!(body["user"]["status"], "active");
+}
+
+#[tokio::test]
+async fn test_register_11th_user_becomes_pending() {
+    let state = test_state();
+
+    // Create 10 users directly to fill daily quota
+    for i in 0..10 {
+        create_test_user(&state, &format!("filler_{}", i), "Filler1x");
+    }
+
+    // 11th user via registration API should be pending
+    let app = build_app(state);
+    let req = Request::post("/api/auth/register")
+        .header("content-type", "application/json")
+        .body(Body::from(
+            serde_json::to_string(&serde_json::json!({
+                "username": "user_eleven",
+                "password": "Eleven1x"
+            }))
+            .unwrap(),
+        ))
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["success"], true);
+    assert_eq!(body["user"]["status"], "pending");
+    assert!(body["message"].as_str().unwrap().contains("待审核"));
+}
+
+// ──────────────────── /me returns status ────────────────────
+
+#[tokio::test]
+async fn test_me_returns_status() {
+    let state = test_state();
+    let (_, token) = create_test_user(&state, "me_user", "Meuser1x");
+
+    let app = build_app(state);
+    let req = Request::get("/api/auth/me")
+        .header("cookie", auth_cookie(&token))
+        .body(Body::empty())
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["user"]["status"], "active");
+}
+
+#[tokio::test]
+async fn test_me_returns_pending_status() {
+    let state = test_state();
+    let (_, token) = create_test_user_with_status(&state, "pending_me", "Pending1", "pending");
+
+    let app = build_app(state);
+    let req = Request::get("/api/auth/me")
+        .header("cookie", auth_cookie(&token))
+        .body(Body::empty())
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["user"]["status"], "pending");
+}
+
+// ──────────────────── Login returns status ────────────────────
+
+#[tokio::test]
+async fn test_login_returns_status_active() {
+    let state = test_state();
+    create_test_user(&state, "login_st", "Login1xx");
+
+    let app = build_app(state);
+    let req = Request::post("/api/auth/login")
+        .header("content-type", "application/json")
+        .body(Body::from(
+            serde_json::to_string(&serde_json::json!({
+                "username": "login_st",
+                "password": "Login1xx"
+            }))
+            .unwrap(),
+        ))
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["user"]["status"], "active");
+}
+
+#[tokio::test]
+async fn test_login_rejected_user_blocked() {
+    let state = test_state();
+    create_test_user_with_status(&state, "rejected_u", "Reject1x", "rejected");
+
+    let app = build_app(state);
+    let req = Request::post("/api/auth/login")
+        .header("content-type", "application/json")
+        .body(Body::from(
+            serde_json::to_string(&serde_json::json!({
+                "username": "rejected_u",
+                "password": "Reject1x"
+            }))
+            .unwrap(),
+        ))
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    assert_eq!(body["success"], false);
+}
+
+// ──────────────────── Pending user: read OK, write 403 ────────────────────
+
+#[tokio::test]
+async fn test_pending_user_can_read_todos() {
+    let state = test_state();
+    let (_, token) = create_test_user_with_status(&state, "pend_read", "Pendrd1x", "pending");
+
+    let app = build_app(state);
+    let req = Request::get("/api/todos")
+        .header("cookie", auth_cookie(&token))
+        .body(Body::empty())
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(body["items"].is_array());
+}
+
+#[tokio::test]
+async fn test_pending_user_cannot_create_todo() {
+    let state = test_state();
+    let (_, token) = create_test_user_with_status(&state, "pend_write", "Pendwr1x", "pending");
+
+    let app = build_app(state);
+    let req = Request::post("/api/todos")
+        .header("content-type", "application/json")
+        .header("cookie", auth_cookie(&token))
+        .body(Body::from(
+            serde_json::to_string(&serde_json::json!({ "text": "Should fail" })).unwrap(),
+        ))
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    assert_eq!(body["error"], "ACCOUNT_PENDING");
+}
+
+#[tokio::test]
+async fn test_pending_user_cannot_create_routine() {
+    let state = test_state();
+    let (_, token) = create_test_user_with_status(&state, "pend_rout", "Pendrt1x", "pending");
+
+    let app = build_app(state);
+    let req = Request::post("/api/routines")
+        .header("content-type", "application/json")
+        .header("cookie", auth_cookie(&token))
+        .body(Body::from(
+            serde_json::to_string(&serde_json::json!({ "text": "Morning run" })).unwrap(),
+        ))
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    assert_eq!(body["error"], "ACCOUNT_PENDING");
+}
+
+#[tokio::test]
+async fn test_pending_user_can_read_routines() {
+    let state = test_state();
+    let (_, token) = create_test_user_with_status(&state, "pend_rrd", "Pendrr1x", "pending");
+
+    let app = build_app(state);
+    let req = Request::get("/api/routines")
+        .header("cookie", auth_cookie(&token))
+        .body(Body::empty())
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(body["items"].is_array());
+}
+
+#[tokio::test]
+async fn test_pending_user_cannot_create_review() {
+    let state = test_state();
+    let (_, token) = create_test_user_with_status(&state, "pend_rev", "Pendrv1x", "pending");
+
+    let app = build_app(state);
+    let req = Request::post("/api/reviews")
+        .header("content-type", "application/json")
+        .header("cookie", auth_cookie(&token))
+        .body(Body::from(
+            serde_json::to_string(&serde_json::json!({
+                "text": "Review thing",
+                "frequency": "daily"
+            }))
+            .unwrap(),
+        ))
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    assert_eq!(body["error"], "ACCOUNT_PENDING");
+}
+
+#[tokio::test]
+async fn test_pending_user_cannot_create_expense() {
+    let state = test_state();
+    let (_, token) = create_test_user_with_status(&state, "pend_exp", "Pendex1x", "pending");
+
+    let app = build_app(state);
+    let req = Request::post("/api/expenses")
+        .header("content-type", "application/json")
+        .header("cookie", auth_cookie(&token))
+        .body(Body::from(
+            serde_json::to_string(&serde_json::json!({
+                "amount": 10.0,
+                "date": "2026-02-26"
+            }))
+            .unwrap(),
+        ))
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    assert_eq!(body["error"], "ACCOUNT_PENDING");
+}
+
+#[tokio::test]
+async fn test_pending_user_cannot_send_friend_request() {
+    let state = test_state();
+    let (_, token) = create_test_user_with_status(&state, "pend_fr", "Pendfr1x", "pending");
+
+    let app = build_app(state);
+    let req = Request::post("/api/friends/request")
+        .header("content-type", "application/json")
+        .header("cookie", auth_cookie(&token))
+        .body(Body::from(
+            serde_json::to_string(&serde_json::json!({ "username": "nobody" })).unwrap(),
+        ))
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    assert_eq!(body["error"], "ACCOUNT_PENDING");
+}
+
+#[tokio::test]
+async fn test_pending_user_cannot_change_password() {
+    let state = test_state();
+    let (_, token) = create_test_user_with_status(&state, "pend_pw", "Pendpw1x", "pending");
+
+    let app = build_app(state);
+    let req = Request::post("/api/auth/change-password")
+        .header("content-type", "application/json")
+        .header("cookie", auth_cookie(&token))
+        .body(Body::from(
+            serde_json::to_string(&serde_json::json!({
+                "old_password": "Pendpw1x",
+                "new_password": "Newpwd1x"
+            }))
+            .unwrap(),
+        ))
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    assert_eq!(body["error"], "ACCOUNT_PENDING");
+}
+
+// ──────────────────── Rejected user: session returns 403 ────────────────────
+
+#[tokio::test]
+async fn test_rejected_user_write_returns_forbidden() {
+    let state = test_state();
+    let (_, token) = create_test_user_with_status(&state, "rej_sess", "Rejses1x", "rejected");
+
+    let app = build_app(state);
+    let req = Request::post("/api/todos")
+        .header("content-type", "application/json")
+        .header("cookie", auth_cookie(&token))
+        .body(Body::from(
+            serde_json::to_string(&serde_json::json!({ "text": "Should fail" })).unwrap(),
+        ))
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    assert_eq!(body["error"], "ACCOUNT_REJECTED");
+}
+
+// ──────────────────── Admin: pending users CRUD ────────────────────
+
+#[tokio::test]
+async fn test_admin_list_pending_users() {
+    let state = test_state();
+    let (_, admin_token) = create_admin_user(&state, "admin_lp", "Admin1xx");
+    create_test_user_with_status(&state, "pend_a", "Penda11x", "pending");
+    create_test_user_with_status(&state, "pend_b", "Pendb11x", "pending");
+
+    let app = build_app(state);
+    let req = Request::get("/api/admin/pending-users")
+        .header("cookie", auth_cookie(&admin_token))
+        .body(Body::empty())
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["success"], true);
+    assert_eq!(body["users"].as_array().unwrap().len(), 2);
+}
+
+#[tokio::test]
+async fn test_admin_approve_user() {
+    let state = test_state();
+    let (_, admin_token) = create_admin_user(&state, "admin_ap", "Admin2xx");
+    let (pending_id, pending_token) =
+        create_test_user_with_status(&state, "to_approve", "Approv1x", "pending");
+
+    // Approve
+    let app = build_app(state.clone());
+    let req = Request::post(&format!("/api/admin/users/{}/approve", pending_id))
+        .header("cookie", auth_cookie(&admin_token))
+        .body(Body::empty())
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["success"], true);
+
+    // Now the user should be able to create a todo
+    let app = build_app(state);
+    let req = Request::post("/api/todos")
+        .header("content-type", "application/json")
+        .header("cookie", auth_cookie(&pending_token))
+        .body(Body::from(
+            serde_json::to_string(&serde_json::json!({ "text": "I can write now!" })).unwrap(),
+        ))
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["success"], true);
+}
+
+#[tokio::test]
+async fn test_admin_reject_user() {
+    let state = test_state();
+    let (_, admin_token) = create_admin_user(&state, "admin_rj", "Admin3xx");
+    let (pending_id, pending_token) =
+        create_test_user_with_status(&state, "to_reject", "Reject1x", "pending");
+
+    // Reject
+    let app = build_app(state.clone());
+    let req = Request::post(&format!("/api/admin/users/{}/reject", pending_id))
+        .header("cookie", auth_cookie(&admin_token))
+        .body(Body::empty())
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["success"], true);
+
+    // Rejected user's session should be invalidated (sessions deleted)
+    let app = build_app(state);
+    let req = Request::get("/api/auth/me")
+        .header("cookie", auth_cookie(&pending_token))
+        .body(Body::empty())
+        .unwrap();
+    let (status, _) = send(app, req).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn test_non_admin_cannot_list_pending() {
+    let state = test_state();
+    let (_, token) = create_test_user(&state, "nonadmin", "Nonadm1x");
+
+    let app = build_app(state);
+    let req = Request::get("/api/admin/pending-users")
+        .header("cookie", auth_cookie(&token))
+        .body(Body::empty())
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    assert_eq!(body["success"], false);
+}
+
+#[tokio::test]
+async fn test_non_admin_cannot_approve() {
+    let state = test_state();
+    let (_, token) = create_test_user(&state, "nonadm_ap", "Nonadm2x");
+    let (pending_id, _) =
+        create_test_user_with_status(&state, "target_ap", "Target1x", "pending");
+
+    let app = build_app(state);
+    let req = Request::post(&format!("/api/admin/users/{}/approve", pending_id))
+        .header("cookie", auth_cookie(&token))
+        .body(Body::empty())
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    assert_eq!(body["success"], false);
+}
+
+#[tokio::test]
+async fn test_approve_already_active_user_404() {
+    let state = test_state();
+    let (_, admin_token) = create_admin_user(&state, "admin_aa", "Admin4xx");
+    let (active_id, _) = create_test_user(&state, "already_active", "Active1x");
+
+    let app = build_app(state);
+    let req = Request::post(&format!("/api/admin/users/{}/approve", active_id))
+        .header("cookie", auth_cookie(&admin_token))
+        .body(Body::empty())
+        .unwrap();
+    let (status, _) = send(app, req).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+}
+
+// ──────────────────── Admin dashboard: pending_count ────────────────────
+
+#[tokio::test]
+async fn test_admin_dashboard_includes_pending_count() {
+    let state = test_state();
+    let (_, admin_token) = create_admin_user(&state, "admin_pc", "Admin5xx");
+    create_test_user_with_status(&state, "pend_c", "Pendc11x", "pending");
+
+    let app = build_app(state);
+    let req = Request::get("/api/admin/dashboard")
+        .header("cookie", auth_cookie(&admin_token))
+        .body(Body::empty())
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["users"]["pending_count"], 1);
+}
+
+// ──────────────────── Path traversal protection ────────────────────
+
+#[tokio::test]
+async fn test_path_traversal_dotdot_in_user_id() {
+    let state = test_state();
+    let (_, token) = create_test_user(&state, "pt_user1", "Ptuser1x");
+
+    let app = build_app(state);
+    let req = Request::get("/api/uploads/..%2F..%2F/next.db")
+        .header("cookie", auth_cookie(&token))
+        .body(Body::empty())
+        .unwrap();
+    let (status, _) = send(app, req).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn test_path_traversal_dotdot_in_filename() {
+    let state = test_state();
+    let (user_id, token) = create_test_user(&state, "pt_user2", "Ptuser2x");
+
+    let app = build_app(state);
+    let req = Request::get(&format!("/api/uploads/{}/..%2F..%2Fetc%2Fpasswd", user_id))
+        .header("cookie", auth_cookie(&token))
+        .body(Body::empty())
+        .unwrap();
+    let (status, _) = send(app, req).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn test_path_traversal_backslash_in_user_id() {
+    let state = test_state();
+    let (_, token) = create_test_user(&state, "pt_user3", "Ptuser3x");
+
+    let app = build_app(state);
+    let req = Request::get("/api/uploads/foo%5Cbar/photo.jpg")
+        .header("cookie", auth_cookie(&token))
+        .body(Body::empty())
+        .unwrap();
+    let (status, _) = send(app, req).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+}
+
+// ──────────────────── Pending registration notifies admins ────────────────────
+
+#[tokio::test]
+async fn test_pending_registration_notifies_admins() {
+    let state = test_state();
+    let (_, admin_token) = create_admin_user(&state, "admin_notif", "Admin6xx");
+
+    // Fill 10 users to trigger pending
+    for i in 0..10 {
+        create_test_user(&state, &format!("fill_notif_{}", i), "Filler1x");
+    }
+
+    // Register 11th user
+    let app = build_app(state.clone());
+    let req = Request::post("/api/auth/register")
+        .header("content-type", "application/json")
+        .body(Body::from(
+            serde_json::to_string(&serde_json::json!({
+                "username": "notif_user",
+                "password": "Notif11x"
+            }))
+            .unwrap(),
+        ))
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["user"]["status"], "pending");
+
+    // Admin should have a notification
+    let app = build_app(state);
+    let req = Request::get("/api/notifications/unread")
+        .header("cookie", auth_cookie(&admin_token))
+        .body(Body::empty())
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::OK);
+    let items = body["items"].as_array().unwrap();
+    let has_pending_notif = items
+        .iter()
+        .any(|n| n["title"].as_str().unwrap_or("").contains("待审批"));
+    assert!(has_pending_notif, "Admin should have a pending-user notification");
+}
+
+// ──────────────────── Approve creates user notification ────────────────────
+
+#[tokio::test]
+async fn test_approve_creates_user_notification() {
+    let state = test_state();
+    let (_, admin_token) = create_admin_user(&state, "admin_an", "Admin7xx");
+    let (pending_id, pending_token) =
+        create_test_user_with_status(&state, "appnotif_u", "Appnot1x", "pending");
+
+    // Approve
+    let app = build_app(state.clone());
+    let req = Request::post(&format!("/api/admin/users/{}/approve", pending_id))
+        .header("cookie", auth_cookie(&admin_token))
+        .body(Body::empty())
+        .unwrap();
+    let _ = send(app, req).await;
+
+    // User should have a notification about approval
+    let app = build_app(state);
+    let req = Request::get("/api/notifications/unread")
+        .header("cookie", auth_cookie(&pending_token))
+        .body(Body::empty())
+        .unwrap();
+    let (status, body) = send(app, req).await;
+    assert_eq!(status, StatusCode::OK);
+    let items = body["items"].as_array().unwrap();
+    let has_approval = items
+        .iter()
+        .any(|n| n["title"].as_str().unwrap_or("").contains("通过"));
+    assert!(has_approval, "User should have an approval notification");
 }

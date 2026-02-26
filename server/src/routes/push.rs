@@ -1,7 +1,7 @@
 use axum::{extract::State, http::StatusCode, Json};
 use serde::{Deserialize, Serialize};
 
-use crate::auth::UserId;
+use crate::auth::ActiveUserId;
 use crate::services::push::VapidKeys;
 use crate::state::AppState;
 
@@ -45,7 +45,7 @@ pub async fn get_vapid_public_key() -> Json<VapidKeyResponse> {
 // POST /api/push/subscribe
 pub async fn subscribe(
     State(state): State<AppState>,
-    UserId(user_id): UserId,
+    ActiveUserId(user_id): ActiveUserId,
     Json(req): Json<SubscribeRequest>,
 ) -> Result<Json<SimpleResponse>, StatusCode> {
     if req.endpoint.is_empty() || req.p256dh.is_empty() || req.auth.is_empty() {
@@ -76,7 +76,7 @@ pub async fn subscribe(
 // DELETE /api/push/subscribe
 pub async fn unsubscribe(
     State(state): State<AppState>,
-    UserId(user_id): UserId,
+    ActiveUserId(user_id): ActiveUserId,
     Json(req): Json<UnsubscribeRequest>,
 ) -> Result<Json<SimpleResponse>, StatusCode> {
     let db = state.db.lock();

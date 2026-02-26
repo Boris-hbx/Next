@@ -20,6 +20,10 @@ var API = (function() {
                 window.location.href = '/login.html';
                 throw new Error('UNAUTHORIZED');
             }
+            if (resp.status === 403 && data && data.error === 'ACCOUNT_PENDING') {
+                if (typeof showToast === 'function') showToast('账户审核中，暂时无法操作', 'warning');
+                throw new Error('ACCOUNT_PENDING');
+            }
             return data;
         } catch (err) {
             if (err.message === 'UNAUTHORIZED') throw err;
@@ -502,6 +506,15 @@ var API = (function() {
         // ===== Admin APIs =====
         getAdminDashboard: async function() {
             return await request('GET', '/admin/dashboard');
+        },
+        getPendingUsers: async function() {
+            return await request('GET', '/admin/pending-users');
+        },
+        approveUser: async function(id) {
+            return await request('POST', '/admin/users/' + encodeURIComponent(id) + '/approve');
+        },
+        rejectUser: async function(id) {
+            return await request('POST', '/admin/users/' + encodeURIComponent(id) + '/reject');
         },
 
         // 环境检测 (always web now)

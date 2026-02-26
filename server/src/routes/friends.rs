@@ -7,7 +7,7 @@ use serde::Serialize;
 use serde_json::json;
 use std::collections::HashMap;
 
-use crate::auth::UserId;
+use crate::auth::{ActiveUserId, UserId};
 use crate::models::friend::*;
 use crate::state::AppState;
 
@@ -136,7 +136,7 @@ pub async fn list_friend_requests(
 
 pub async fn send_friend_request(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Json(req): Json<FriendRequestPayload>,
 ) -> (StatusCode, Json<SimpleResponse>) {
     let db = state.db.lock();
@@ -210,7 +210,7 @@ pub async fn send_friend_request(
 
 pub async fn accept_friend(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
     let db = state.db.lock();
@@ -282,7 +282,7 @@ pub async fn accept_friend(
 
 pub async fn decline_friend(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
     let db = state.db.lock();
@@ -316,7 +316,7 @@ pub async fn decline_friend(
 
 pub async fn delete_friend(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
     let db = state.db.lock();
@@ -415,7 +415,7 @@ pub async fn search_users(
 
 pub async fn share_item(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Json(req): Json<SharePayload>,
 ) -> (StatusCode, Json<SimpleResponse>) {
     let db = state.db.lock();
@@ -669,7 +669,7 @@ pub async fn shared_inbox_count(
 /// Accept shared item — returns new_id + item_type for navigation
 pub async fn accept_shared(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<serde_json::Value>) {
     let db = state.db.lock();
@@ -780,7 +780,7 @@ pub async fn accept_shared(
 
 pub async fn dismiss_shared(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
     let db = state.db.lock();

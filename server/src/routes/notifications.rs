@@ -5,7 +5,7 @@ use axum::{
 };
 use serde::Serialize;
 
-use crate::auth::UserId;
+use crate::auth::{ActiveUserId, UserId};
 use crate::state::AppState;
 
 #[derive(Debug, Serialize)]
@@ -87,7 +87,7 @@ pub async fn unread_notifications(
 // POST /api/notifications/:id/read
 pub async fn mark_read(
     State(state): State<AppState>,
-    UserId(user_id): UserId,
+    ActiveUserId(user_id): ActiveUserId,
     Path(id): Path<String>,
 ) -> Result<Json<SimpleResponse>, StatusCode> {
     let db = state.db.lock();
@@ -107,7 +107,7 @@ pub async fn mark_read(
 // POST /api/notifications/read-all
 pub async fn mark_all_read(
     State(state): State<AppState>,
-    UserId(user_id): UserId,
+    ActiveUserId(user_id): ActiveUserId,
 ) -> Result<Json<SimpleResponse>, StatusCode> {
     let db = state.db.lock();
     let now = chrono::Utc::now().to_rfc3339();

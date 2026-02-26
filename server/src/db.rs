@@ -105,6 +105,13 @@ fn run_migrations(conn: &Connection) {
         [],
     )
     .ok();
+
+    // Add status column to users (default 'active')
+    let has_status: bool = conn.prepare("SELECT status FROM users LIMIT 1").is_ok();
+    if !has_status {
+        conn.execute_batch("ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active';")
+            .ok();
+    }
 }
 
 fn create_tables(conn: &Connection) {
@@ -118,6 +125,7 @@ fn create_tables(conn: &Connection) {
             display_name TEXT,
             avatar TEXT DEFAULT '',
             role TEXT DEFAULT 'user',
+            status TEXT DEFAULT 'active',
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
         );

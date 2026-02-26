@@ -5,7 +5,7 @@ use axum::{
 };
 use serde::Serialize;
 
-use crate::auth::UserId;
+use crate::auth::{ActiveUserId, UserId};
 use crate::models::collaboration::*;
 use crate::services::collaboration;
 use crate::state::AppState;
@@ -40,7 +40,7 @@ pub struct CollaboratorInfo {
 /// POST /api/collaborate/todos/:id - Set a collaborator on a todo
 pub async fn set_collaborator(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(todo_id): Path<String>,
     Json(req): Json<SetCollaboratorRequest>,
 ) -> (StatusCode, Json<SimpleResponse>) {
@@ -114,7 +114,7 @@ pub async fn set_collaborator(
 /// DELETE /api/collaborate/todos/:id - Remove collaborator from a todo
 pub async fn remove_collaborator(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(todo_id): Path<String>,
     Json(req): Json<SetCollaboratorRequest>,
 ) -> (StatusCode, Json<SimpleResponse>) {
@@ -259,7 +259,7 @@ pub async fn list_pending_confirmations(
 /// POST /api/collaborate/confirmations/:id/respond - Respond to a confirmation
 pub async fn respond_confirmation(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(confirmation_id): Path<String>,
     Json(req): Json<ConfirmationRespondRequest>,
 ) -> (StatusCode, Json<SimpleResponse>) {
@@ -395,7 +395,7 @@ pub async fn respond_confirmation(
 /// POST /api/collaborate/confirmations/:id/withdraw - Withdraw a confirmation
 pub async fn withdraw_confirmation(
     State(state): State<AppState>,
-    user_id: UserId,
+    user_id: ActiveUserId,
     Path(confirmation_id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
     let db = state.db.lock();
