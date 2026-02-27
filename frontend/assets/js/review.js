@@ -97,6 +97,7 @@ function renderReviewItem(item, isDueSection) {
     var itemClass = 'review-item';
     if (isCompleted) itemClass += ' completed';
     if (isPaused) itemClass += ' paused';
+    if (item.notes) itemClass += ' has-notes';
 
     var statusClass = '';
     var statusText = item.due_label || '';
@@ -107,24 +108,36 @@ function renderReviewItem(item, isDueSection) {
     else if (item.due_status === 'paused') statusClass = 'status-paused';
 
     var freqLabel = getFrequencyLabel(item);
-    var notesHint = item.notes ? '<span class="review-notes-hint" title="' + escapeHtml(item.notes) + '">📝</span>' : '';
+    var notesIndicator = item.notes ? '<span class="review-notes-indicator">📝</span>' : '';
     var categoryHtml = item.category ? '<span class="review-category">' + escapeHtml(item.category) + '</span>' : '';
+    var notesHtml = item.notes
+        ? '<div class="review-notes-body">' + escapeHtml(item.notes) + '</div>'
+        : '';
 
     return '<div class="' + itemClass + '" data-id="' + item.id + '">' +
-        '<div class="review-checkbox ' + checkClass + '" onclick="toggleReviewComplete(\'' + item.id + '\')">' +
-            (isCompleted ? '✓' : '') +
+        '<div class="review-item-row">' +
+            '<div class="review-checkbox ' + checkClass + '" onclick="event.stopPropagation(); toggleReviewComplete(\'' + item.id + '\')">' +
+                (isCompleted ? '✓' : '') +
+            '</div>' +
+            '<div class="review-item-content" onclick="toggleReviewNotes(this)">' +
+                '<span class="review-item-text">' + escapeHtml(item.text) + '</span>' +
+                categoryHtml + notesIndicator +
+            '</div>' +
+            '<span class="review-freq-label">' + freqLabel + '</span>' +
+            '<span class="review-status ' + statusClass + '">' + statusText + '</span>' +
+            '<div class="review-item-actions">' +
+                '<button class="review-action-btn" onclick="event.stopPropagation(); openReviewModal(\'edit\', \'' + item.id + '\')" title="编辑">✎</button>' +
+                '<button class="review-action-btn danger" onclick="event.stopPropagation(); deleteReviewItem(\'' + item.id + '\')" title="删除">×</button>' +
+            '</div>' +
         '</div>' +
-        '<div class="review-item-content">' +
-            '<span class="review-item-text">' + escapeHtml(item.text) + '</span>' +
-            categoryHtml + notesHint +
-        '</div>' +
-        '<span class="review-freq-label">' + freqLabel + '</span>' +
-        '<span class="review-status ' + statusClass + '">' + statusText + '</span>' +
-        '<div class="review-item-actions">' +
-            '<button class="review-action-btn" onclick="openReviewModal(\'edit\', \'' + item.id + '\')" title="编辑">✎</button>' +
-            '<button class="review-action-btn danger" onclick="deleteReviewItem(\'' + item.id + '\')" title="删除">×</button>' +
-        '</div>' +
+        notesHtml +
     '</div>';
+}
+
+function toggleReviewNotes(contentEl) {
+    var item = contentEl.closest('.review-item');
+    if (!item || !item.classList.contains('has-notes')) return;
+    item.classList.toggle('expanded');
 }
 
 function getFrequencyLabel(item) {
@@ -181,7 +194,8 @@ function openReviewModal(mode, id) {
         document.getElementById('review-text').value = '';
         document.getElementById('review-category').value = '';
         document.getElementById('review-notes').value = '';
-        selectFrequency('daily');
+        var defaultFreq = (currentReviewFilter && currentReviewFilter !== 'all') ? currentReviewFilter : 'daily';
+        selectFrequency(defaultFreq);
     }
 }
 

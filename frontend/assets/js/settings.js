@@ -23,6 +23,13 @@ async function loadSettingsData() {
     if (typeof Notifications !== 'undefined' && Notifications.updatePushStatus) {
         Notifications.updatePushStatus();
     }
+    // Guest mode: hide password change and friends sections
+    if (window._userStatus === 'guest') {
+        var pwdSection = document.getElementById('settings-password-section');
+        if (pwdSection) pwdSection.style.display = 'none';
+        var friendsSection = document.getElementById('settings-friends-section');
+        if (friendsSection) friendsSection.style.display = 'none';
+    }
 }
 
 // 修改密码

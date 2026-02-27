@@ -6,7 +6,7 @@ use axum::{
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 
-use crate::auth::ActiveUserId;
+use crate::auth::{reject_if_guest, ActiveUserId};
 use crate::state::AppState;
 
 #[derive(Debug, Serialize)]
@@ -49,6 +49,15 @@ pub async fn set_routine_collaborator(
     Path(id): Path<String>,
     Json(req): Json<SetCollaboratorRequest>,
 ) -> (StatusCode, Json<SimpleResponse>) {
+    if reject_if_guest(&state, &user_id.0).is_some() {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(SimpleResponse {
+                success: false,
+                message: Some("体验模式不支持此功能，注册账户解锁".into()),
+            }),
+        );
+    }
     let db = state.db.lock();
 
     // 1. Verify user owns the routine
@@ -115,6 +124,15 @@ pub async fn remove_routine_collaborator(
     user_id: ActiveUserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
+    if reject_if_guest(&state, &user_id.0).is_some() {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(SimpleResponse {
+                success: false,
+                message: Some("体验模式不支持此功能，注册账户解锁".into()),
+            }),
+        );
+    }
     let db = state.db.lock();
 
     // 1. Verify ownership

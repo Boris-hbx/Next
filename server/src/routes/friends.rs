@@ -7,7 +7,7 @@ use serde::Serialize;
 use serde_json::json;
 use std::collections::HashMap;
 
-use crate::auth::{ActiveUserId, UserId};
+use crate::auth::{reject_if_guest, ActiveUserId, UserId};
 use crate::models::friend::*;
 use crate::state::AppState;
 
@@ -139,6 +139,15 @@ pub async fn send_friend_request(
     user_id: ActiveUserId,
     Json(req): Json<FriendRequestPayload>,
 ) -> (StatusCode, Json<SimpleResponse>) {
+    if reject_if_guest(&state, &user_id.0).is_some() {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(SimpleResponse {
+                success: false,
+                message: Some("体验模式不支持此功能，注册账户解锁".into()),
+            }),
+        );
+    }
     let db = state.db.lock();
 
     // Find target user
@@ -213,6 +222,15 @@ pub async fn accept_friend(
     user_id: ActiveUserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
+    if reject_if_guest(&state, &user_id.0).is_some() {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(SimpleResponse {
+                success: false,
+                message: Some("体验模式不支持此功能，注册账户解锁".into()),
+            }),
+        );
+    }
     let db = state.db.lock();
     let now = chrono::Utc::now().to_rfc3339();
 
@@ -285,6 +303,15 @@ pub async fn decline_friend(
     user_id: ActiveUserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
+    if reject_if_guest(&state, &user_id.0).is_some() {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(SimpleResponse {
+                success: false,
+                message: Some("体验模式不支持此功能，注册账户解锁".into()),
+            }),
+        );
+    }
     let db = state.db.lock();
     let now = chrono::Utc::now().to_rfc3339();
 
@@ -319,6 +346,15 @@ pub async fn delete_friend(
     user_id: ActiveUserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
+    if reject_if_guest(&state, &user_id.0).is_some() {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(SimpleResponse {
+                success: false,
+                message: Some("体验模式不支持此功能，注册账户解锁".into()),
+            }),
+        );
+    }
     let db = state.db.lock();
 
     // Get the other user's id before deleting
@@ -418,6 +454,15 @@ pub async fn share_item(
     user_id: ActiveUserId,
     Json(req): Json<SharePayload>,
 ) -> (StatusCode, Json<SimpleResponse>) {
+    if reject_if_guest(&state, &user_id.0).is_some() {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(SimpleResponse {
+                success: false,
+                message: Some("体验模式不支持此功能，注册账户解锁".into()),
+            }),
+        );
+    }
     let db = state.db.lock();
 
     // Verify friendship
@@ -672,6 +717,9 @@ pub async fn accept_shared(
     user_id: ActiveUserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<serde_json::Value>) {
+    if let Some(e) = reject_if_guest(&state, &user_id.0) {
+        return e;
+    }
     let db = state.db.lock();
 
     let result = db.query_row(
@@ -783,6 +831,15 @@ pub async fn dismiss_shared(
     user_id: ActiveUserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<SimpleResponse>) {
+    if reject_if_guest(&state, &user_id.0).is_some() {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(SimpleResponse {
+                success: false,
+                message: Some("体验模式不支持此功能，注册账户解锁".into()),
+            }),
+        );
+    }
     let db = state.db.lock();
 
     let rows = db

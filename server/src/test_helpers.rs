@@ -15,6 +15,7 @@ pub fn test_state() -> AppState {
         login_ip_attempts: Arc::new(Mutex::new(HashMap::new())),
         login_user_lockouts: Arc::new(Mutex::new(HashMap::new())),
         ai_rate_limits: Arc::new(Mutex::new(HashMap::new())),
+        guest_ip_rate_limits: Arc::new(Mutex::new(HashMap::new())),
     }
 }
 
@@ -77,11 +78,8 @@ pub fn create_test_user_with_status(
 pub fn create_admin_user(state: &AppState, username: &str, password: &str) -> (String, String) {
     let (user_id, token) = create_test_user(state, username, password);
     let db = state.db.lock();
-    db.execute(
-        "UPDATE users SET role = 'admin' WHERE id = ?1",
-        [&user_id],
-    )
-    .expect("set admin failed");
+    db.execute("UPDATE users SET role = 'admin' WHERE id = ?1", [&user_id])
+        .expect("set admin failed");
     (user_id, token)
 }
 

@@ -662,7 +662,7 @@
     }
 
     /* Review items: compact layout on mobile */
-    .review-item {
+    .review-item-row {
         flex-wrap: wrap;
         gap: 6px;
         padding: 10px 12px;
@@ -693,6 +693,10 @@
 
     .review-item-actions {
         opacity: 1;
+    }
+
+    .review-notes-body {
+        padding-left: 42px;
     }
 
     .quadrant.collapsed .task-list {

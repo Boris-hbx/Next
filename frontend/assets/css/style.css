@@ -9741,3 +9741,41 @@ body.dark-mode .action-sheet-cancel {
 .trip-multi-desc { flex: 1; font-size: 13px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .trip-multi-amt { font-size: 13px; font-weight: 600; color: var(--primary-color); flex-shrink: 0; }
 .trip-multi-date { display: block; font-size: 11px; color: var(--text-muted, #aaa); margin-top: 4px; padding-left: 24px; }
+
+/* ========== Guest Mode Banner (SPEC-051) ========== */
+.guest-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    font-size: 13px;
+    text-align: center;
+    position: relative;
+    z-index: 100;
+}
+.guest-banner b { font-weight: 700; }
+.guest-register-btn {
+    padding: 4px 14px;
+    border: 1px solid rgba(255,255,255,0.5);
+    border-radius: 6px;
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+}
+.guest-register-btn:hover { background: rgba(255,255,255,0.3); }
+/* Guest AI remaining badge inline */
+.guest-ai-badge {
+    display: inline-block;
+    font-size: 11px;
+    color: var(--primary-color, #667eea);
+    margin-left: 6px;
+    opacity: 0.8;
+}
+.guest-ai-badge.exhausted { color: #f85149; }

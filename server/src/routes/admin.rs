@@ -10,19 +10,14 @@ use crate::auth::UserId;
 use crate::state::AppState;
 
 /// GET /api/admin/dashboard — owner-only usage dashboard
-pub async fn dashboard(
-    State(state): State<AppState>,
-    user_id: UserId,
-) -> impl IntoResponse {
+pub async fn dashboard(State(state): State<AppState>, user_id: UserId) -> impl IntoResponse {
     let db = state.db.lock();
 
     // Check if requesting user has admin role
     let is_admin: bool = db
-        .query_row(
-            "SELECT role FROM users WHERE id = ?1",
-            [&user_id.0],
-            |r| r.get::<_, String>(0),
-        )
+        .query_row("SELECT role FROM users WHERE id = ?1", [&user_id.0], |r| {
+            r.get::<_, String>(0)
+        })
         .map(|role| role == "admin")
         .unwrap_or(false);
 
@@ -219,11 +214,9 @@ fn require_admin(
     user_id: &str,
 ) -> Result<(), (StatusCode, Json<serde_json::Value>)> {
     let is_admin: bool = db
-        .query_row(
-            "SELECT role FROM users WHERE id = ?1",
-            [user_id],
-            |r| r.get::<_, String>(0),
-        )
+        .query_row("SELECT role FROM users WHERE id = ?1", [user_id], |r| {
+            r.get::<_, String>(0)
+        })
         .map(|role| role == "admin")
         .unwrap_or(false);
     if !is_admin {
@@ -236,10 +229,7 @@ fn require_admin(
 }
 
 /// GET /api/admin/pending-users
-pub async fn pending_users(
-    State(state): State<AppState>,
-    user_id: UserId,
-) -> impl IntoResponse {
+pub async fn pending_users(State(state): State<AppState>, user_id: UserId) -> impl IntoResponse {
     let db = state.db.lock();
     if let Err(e) = require_admin(&db, &user_id.0) {
         return e;
@@ -263,7 +253,10 @@ pub async fn pending_users(
         .flatten()
         .collect();
 
-    (StatusCode::OK, Json(json!({ "success": true, "users": rows })))
+    (
+        StatusCode::OK,
+        Json(json!({ "success": true, "users": rows })),
+    )
 }
 
 /// POST /api/admin/users/{id}/approve
@@ -300,7 +293,10 @@ pub async fn approve_user(
     )
     .ok();
 
-    (StatusCode::OK, Json(json!({"success": true, "message": "已通过"})))
+    (
+        StatusCode::OK,
+        Json(json!({"success": true, "message": "已通过"})),
+    )
 }
 
 /// POST /api/admin/users/{id}/reject
@@ -333,7 +329,10 @@ pub async fn reject_user(
     db.execute("DELETE FROM sessions WHERE user_id = ?1", [&target_id])
         .ok();
 
-    (StatusCode::OK, Json(json!({"success": true, "message": "已拒绝"})))
+    (
+        StatusCode::OK,
+        Json(json!({"success": true, "message": "已拒绝"})),
+    )
 }
 
 fn query_ai_period(db: &rusqlite::Connection, since: &str) -> serde_json::Value {

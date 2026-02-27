@@ -37,6 +37,7 @@ var Friends = (function() {
 
     async function loadFriendsData() {
         init();
+        if (window._userStatus === 'guest') return; // Guest: skip friend loading
         try {
             var [friendsResp, requestsResp] = await Promise.all([
                 API.getFriends(),
@@ -443,6 +444,7 @@ var Friends = (function() {
     // ─── Badge ───
 
     async function updateInboxBadge() {
+        if (window._userStatus === 'guest') return; // Guest: no inbox
         try {
             var resp = await API.getSharedInboxCount();
             if (resp.success) {

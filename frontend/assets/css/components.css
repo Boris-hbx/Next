@@ -2519,19 +2519,26 @@ html.sidebar-will-collapse .sidebar-hint {
 /* Review item */
 .review-item {
     display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 16px;
+    flex-direction: column;
     border-radius: 10px;
     transition: background 0.15s;
     background: rgba(255, 255, 255, 0.7);
     margin-bottom: 2px;
+}
+.review-item-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
 }
 [data-theme="dark"] .review-item {
     background: rgba(255, 255, 255, 0.04);
 }
 .review-item:hover {
     background: rgba(var(--primary-color-rgb), 0.05);
+}
+.review-item.has-notes .review-item-content {
+    cursor: pointer;
 }
 .review-item.completed {
     opacity: 0.6;
@@ -2543,6 +2550,26 @@ html.sidebar-will-collapse .sidebar-hint {
 .review-item.paused {
     opacity: 0.5;
     border: 1px dashed var(--border-color);
+}
+.review-notes-indicator {
+    font-size: 12px;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+}
+.review-item.expanded .review-notes-indicator {
+    transform: scale(1.15);
+}
+.review-notes-body {
+    display: none;
+    padding: 0 16px 10px 46px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.review-item.expanded .review-notes-body {
+    display: block;
 }
 .review-checkbox {
     width: 20px;

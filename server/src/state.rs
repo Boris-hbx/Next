@@ -17,4 +17,6 @@ pub struct AppState {
     pub login_user_lockouts: Arc<Mutex<HashMap<String, (u32, Instant)>>>,
     /// AI scenario generation rate limiting: user_id -> last_generation_time
     pub ai_rate_limits: Arc<Mutex<HashMap<String, Instant>>>,
+    /// Guest login rate limiting: IP -> (count, window_start)
+    pub guest_ip_rate_limits: Arc<Mutex<HashMap<String, (u32, Instant)>>>,
 }

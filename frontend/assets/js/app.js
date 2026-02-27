@@ -25,7 +25,7 @@
             }
             if (typeof applyAvatar === 'function') applyAvatar();
 
-            // Handle pending account status
+            // Handle account status
             window._userStatus = data.user.status || 'active';
             if (window._userStatus === 'pending') {
                 // Show pending banner
@@ -38,6 +38,19 @@
                 if (abaoBtn) abaoBtn.style.display = 'none';
                 var mobileAbao = document.querySelector('.mobile-nav-item[onclick*="toggleAbao"]');
                 if (mobileAbao) mobileAbao.style.display = 'none';
+            }
+
+            // Handle guest mode
+            if (window._userStatus === 'guest') {
+                window._guestAiRemaining = data.user.ai_calls_remaining != null ? data.user.ai_calls_remaining : 21;
+                // Show guest banner
+                var guestBanner = document.getElementById('guest-banner');
+                if (guestBanner) guestBanner.style.display = '';
+                var aiCount = document.getElementById('guest-ai-count');
+                if (aiCount) aiCount.textContent = window._guestAiRemaining;
+                // Hide friend/share related entries
+                var inboxBell = document.getElementById('inbox-bell-wrapper');
+                if (inboxBell) inboxBell.style.display = 'none';
             }
         }
     } catch(e) {

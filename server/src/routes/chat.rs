@@ -2,7 +2,7 @@ use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use crate::auth::ActiveUserId;
+use crate::auth::{check_guest_ai_quota, ActiveUserId};
 use crate::services::{claude::ClaudeClient, context, tool_executor};
 use crate::state::AppState;
 
@@ -26,6 +26,8 @@ pub struct ChatResponse {
     pub reply: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tool_calls: Option<Vec<serde_json::Value>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ai_remaining: Option<i32>,
 }
 
 /// POST /api/chat — send message, get SSE stream response
@@ -45,10 +47,17 @@ pub async fn chat_handler(
                 conversation_id: None,
                 reply: None,
                 tool_calls: None,
+                ai_remaining: None,
             }),
         )
             .into_response();
     }
+
+    // Guest AI quota check
+    let guest_ai_remaining = match check_guest_ai_quota(&state, &user_id.0) {
+        Ok(remaining) => Some(remaining),
+        Err(err_resp) => return err_resp.into_response(),
+    };
 
     // Rate limiting: 5 per minute per user
     {
@@ -72,6 +81,7 @@ pub async fn chat_handler(
                     conversation_id: None,
                     reply: None,
                     tool_calls: None,
+                    ai_remaining: None,
                 }),
             )
                 .into_response();
@@ -90,6 +100,7 @@ pub async fn chat_handler(
                     conversation_id: None,
                     reply: None,
                     tool_calls: None,
+                    ai_remaining: None,
                 }),
             )
                 .into_response()
@@ -121,6 +132,7 @@ pub async fn chat_handler(
                         conversation_id: None,
                         reply: None,
                         tool_calls: None,
+                        ai_remaining: None,
                     }),
                 )
                     .into_response();
@@ -267,6 +279,11 @@ pub async fn chat_handler(
                     } else {
                         Some(tool_info)
                     },
+                    ai_remaining: if guest_ai_remaining.unwrap_or(999) < 999 {
+                        guest_ai_remaining
+                    } else {
+                        None
+                    },
                 }),
             )
                 .into_response()
@@ -279,6 +296,7 @@ pub async fn chat_handler(
                 conversation_id: Some(conv_id_clone),
                 reply: None,
                 tool_calls: None,
+                ai_remaining: None,
             }),
         )
             .into_response(),

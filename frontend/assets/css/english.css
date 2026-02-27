@@ -1281,6 +1281,11 @@
     object-fit: cover;
 }
 
+.expense-photo-existing {
+    opacity: 0.85;
+    pointer-events: none;
+}
+
 .expense-photo-remove {
     position: absolute;
     top: 2px;

@@ -9,7 +9,7 @@ use chrono::Datelike;
 use serde::Serialize;
 use serde_json::json;
 
-use crate::auth::{ActiveUserId, UserId};
+use crate::auth::{check_guest_ai_quota, ActiveUserId, UserId};
 use crate::models::expense::*;
 use crate::state::AppState;
 
@@ -828,8 +828,12 @@ pub async fn serve_photo(
     Path((path_user_id, filename)): Path<(String, String)>,
 ) -> impl IntoResponse {
     // Path traversal protection
-    if path_user_id.contains("..") || path_user_id.contains('/') || path_user_id.contains('\\')
-        || filename.contains("..") || filename.contains('/') || filename.contains('\\')
+    if path_user_id.contains("..")
+        || path_user_id.contains('/')
+        || path_user_id.contains('\\')
+        || filename.contains("..")
+        || filename.contains('/')
+        || filename.contains('\\')
     {
         return StatusCode::BAD_REQUEST.into_response();
     }
@@ -895,6 +899,12 @@ pub async fn parse_receipts(
     user_id: ActiveUserId,
     Path(entry_id): Path<String>,
 ) -> (StatusCode, Json<serde_json::Value>) {
+    // Guest AI quota check
+    let guest_ai_remaining = match check_guest_ai_quota(&state, &user_id.0) {
+        Ok(r) => r,
+        Err(e) => return e,
+    };
+
     // Get photos for this entry
     let photos: Vec<(String, String)>;
     {
@@ -1019,16 +1029,17 @@ pub async fn parse_receipts(
                 .ok();
             }
 
-            (
-                StatusCode::OK,
-                Json(json!({
-                    "success": true,
-                    "tags": parsed.tags,
-                    "items_count": parsed.items.len(),
-                    "total_amount": parsed.total_amount,
-                    "merchant": parsed.merchant
-                })),
-            )
+            let mut resp = json!({
+                "success": true,
+                "tags": parsed.tags,
+                "items_count": parsed.items.len(),
+                "total_amount": parsed.total_amount,
+                "merchant": parsed.merchant
+            });
+            if guest_ai_remaining < 999 {
+                resp["ai_remaining"] = json!(guest_ai_remaining);
+            }
+            (StatusCode::OK, Json(resp))
         }
         Err(e) => {
             eprintln!("[Expense] AI parse error: {}", e);
@@ -1042,9 +1053,26 @@ pub async fn parse_receipts(
 
 // ===== Parse Preview (AI, no DB write) =====
 pub async fn parse_preview(
-    _user_id: ActiveUserId,
+    State(state): State<AppState>,
+    user_id: ActiveUserId,
     Json(req): Json<ParsePreviewRequest>,
 ) -> (StatusCode, Json<ParsePreviewResponse>) {
+    // Guest AI quota check
+    let guest_ai_remaining = match check_guest_ai_quota(&state, &user_id.0) {
+        Ok(r) => r,
+        Err(_) => {
+            return (
+                StatusCode::FORBIDDEN,
+                Json(ParsePreviewResponse {
+                    success: false,
+                    preview: None,
+                    message: Some("AI 体验次数已用完，注册解锁无限使用".into()),
+                    ai_remaining: Some(0),
+                }),
+            );
+        }
+    };
+
     if req.images.is_empty() {
         return (
             StatusCode::BAD_REQUEST,
@@ -1052,6 +1080,7 @@ pub async fn parse_preview(
                 success: false,
                 preview: None,
                 message: Some("没有照片可解析".into()),
+                ai_remaining: None,
             }),
         );
     }
@@ -1065,6 +1094,7 @@ pub async fn parse_preview(
                     success: false,
                     preview: None,
                     message: Some("AI 服务未配置".into()),
+                    ai_remaining: None,
                 }),
             );
         }
@@ -1115,6 +1145,11 @@ pub async fn parse_preview(
                         total_amount: parsed.total_amount,
                     }),
                     message: None,
+                    ai_remaining: if guest_ai_remaining < 999 {
+                        Some(guest_ai_remaining)
+                    } else {
+                        None
+                    },
                 }),
             )
         }
@@ -1126,6 +1161,7 @@ pub async fn parse_preview(
                     success: false,
                     preview: None,
                     message: Some(e),
+                    ai_remaining: None,
                 }),
             )
         }
@@ -1277,15 +1313,19 @@ fn tag_to_category(tag: &str) -> &'static str {
     match tag {
         "超市" | "杂货" | "肉类" | "蔬菜" | "水果" | "海鲜" | "零食" | "饮料" | "奶制品"
         | "调料" | "面包" | "生鲜" | "食材" => "食品杂货",
-        "餐饮" | "外卖" | "餐厅" | "咖啡" | "奶茶" | "早餐" | "午餐" | "晚餐" | "火锅"
-        | "快餐" | "甜点" | "酒吧" => "餐饮",
+        "餐饮" | "外卖" | "餐厅" | "咖啡" | "奶茶" | "早餐" | "午餐" | "晚餐" | "火锅" | "快餐"
+        | "甜点" | "酒吧" => "餐饮",
         "交通" | "加油" | "停车" | "公交" | "地铁" | "打车" | "出租车" | "高铁" | "机票"
         | "油费" | "租车" => "交通",
         "购物" | "衣服" | "鞋子" | "电子" | "数码" | "家居" | "家电" | "日用品" | "化妆品" => {
             "购物"
         }
-        "住房" | "房租" | "水电" | "网费" | "物业" | "维修" | "家具" | "电话费" => "住房",
-        "娱乐" | "电影" | "游戏" | "旅游" | "景点" | "KTV" | "运动" | "健身" => "娱乐",
+        "住房" | "房租" | "水电" | "网费" | "物业" | "维修" | "家具" | "电话费" => {
+            "住房"
+        }
+        "娱乐" | "电影" | "游戏" | "旅游" | "景点" | "KTV" | "运动" | "健身" => {
+            "娱乐"
+        }
         "医疗" | "药品" | "看病" | "体检" | "牙科" | "保健" => "医疗",
         "教育" | "书籍" | "课程" | "培训" | "文具" => "教育",
         _ => "其他",
@@ -1347,8 +1387,7 @@ pub async fn get_analytics(
     let to = to_date.to_string();
 
     // Query all entries in range
-    let mut cat_map: std::collections::HashMap<&str, (f64, i64)> =
-        std::collections::HashMap::new();
+    let mut cat_map: std::collections::HashMap<&str, (f64, i64)> = std::collections::HashMap::new();
     let mut day_map: std::collections::HashMap<String, f64> = std::collections::HashMap::new();
     let mut total_amount: f64 = 0.0;
     let mut entry_count: i64 = 0;

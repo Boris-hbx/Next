@@ -6,7 +6,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use crate::auth::{ActiveUserId, UserId};
+use crate::auth::{check_guest_ai_quota, ActiveUserId, UserId};
 use crate::models::english::*;
 use crate::services::claude::ClaudeClient;
 use crate::state::AppState;
@@ -393,6 +393,21 @@ pub async fn generate_scenario(
     user_id: ActiveUserId,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<ScenarioResponse>) {
+    // Guest AI quota check
+    match check_guest_ai_quota(&state, &user_id.0) {
+        Ok(_) => {}
+        Err(_) => {
+            return (
+                StatusCode::FORBIDDEN,
+                Json(ScenarioResponse {
+                    success: false,
+                    item: None,
+                    message: Some("AI 体验次数已用完，注册解锁无限使用".into()),
+                }),
+            );
+        }
+    }
+
     // Rate limit: 1 generation per 30 seconds per user
     {
         let mut limits = state.ai_rate_limits.lock();

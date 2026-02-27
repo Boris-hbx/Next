@@ -57,6 +57,8 @@ pub struct UserInfo {
     pub avatar: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub status: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ai_calls_remaining: Option<i32>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -132,7 +134,7 @@ impl FromRequestParts<AppState> for ActiveUserId {
 
         match result {
             Ok((user_id, status)) => match status.as_str() {
-                "active" => Ok(ActiveUserId(user_id)),
+                "active" | "guest" => Ok(ActiveUserId(user_id)),
                 "pending" => Err((
                     StatusCode::FORBIDDEN,
                     Json(serde_json::json!({
@@ -384,7 +386,11 @@ pub async fn register(
         )
         .unwrap_or(0);
 
-    let status = if today_count < 10 { "active" } else { "pending" };
+    let status = if today_count < 10 {
+        "active"
+    } else {
+        "pending"
+    };
 
     db.execute(
         "INSERT INTO users (id, username, password_hash, display_name, status, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
@@ -447,6 +453,7 @@ pub async fn register(
                     display_name: Some(display_name),
                     avatar: None,
                     status: Some(status.to_string()),
+                    ai_calls_remaining: None,
                 }),
                 message: Some(message.into()),
             }),
@@ -600,6 +607,7 @@ pub async fn login(
                         Some(avatar)
                     },
                     status: Some(status),
+                    ai_calls_remaining: None,
                 }),
                 message: Some("登录成功".into()),
             }),
@@ -624,16 +632,18 @@ pub async fn me(State(state): State<AppState>, user_id: UserId) -> impl IntoResp
     let db = state.db.lock();
 
     let result = db.query_row(
-        "SELECT id, username, display_name, COALESCE(avatar,''), COALESCE(status,'active') FROM users WHERE id = ?1",
+        "SELECT id, username, display_name, COALESCE(avatar,''), COALESCE(status,'active'), ai_calls_remaining FROM users WHERE id = ?1",
         [&user_id.0],
         |row: &rusqlite::Row| {
             let av: String = row.get(3)?;
             let st: String = row.get(4)?;
+            let ai_remaining: Option<i32> = row.get(5)?;
             Ok(UserInfo {
                 id: row.get(0)?,
                 username: row.get(1)?,
                 display_name: row.get(2)?,
                 avatar: if av.is_empty() { None } else { Some(av) },
+                ai_calls_remaining: if st == "guest" { ai_remaining } else { None },
                 status: Some(st),
             })
         },
@@ -792,6 +802,204 @@ pub async fn update_avatar(
             })),
         ),
     }
+}
+
+// ─── Guest mode helpers ───
+
+/// Check if user is a guest and reject if so (for social/collab routes)
+pub fn reject_if_guest(
+    state: &AppState,
+    user_id: &str,
+) -> Option<(StatusCode, Json<serde_json::Value>)> {
+    let db = state.db.lock();
+    let status: String = db
+        .query_row(
+            "SELECT COALESCE(status,'active') FROM users WHERE id = ?1",
+            [user_id],
+            |row| row.get(0),
+        )
+        .unwrap_or_else(|_| "active".to_string());
+    if status == "guest" {
+        Some((
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!({
+                "success": false,
+                "error": "GUEST_RESTRICTED",
+                "message": "体验模式不支持此功能，注册账户解锁"
+            })),
+        ))
+    } else {
+        None
+    }
+}
+
+/// Check and decrement AI quota for guest users. Returns remaining count.
+/// Non-guest users pass through with Ok(999).
+pub fn check_guest_ai_quota(
+    state: &AppState,
+    user_id: &str,
+) -> Result<i32, (StatusCode, Json<serde_json::Value>)> {
+    let db = state.db.lock();
+    let row = db.query_row(
+        "SELECT COALESCE(status,'active'), ai_calls_remaining FROM users WHERE id = ?1",
+        [user_id],
+        |row| Ok((row.get::<_, String>(0)?, row.get::<_, Option<i32>>(1)?)),
+    );
+    match row {
+        Ok((status, remaining)) => {
+            if status != "guest" {
+                return Ok(999);
+            }
+            let remaining = remaining.unwrap_or(0);
+            if remaining <= 0 {
+                return Err((
+                    StatusCode::FORBIDDEN,
+                    Json(serde_json::json!({
+                        "success": false,
+                        "error": "GUEST_AI_EXHAUSTED",
+                        "message": "AI 体验次数已用完，注册解锁无限使用",
+                        "ai_remaining": 0
+                    })),
+                ));
+            }
+            // Decrement
+            db.execute(
+                "UPDATE users SET ai_calls_remaining = ai_calls_remaining - 1 WHERE id = ?1",
+                [user_id],
+            )
+            .ok();
+            Ok(remaining - 1)
+        }
+        Err(_) => Ok(999),
+    }
+}
+
+// ─── Guest login ───
+
+const GUEST_IP_MAX: u32 = 5;
+const GUEST_IP_WINDOW_SECS: u64 = 3600; // 1 hour
+const GUEST_MAX_ACTIVE: i64 = 50;
+const GUEST_AI_QUOTA: i32 = 21;
+
+pub async fn guest_login(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    jar: CookieJar,
+) -> impl IntoResponse {
+    let ip = extract_client_ip(&headers);
+
+    // IP rate limit for guest creation
+    {
+        let limits = state.guest_ip_rate_limits.lock();
+        if let Some((count, window_start)) = limits.get(&ip) {
+            if window_start.elapsed().as_secs() < GUEST_IP_WINDOW_SECS && *count >= GUEST_IP_MAX {
+                return (
+                    jar,
+                    (
+                        StatusCode::TOO_MANY_REQUESTS,
+                        Json(AuthResponse {
+                            success: false,
+                            user: None,
+                            message: Some("体验账户创建过于频繁，请稍后再试".into()),
+                        }),
+                    ),
+                );
+            }
+        }
+    }
+
+    let db = state.db.lock();
+
+    // Check global guest count
+    let active_guests: i64 = db
+        .query_row(
+            "SELECT COUNT(*) FROM users u WHERE u.status = 'guest' \
+             AND EXISTS (SELECT 1 FROM sessions s WHERE s.user_id = u.id AND s.expires_at > datetime('now'))",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap_or(0);
+
+    if active_guests >= GUEST_MAX_ACTIVE {
+        return (
+            jar,
+            (
+                StatusCode::TOO_MANY_REQUESTS,
+                Json(AuthResponse {
+                    success: false,
+                    user: None,
+                    message: Some("体验名额已满，请稍后再试或直接注册".into()),
+                }),
+            ),
+        );
+    }
+
+    // Generate guest user
+    let hex8: String = {
+        use rand::RngCore;
+        let mut bytes = [0u8; 4];
+        rand::rng().fill_bytes(&mut bytes);
+        hex::encode(bytes)
+    };
+    let user_id = uuid::Uuid::new_v4().to_string();
+    let username = format!("guest_{}", hex8);
+    let now = chrono::Utc::now().to_rfc3339();
+
+    // Create user with dummy password hash (guests can't login with password)
+    db.execute(
+        "INSERT INTO users (id, username, password_hash, display_name, status, ai_calls_remaining, created_at, updated_at) \
+         VALUES (?1, ?2, ?3, ?4, 'guest', ?5, ?6, ?7)",
+        rusqlite::params![user_id, username, "guest_no_password", "访客", GUEST_AI_QUOTA, now, now],
+    )
+    .unwrap();
+
+    // Seed demo data
+    drop(db); // release lock before seeding (seed will re-acquire)
+    crate::services::guest_seed::seed_guest_demo_data(&state, &user_id);
+
+    let db = state.db.lock();
+
+    // Create 24h session
+    let token = generate_session_token();
+    let expires = (chrono::Utc::now() + chrono::Duration::hours(24)).to_rfc3339();
+    db.execute(
+        "INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?1, ?2, ?3, ?4)",
+        rusqlite::params![token, user_id, now, expires],
+    )
+    .unwrap();
+
+    // Record IP attempt
+    drop(db);
+    {
+        let mut limits = state.guest_ip_rate_limits.lock();
+        let entry = limits.entry(ip).or_insert((0, Instant::now()));
+        if entry.1.elapsed().as_secs() >= GUEST_IP_WINDOW_SECS {
+            *entry = (1, Instant::now());
+        } else {
+            entry.0 += 1;
+        }
+    }
+
+    let jar = jar.add(make_session_cookie(token));
+
+    (
+        jar,
+        (
+            StatusCode::OK,
+            Json(AuthResponse {
+                success: true,
+                user: Some(UserInfo {
+                    id: user_id,
+                    username,
+                    display_name: Some("访客".into()),
+                    avatar: None,
+                    status: Some("guest".into()),
+                    ai_calls_remaining: Some(GUEST_AI_QUOTA),
+                }),
+                message: Some("体验模式已开启".into()),
+            }),
+        ),
+    )
 }
 
 // ─── Helpers ───

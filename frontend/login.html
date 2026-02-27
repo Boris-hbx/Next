@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#667eea">
     <title>Next - 登录</title>
-    <link rel="stylesheet" href="assets/css/base.css?v=20260223a">
+    <link rel="stylesheet" href="assets/css/base.css?v=20260227a">
     <link rel="manifest" href="assets/manifest.json">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
     <script>
@@ -143,6 +143,92 @@
             line-height: 1.5;
         }
         .password-hint.show { display: block; }
+        .guest-divider {
+            display: flex;
+            align-items: center;
+            margin: 24px 0 16px;
+            color: var(--text-muted, #484f58);
+            font-size: 12px;
+        }
+        .guest-divider::before, .guest-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-color, rgba(255,255,255,0.08));
+        }
+        .guest-divider span { padding: 0 12px; }
+        .guest-btn {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: 1px solid var(--border-color, rgba(255,255,255,0.15));
+            border-radius: 8px;
+            color: var(--text-secondary, #8b949e);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .guest-btn:hover {
+            border-color: var(--primary-color, #667eea);
+            color: var(--primary-color, #667eea);
+        }
+        .guest-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        /* Guest confirm dialog */
+        .guest-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .guest-overlay.show { display: flex; }
+        .guest-dialog {
+            width: 90%;
+            max-width: 360px;
+            background: var(--bg-secondary, #161b22);
+            border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+            border-radius: 16px;
+            padding: 28px 24px;
+            text-align: center;
+        }
+        .guest-dialog h3 {
+            font-size: 18px;
+            margin-bottom: 16px;
+        }
+        .guest-dialog ul {
+            text-align: left;
+            list-style: none;
+            font-size: 13px;
+            color: var(--text-secondary, #8b949e);
+            line-height: 1.8;
+            margin-bottom: 20px;
+            padding: 0;
+        }
+        .guest-dialog ul li::before { content: '• '; color: var(--primary-color, #667eea); }
+        .guest-dialog-actions {
+            display: flex;
+            gap: 12px;
+        }
+        .guest-dialog-actions button {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+        }
+        .guest-dialog .btn-cancel {
+            background: var(--bg-primary, #0d1117);
+            color: var(--text-secondary, #8b949e);
+            border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+        }
+        .guest-dialog .btn-confirm {
+            background: linear-gradient(135deg, var(--primary-color, #667eea), var(--primary-hover, #5a6fd6));
+            color: #fff;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -175,10 +261,64 @@
             <button type="submit" class="submit-btn" id="submit-btn">登录</button>
             <div class="error-msg" id="error-msg"></div>
         </form>
+
+        <div class="guest-divider"><span>或</span></div>
+        <button class="guest-btn" id="guest-btn" onclick="showGuestDialog()">体验一下</button>
+    </div>
+
+    <!-- Guest confirm dialog -->
+    <div class="guest-overlay" id="guest-overlay" onclick="if(event.target===this)hideGuestDialog()">
+        <div class="guest-dialog">
+            <h3>体验模式</h3>
+            <ul>
+                <li>获得临时账户，预置示例数据</li>
+                <li>AI 功能可体验 21 次（阿宝对话 + 智能解析）</li>
+                <li>数据将在 24 小时后自动清除</li>
+                <li>注册账户可获得完整功能</li>
+            </ul>
+            <div class="guest-dialog-actions">
+                <button class="btn-cancel" onclick="hideGuestDialog()">返回</button>
+                <button class="btn-confirm" id="guest-confirm-btn" onclick="startGuestMode()">开始体验</button>
+            </div>
+        </div>
     </div>
 
     <script>
     var authMode = 'login';
+
+    function showGuestDialog() {
+        document.getElementById('guest-overlay').classList.add('show');
+    }
+    function hideGuestDialog() {
+        document.getElementById('guest-overlay').classList.remove('show');
+    }
+    async function startGuestMode() {
+        var btn = document.getElementById('guest-confirm-btn');
+        btn.disabled = true;
+        btn.textContent = '创建中...';
+        try {
+            var resp = await fetch('/api/auth/guest', {
+                method: 'POST',
+                credentials: 'same-origin'
+            });
+            var data = await resp.json();
+            if (data.success) {
+                localStorage.setItem('loggedIn', 'true');
+                localStorage.setItem('username', data.user.username);
+                if (data.user.display_name) localStorage.setItem('displayName', data.user.display_name);
+                window.location.href = '/';
+            } else {
+                hideGuestDialog();
+                document.getElementById('error-msg').textContent = data.message || '创建失败';
+            }
+        } catch(e) {
+            hideGuestDialog();
+            document.getElementById('error-msg').textContent = '网络错误，请重试';
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '开始体验';
+        }
+    }
 
     // Check if already logged in
     (async function() {

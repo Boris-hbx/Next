@@ -23,6 +23,7 @@ pub fn build_app(state: state::AppState) -> Router {
         .route("/register", post(auth::register))
         .route("/login", post(auth::login))
         .route("/logout", post(auth::logout))
+        .route("/guest", post(auth::guest_login))
         .route("/me", get(auth::me))
         .route("/change-password", post(auth::change_password))
         .route("/avatar", put(auth::update_avatar));
@@ -252,11 +253,13 @@ pub fn build_app(state: state::AppState) -> Router {
         .nest("/share", share_routes)
         .nest("/contacts", contacts_routes)
         .nest("/collaborate", collaborate_routes)
-        .nest("/admin", Router::new()
-            .route("/dashboard", get(routes::admin::dashboard))
-            .route("/pending-users", get(routes::admin::pending_users))
-            .route("/users/{id}/approve", post(routes::admin::approve_user))
-            .route("/users/{id}/reject", post(routes::admin::reject_user))
+        .nest(
+            "/admin",
+            Router::new()
+                .route("/dashboard", get(routes::admin::dashboard))
+                .route("/pending-users", get(routes::admin::pending_users))
+                .route("/users/{id}/approve", post(routes::admin::approve_user))
+                .route("/users/{id}/reject", post(routes::admin::reject_user)),
         )
         .route("/moment", get(routes::moment::get_moment))
         .route(

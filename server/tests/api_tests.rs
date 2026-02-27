@@ -758,8 +758,7 @@ async fn test_non_admin_cannot_list_pending() {
 async fn test_non_admin_cannot_approve() {
     let state = test_state();
     let (_, token) = create_test_user(&state, "nonadm_ap", "Nonadm2x");
-    let (pending_id, _) =
-        create_test_user_with_status(&state, "target_ap", "Target1x", "pending");
+    let (pending_id, _) = create_test_user_with_status(&state, "target_ap", "Target1x", "pending");
 
     let app = build_app(state);
     let req = Request::post(&format!("/api/admin/users/{}/approve", pending_id))
@@ -888,7 +887,10 @@ async fn test_pending_registration_notifies_admins() {
     let has_pending_notif = items
         .iter()
         .any(|n| n["title"].as_str().unwrap_or("").contains("待审批"));
-    assert!(has_pending_notif, "Admin should have a pending-user notification");
+    assert!(
+        has_pending_notif,
+        "Admin should have a pending-user notification"
+    );
 }
 
 // ──────────────────── Approve creates user notification ────────────────────

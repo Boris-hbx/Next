@@ -24,12 +24,31 @@ var API = (function() {
                 if (typeof showToast === 'function') showToast('账户审核中，暂时无法操作', 'warning');
                 throw new Error('ACCOUNT_PENDING');
             }
+            if (resp.status === 403 && data && data.error === 'GUEST_RESTRICTED') {
+                if (typeof showToast === 'function') showToast('体验模式不支持此功能，注册账户解锁', 'warning');
+                throw new Error('GUEST_RESTRICTED');
+            }
+            if (resp.status === 403 && data && data.error === 'GUEST_AI_EXHAUSTED') {
+                if (typeof showToast === 'function') showToast('AI 体验次数已用完 — 注册账户解锁无限使用', 'warning');
+                updateGuestAiCount(0);
+                throw new Error('GUEST_AI_EXHAUSTED');
+            }
+            // Sync AI remaining count from any response
+            if (data && data.ai_remaining !== undefined) {
+                updateGuestAiCount(data.ai_remaining);
+            }
             return data;
         } catch (err) {
-            if (err.message === 'UNAUTHORIZED') throw err;
+            if (err.message === 'UNAUTHORIZED' || err.message === 'ACCOUNT_PENDING' || err.message === 'GUEST_RESTRICTED' || err.message === 'GUEST_AI_EXHAUSTED') throw err;
             console.error('[API] error:', method, path, err);
             throw err;
         }
+    }
+
+    function updateGuestAiCount(remaining) {
+        window._guestAiRemaining = remaining;
+        var el = document.getElementById('guest-ai-count');
+        if (el) el.textContent = remaining;
     }
 
     return {

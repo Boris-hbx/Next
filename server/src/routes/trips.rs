@@ -8,7 +8,7 @@ use rusqlite::Connection;
 use serde::Deserialize;
 use serde_json::json;
 
-use crate::auth::{ActiveUserId, UserId};
+use crate::auth::{check_guest_ai_quota, ActiveUserId, UserId};
 use crate::models::trip::*;
 use crate::services::claude::ClaudeClient;
 use crate::state::AppState;
@@ -1237,10 +1237,16 @@ pub struct AnalyzeItemRequest {
 /// 图片(base64) + 可选文字 → AI提取差旅条目数组
 /// 一图多事件→拆分多条；多图同一事件→合并一条
 pub async fn analyze_item(
-    State(_state): State<AppState>,
-    _user_id: ActiveUserId,
+    State(state): State<AppState>,
+    user_id: ActiveUserId,
     Json(req): Json<AnalyzeItemRequest>,
 ) -> (StatusCode, Json<serde_json::Value>) {
+    // Guest AI quota check
+    let guest_ai_remaining = match check_guest_ai_quota(&state, &user_id.0) {
+        Ok(r) => r,
+        Err(e) => return e,
+    };
+
     let has_images = !req.images.is_empty();
     let text = req.text.as_deref().unwrap_or("").trim().to_string();
     let has_text = !text.is_empty();
@@ -1254,10 +1260,12 @@ pub async fn analyze_item(
 
     let client = match ClaudeClient::new() {
         Some(c) => c,
-        None => return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({ "success": false, "message": "AI服务未配置" })),
-        ),
+        None => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "success": false, "message": "AI服务未配置" })),
+            )
+        }
     };
 
     let system = r#"你是差旅费用提取助手。从票据照片或文字中提取差旅费用信息，以JSON数组格式返回。
@@ -1284,11 +1292,16 @@ pub async fn analyze_item(
         (false, false) => unreachable!(), // already guarded above
     };
 
-    let images: Vec<(String, String)> = req.images.iter()
+    let images: Vec<(String, String)> = req
+        .images
+        .iter()
         .map(|img| (img.data.clone(), img.mime_type.clone()))
         .collect();
 
-    match client.vision_generate(system, images, &user_message, 4096).await {
+    match client
+        .vision_generate(system, images, &user_message, 4096)
+        .await
+    {
         Ok(raw) => {
             // Try array first, then single object wrapped in array
             let json_str = if let (Some(s), Some(e)) = (raw.find('['), raw.rfind(']')) {
@@ -1296,20 +1309,32 @@ pub async fn analyze_item(
             } else if let (Some(s), Some(e)) = (raw.find('{'), raw.rfind('}')) {
                 format!("[{}]", &raw[s..=e])
             } else {
-                return (StatusCode::OK, Json(json!({
-                    "success": false,
-                    "message": "AI未返回结构化数据，请手动填写",
-                    "raw": raw
-                })));
+                return (
+                    StatusCode::OK,
+                    Json(json!({
+                        "success": false,
+                        "message": "AI未返回结构化数据，请手动填写",
+                        "raw": raw
+                    })),
+                );
             };
 
             match serde_json::from_str::<serde_json::Value>(&json_str) {
-                Ok(items) => (StatusCode::OK, Json(json!({ "success": true, "items": items }))),
-                Err(_) => (StatusCode::OK, Json(json!({
-                    "success": false,
-                    "message": "解析失败，请手动填写",
-                    "raw": raw
-                }))),
+                Ok(items) => {
+                    let mut resp = json!({ "success": true, "items": items });
+                    if guest_ai_remaining < 999 {
+                        resp["ai_remaining"] = json!(guest_ai_remaining);
+                    }
+                    (StatusCode::OK, Json(resp))
+                }
+                Err(_) => (
+                    StatusCode::OK,
+                    Json(json!({
+                        "success": false,
+                        "message": "解析失败，请手动填写",
+                        "raw": raw
+                    })),
+                ),
             }
         }
         Err(e) => (

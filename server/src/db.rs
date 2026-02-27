@@ -112,6 +112,15 @@ fn run_migrations(conn: &Connection) {
         conn.execute_batch("ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active';")
             .ok();
     }
+
+    // Add ai_calls_remaining for guest users (NULL = unlimited for normal users)
+    let has_ai_remaining: bool = conn
+        .prepare("SELECT ai_calls_remaining FROM users LIMIT 1")
+        .is_ok();
+    if !has_ai_remaining {
+        conn.execute_batch("ALTER TABLE users ADD COLUMN ai_calls_remaining INTEGER DEFAULT NULL;")
+            .ok();
+    }
 }
 
 fn create_tables(conn: &Connection) {

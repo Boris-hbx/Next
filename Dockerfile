@@ -29,8 +29,9 @@ COPY --from=builder /app/server/target/release/next-server /app/next-server
 # Copy frontend
 COPY frontend/ /app/frontend/
 
-# Copy data files (quotes)
+# Copy data files (quotes + demo photos for guest mode)
 COPY data/quotes.txt /app/data/quotes.txt
+COPY data/demo-photos/ /app/data/demo-photos/
 
 # Copy entrypoint script
 COPY start.sh /app/start.sh

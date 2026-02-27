@@ -8,13 +8,13 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Next">
     <title>Next - Focus on the Right Thing</title>
-    <link rel="stylesheet" href="assets/css/base.css?v=20260226c">
-    <link rel="stylesheet" href="assets/css/style.css?v=20260226c">
-    <link rel="stylesheet" href="assets/css/components.css?v=20260226c">
-    <link rel="stylesheet" href="assets/css/mobile.css?v=20260226c">
-    <link rel="stylesheet" href="assets/css/abao.css?v=20260226c">
-    <link rel="stylesheet" href="assets/css/english.css?v=20260226c">
-    <link rel="stylesheet" href="assets/css/health.css?v=20260226c">
+    <link rel="stylesheet" href="assets/css/base.css?v=20260227c">
+    <link rel="stylesheet" href="assets/css/style.css?v=20260227c">
+    <link rel="stylesheet" href="assets/css/components.css?v=20260227c">
+    <link rel="stylesheet" href="assets/css/mobile.css?v=20260227c">
+    <link rel="stylesheet" href="assets/css/abao.css?v=20260227c">
+    <link rel="stylesheet" href="assets/css/english.css?v=20260227c">
+    <link rel="stylesheet" href="assets/css/health.css?v=20260227c">
     <link rel="manifest" href="assets/manifest.json">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
     <script>
@@ -36,6 +36,11 @@
 <body>
     <!-- 账户审核中横幅 -->
     <div class="pending-banner" id="pending-banner" style="display:none;">账户审核中 - 你可以浏览内容，但暂时无法创建或修改数据。审核通过后刷新页面即可正常使用。</div>
+    <!-- Guest 体验模式横幅 -->
+    <div class="guest-banner" id="guest-banner" style="display:none;">
+        <span>体验模式 — 数据将在 24 小时后清除 · AI 剩余 <b id="guest-ai-count">21</b> 次</span>
+        <button class="guest-register-btn" onclick="location.href='/login.html'">注册账户</button>
+    </div>
     <!-- 粒子动画画布（覆盖顶栏+侧边栏的L形区域） -->
     <canvas id="header-particles" class="particles-canvas-extended"></canvas>
 
@@ -448,7 +453,7 @@
                 </div>
             </div>
             <!-- 修改密码 -->
-            <div class="settings-section">
+            <div class="settings-section" id="settings-password-section">
                 <h4>修改密码</h4>
                 <div class="setting-group">
                     <label>当前密码</label>
@@ -467,7 +472,7 @@
                         onclick="changePassword()">修改密码</button>
             </div>
             <!-- 好友 -->
-            <div class="settings-section">
+            <div class="settings-section" id="settings-friends-section">
                 <h4>好友</h4>
                 <div id="friend-requests"></div>
                 <div id="friends-list">
@@ -1183,33 +1188,33 @@
     </div>
 
     <!-- JS Modules -->
-    <script src="assets/js/api.js?v=20260226c"></script>
-    <script src="assets/js/utils.js?v=20260226c"></script>
-    <script src="assets/js/app.js?v=20260226c"></script>
-    <script src="assets/js/tasks.js?v=20260226c"></script>
-    <script src="assets/js/modal.js?v=20260226c"></script>
-    <script src="assets/js/datepicker.js?v=20260226c"></script>
-    <script src="assets/js/drag.js?v=20260226c"></script>
-    <script src="assets/js/actionsheet.js?v=20260226c"></script>
-    <script src="assets/js/share-modal.js?v=20260226c"></script>
-    <script src="assets/js/review.js?v=20260226c"></script>
-    <script src="assets/js/routines.js?v=20260226c"></script>
-    <script src="assets/js/features.js?v=20260226c"></script>
-    <script src="assets/js/particles.js?v=20260226c"></script>
-    <script src="assets/js/living-line.js?v=20260226c"></script>
-    <script src="assets/js/abao.js?v=20260226c"></script>
-    <script src="assets/js/english.js?v=20260226c"></script>
-    <script src="assets/js/life.js?v=20260226c"></script>
-    <script src="assets/js/expense.js?v=20260226c"></script>
-    <script src="assets/js/expense-analytics.js?v=20260226c"></script>
-    <script src="assets/js/trip.js?v=20260226c"></script>
-    <script src="assets/js/health-data.js?v=20260226c"></script>
-    <script src="assets/js/health-renderer.js?v=20260226c"></script>
-    <script src="assets/js/health.js?v=20260226c"></script>
-    <script src="assets/js/friends.js?v=20260226c"></script>
-    <script src="assets/js/notifications.js?v=20260226c"></script>
-    <script src="assets/js/settings.js?v=20260226c"></script>
-    <script src="assets/js/admin.js?v=20260226c"></script>
+    <script src="assets/js/api.js?v=20260227c"></script>
+    <script src="assets/js/utils.js?v=20260227c"></script>
+    <script src="assets/js/app.js?v=20260227c"></script>
+    <script src="assets/js/tasks.js?v=20260227c"></script>
+    <script src="assets/js/modal.js?v=20260227c"></script>
+    <script src="assets/js/datepicker.js?v=20260227c"></script>
+    <script src="assets/js/drag.js?v=20260227c"></script>
+    <script src="assets/js/actionsheet.js?v=20260227c"></script>
+    <script src="assets/js/share-modal.js?v=20260227c"></script>
+    <script src="assets/js/review.js?v=20260227c"></script>
+    <script src="assets/js/routines.js?v=20260227c"></script>
+    <script src="assets/js/features.js?v=20260227c"></script>
+    <script src="assets/js/particles.js?v=20260227c"></script>
+    <script src="assets/js/living-line.js?v=20260227c"></script>
+    <script src="assets/js/abao.js?v=20260227c"></script>
+    <script src="assets/js/english.js?v=20260227c"></script>
+    <script src="assets/js/life.js?v=20260227c"></script>
+    <script src="assets/js/expense.js?v=20260227c"></script>
+    <script src="assets/js/expense-analytics.js?v=20260227c"></script>
+    <script src="assets/js/trip.js?v=20260227c"></script>
+    <script src="assets/js/health-data.js?v=20260227c"></script>
+    <script src="assets/js/health-renderer.js?v=20260227c"></script>
+    <script src="assets/js/health.js?v=20260227c"></script>
+    <script src="assets/js/friends.js?v=20260227c"></script>
+    <script src="assets/js/notifications.js?v=20260227c"></script>
+    <script src="assets/js/settings.js?v=20260227c"></script>
+    <script src="assets/js/admin.js?v=20260227c"></script>
 
     <script>
     // Initialize

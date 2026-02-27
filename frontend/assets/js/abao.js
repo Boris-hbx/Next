@@ -766,6 +766,11 @@ var Abao = (function() {
     // ─── Send message ───
     async function sendMessage() {
         if (!inputEl || isSending) return;
+        // Guest AI exhausted check
+        if (window._userStatus === 'guest' && window._guestAiRemaining <= 0) {
+            showToast('AI 体验次数已用完 — 注册账户解锁无限使用', 'warning');
+            return;
+        }
         var text = inputEl.value.trim();
         if (!text) return;
 
@@ -817,6 +822,14 @@ var Abao = (function() {
 
             if (data.conversation_id) {
                 conversationId = data.conversation_id;
+            }
+
+            // Sync guest AI remaining
+            if (data.ai_remaining !== undefined) {
+                window._guestAiRemaining = data.ai_remaining;
+                var guestEl = document.getElementById('guest-ai-count');
+                if (guestEl) guestEl.textContent = data.ai_remaining;
+                updateAbaoGuestHint();
             }
 
             if (data.success && data.reply) {
@@ -922,6 +935,33 @@ var Abao = (function() {
         return labels[q] || q;
     }
 
+    // ─── Guest AI hint ───
+    function updateAbaoGuestHint() {
+        if (window._userStatus !== 'guest') return;
+        var hint = document.getElementById('abao-guest-hint');
+        if (!hint) {
+            // Create hint element next to input
+            var inputArea = document.querySelector('.abao-input-area');
+            if (inputArea) {
+                hint = document.createElement('div');
+                hint.id = 'abao-guest-hint';
+                hint.style.cssText = 'font-size:11px;color:var(--text-muted,#8b949e);padding:2px 12px 4px;text-align:right;';
+                inputArea.parentNode.insertBefore(hint, inputArea);
+            }
+        }
+        if (hint) {
+            var r = window._guestAiRemaining || 0;
+            if (r > 0) {
+                hint.textContent = 'AI 剩余 ' + r + ' 次';
+                hint.style.color = '';
+            } else {
+                hint.innerHTML = 'AI 次数已用完 — <a href="/login.html" style="color:var(--primary-color,#667eea)">注册解锁</a>';
+                if (inputEl) { inputEl.disabled = true; inputEl.placeholder = '注册账户解锁无限 AI 对话'; }
+                if (sendBtn) sendBtn.disabled = true;
+            }
+        }
+    }
+
     // ─── Public API ───
     return {
         init: init,
@@ -929,11 +969,14 @@ var Abao = (function() {
         close: close,
         toggle: toggle,
         loadConversation: loadConversation,
-        isOpen: function() { return isOpen; }
+        isOpen: function() { return isOpen; },
+        updateGuestHint: updateAbaoGuestHint
     };
 })();
 
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', function() {
     Abao.init();
+    // Show guest AI hint after a brief delay (wait for checkAuth)
+    setTimeout(function() { Abao.updateGuestHint(); }, 500);
 });

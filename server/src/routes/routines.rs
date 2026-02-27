@@ -85,7 +85,7 @@ pub async fn list_routines(
 ) -> (StatusCode, Json<RoutinesResponse>) {
     let db = state.db.lock();
     ensure_collab_tables(&db);
-    let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
+    let today = chrono::Local::now().format("%Y-%m-%d").to_string();
 
     let mut items: Vec<Routine> = Vec::new();
 
@@ -228,7 +228,7 @@ pub async fn toggle_routine(
 ) -> (StatusCode, Json<RoutineResponse>) {
     let db = state.db.lock();
     ensure_collab_tables(&db);
-    let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
+    let today = chrono::Local::now().format("%Y-%m-%d").to_string();
     let now = chrono::Utc::now().to_rfc3339();
 
     let is_owner: bool = db
@@ -372,6 +372,8 @@ pub async fn toggle_routine(
     routine.completed_today = !routine.completed_today;
     if routine.completed_today {
         routine.last_completed_date = Some(today);
+    } else {
+        routine.last_completed_date = None;
     }
 
     db.execute(

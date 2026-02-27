@@ -29,6 +29,7 @@ pub fn build_app(state: AppState) -> Router {
         .route("/register", post(auth::register))
         .route("/login", post(auth::login))
         .route("/logout", post(auth::logout))
+        .route("/guest", post(auth::guest_login))
         .route("/me", get(auth::me))
         .route("/change-password", post(auth::change_password))
         .route("/avatar", put(auth::update_avatar));
@@ -280,11 +281,13 @@ pub fn build_app(state: AppState) -> Router {
         .nest("/share", share_routes)
         .nest("/contacts", contacts_routes)
         .nest("/collaborate", collaborate_routes)
-        .nest("/admin", Router::new()
-            .route("/dashboard", get(routes::admin::dashboard))
-            .route("/pending-users", get(routes::admin::pending_users))
-            .route("/users/{id}/approve", post(routes::admin::approve_user))
-            .route("/users/{id}/reject", post(routes::admin::reject_user))
+        .nest(
+            "/admin",
+            Router::new()
+                .route("/dashboard", get(routes::admin::dashboard))
+                .route("/pending-users", get(routes::admin::pending_users))
+                .route("/users/{id}/approve", post(routes::admin::approve_user))
+                .route("/users/{id}/reject", post(routes::admin::reject_user)),
         )
         .route("/moment", get(routes::moment::get_moment))
         .route(
@@ -346,6 +349,7 @@ async fn main() {
         login_ip_attempts: Arc::new(Mutex::new(std::collections::HashMap::new())),
         login_user_lockouts: Arc::new(Mutex::new(std::collections::HashMap::new())),
         ai_rate_limits: Arc::new(Mutex::new(std::collections::HashMap::new())),
+        guest_ip_rate_limits: Arc::new(Mutex::new(std::collections::HashMap::new())),
     };
 
     // Spawn reminder poller (checks every 30s for due reminders)
@@ -395,6 +399,15 @@ async fn main() {
                 )
                 .ok();
             }
+        }
+    });
+
+    // Spawn guest cleanup task: purge expired guests every hour
+    let guest_cleanup_state = state.clone();
+    tokio::spawn(async move {
+        loop {
+            tokio::time::sleep(tokio::time::Duration::from_secs(3600)).await;
+            services::guest_seed::cleanup_expired_guests(&guest_cleanup_state);
         }
     });
 

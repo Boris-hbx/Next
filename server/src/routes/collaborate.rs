@@ -5,7 +5,7 @@ use axum::{
 };
 use serde::Serialize;
 
-use crate::auth::{ActiveUserId, UserId};
+use crate::auth::{reject_if_guest, ActiveUserId, UserId};
 use crate::models::collaboration::*;
 use crate::services::collaboration;
 use crate::state::AppState;
@@ -44,6 +44,15 @@ pub async fn set_collaborator(
     Path(todo_id): Path<String>,
     Json(req): Json<SetCollaboratorRequest>,
 ) -> (StatusCode, Json<SimpleResponse>) {
+    if reject_if_guest(&state, &user_id.0).is_some() {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(SimpleResponse {
+                success: false,
+                message: Some("体验模式不支持此功能，注册账户解锁".into()),
+            }),
+        );
+    }
     let db = state.db.lock();
 
     if !collaboration::check_todo_owner(&db, &todo_id, &user_id.0) {
@@ -118,6 +127,15 @@ pub async fn remove_collaborator(
     Path(todo_id): Path<String>,
     Json(req): Json<SetCollaboratorRequest>,
 ) -> (StatusCode, Json<SimpleResponse>) {
+    if reject_if_guest(&state, &user_id.0).is_some() {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(SimpleResponse {
+                success: false,
+                message: Some("体验模式不支持此功能，注册账户解锁".into()),
+            }),
+        );
+    }
     let db = state.db.lock();
 
     if !collaboration::check_todo_owner(&db, &todo_id, &user_id.0) {

@@ -7,6 +7,7 @@ var Expense = (function() {
     var _allTags = [];
     var _pendingPhotos = []; // files waiting to upload
     var _currentDetailId = null;
+    var _currentDetail = null; // full detail object for current entry
     var _editingId = null; // when editing an existing entry
 
     // Preview state
@@ -982,7 +983,9 @@ var Expense = (function() {
             }
 
             log('openDetail loaded', { amount: data.entry.amount, photos: (data.entry.photos || []).length, items: (data.entry.items || []).length });
+            _currentDetail = data.entry;
             renderDetail(data.entry);
+            updateDetailFooter(data.entry);
 
             var overlay = document.getElementById('expense-detail-overlay');
             if (overlay) overlay.style.display = '';
@@ -1058,10 +1061,65 @@ var Expense = (function() {
         body.innerHTML = html;
     }
 
+    function updateDetailFooter(detail) {
+        var footer = document.getElementById('expense-detail-footer');
+        if (!footer) return;
+        var hasPhotos = detail.photos && detail.photos.length > 0;
+        var canAnalyze = hasPhotos && !detail.ai_processed;
+        if (canAnalyze) {
+            var aiHint = '';
+            if (window._userStatus === 'guest' && window._guestAiRemaining !== undefined) {
+                aiHint = ' (剩余' + window._guestAiRemaining + '次)';
+            }
+            footer.innerHTML =
+                '<button class="btn btn-danger-text" onclick="Expense.deleteEntry()">删除</button>' +
+                '<button class="btn btn-primary" onclick="Expense.analyzeExisting()" style="background:linear-gradient(135deg,#667eea,#764ba2)">阿宝分析 ✨' + aiHint + '</button>' +
+                '<button class="btn btn-secondary" onclick="Expense.editEntry()">编辑</button>';
+        } else {
+            footer.innerHTML =
+                '<button class="btn btn-danger-text" onclick="Expense.deleteEntry()">删除</button>' +
+                '<button class="btn btn-primary" onclick="Expense.editEntry()">编辑</button>';
+        }
+    }
+
+    async function analyzeExisting() {
+        if (!_currentDetailId) return;
+        log('analyzeExisting', _currentDetailId);
+        var body = document.getElementById('expense-detail-body');
+        if (body) {
+            body.innerHTML = '<div class="expense-analyzing"><div class="expense-analyzing-icon">✨</div><p class="expense-analyzing-text">阿宝正在分析照片...</p></div>';
+        }
+        var footer = document.getElementById('expense-detail-footer');
+        if (footer) footer.innerHTML = '';
+        try {
+            var result = await API.parseExpenseReceipts(_currentDetailId);
+            log('analyzeExisting result', result);
+            if (result.ai_remaining !== undefined) {
+                window._guestAiRemaining = result.ai_remaining;
+                if (typeof updateGuestAiCount === 'function') updateGuestAiCount(result.ai_remaining);
+            }
+            // Reload the detail
+            var data = await API.getExpense(_currentDetailId);
+            if (data.success && data.entry) {
+                _currentDetail = data.entry;
+                renderDetail(data.entry);
+                updateDetailFooter(data.entry);
+            }
+            showToast('分析完成', 'success');
+            loadEntries();
+        } catch(e) {
+            log('analyzeExisting ERROR', e.message || e);
+            showToast('分析失败: ' + (e.message || '请稍后重试'), 'error');
+            // Reload detail to restore state
+            if (_currentDetailId) openDetail(_currentDetailId);
+        }
+    }
+
     function closeDetail() {
         var overlay = document.getElementById('expense-detail-overlay');
         if (overlay) overlay.style.display = 'none';
         _currentDetailId = null;
+        _currentDetail = null;
     }
 
     async function deleteEntry() {
@@ -1092,6 +1150,7 @@ var Expense = (function() {
         if (!entry) return;
 
         log('editEntry', _currentDetailId);
+        var detail = _currentDetail; // save detail before closeDetail clears it
         closeDetail();
         _editingId = _currentDetailId;
         _currency = entry.currency || 'CAD';
@@ -1107,7 +1166,24 @@ var Expense = (function() {
         if (amountInput) amountInput.value = entry.amount;
         if (dateInput) dateInput.value = entry.date;
         if (notesInput) notesInput.value = entry.notes || '';
-        if (photoGrid) photoGrid.innerHTML = '';
+
+        // Show existing photos as read-only thumbnails
+        if (photoGrid) {
+            photoGrid.innerHTML = '';
+            if (detail && detail.photos && detail.photos.length > 0) {
+                detail.photos.forEach(function(photo) {
+                    var photoUrl = photo.storage_path ? '/api/uploads/' + photo.storage_path.split('/uploads/').pop() : '';
+                    if (photoUrl) {
+                        var thumb = document.createElement('div');
+                        thumb.className = 'expense-photo-thumb expense-photo-existing';
+                        var img = document.createElement('img');
+                        img.src = photoUrl;
+                        thumb.appendChild(img);
+                        photoGrid.appendChild(thumb);
+                    }
+                });
+            }
+        }
 
         setModalState('input');
         renderCurrencyToggle();
@@ -1240,6 +1316,7 @@ var Expense = (function() {
         editEntry: editEntry,
         toggleTag: toggleTag,
         showLightbox: showLightbox,
+        analyzeExisting: analyzeExisting,
         startParse: startParse,
         savePreview: savePreview,
         retakePhotos: retakePhotos,
