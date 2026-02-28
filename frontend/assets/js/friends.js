@@ -218,6 +218,7 @@ var Friends = (function() {
     // ─── Shared Inbox ───
 
     async function loadSharedInbox() {
+        if (window._userStatus === 'guest') return;
         init();
         try {
             var resp = await API.getSharedInbox();
@@ -243,33 +244,52 @@ var Friends = (function() {
     var bannerConfig = {
         scenario: { elementId: 'english-share-banner', label: '学习笔记' },
         todo:     { elementId: 'todo-share-banner',    label: '待办事项' },
-        review:   { elementId: 'review-share-banner',  label: '例行审视' }
+        review:   { elementId: 'review-share-banner',  label: '例行审视' },
+        routine:  { elementId: 'todo-share-banner',    label: '日常例行' },
+        expense:  { elementId: 'life-share-banner',    label: '账单记录' }
     };
 
     function renderShareBanners() {
-        var counts = {};
+        // 按 elementId 聚合计数和标签（多种 type 可能共享同一个 banner 容器）
+        var byElement = {}; // elementId -> { count, labels[] }
         sharedItems.forEach(function(item) {
-            counts[item.item_type] = (counts[item.item_type] || 0) + 1;
+            var cfg = bannerConfig[item.item_type];
+            if (!cfg) return;
+            var eid = cfg.elementId;
+            if (!byElement[eid]) byElement[eid] = { count: 0, labels: [] };
+            byElement[eid].count += 1;
+            if (byElement[eid].labels.indexOf(cfg.label) < 0) {
+                byElement[eid].labels.push(cfg.label);
+            }
         });
 
-        Object.keys(bannerConfig).forEach(function(type) {
-            var cfg = bannerConfig[type];
-            var banner = document.getElementById(cfg.elementId);
+        // 找到所有 elementId（可能有 banner 但此次无数据，需清空）
+        var allElementIds = {};
+        Object.keys(bannerConfig).forEach(function(t) { allElementIds[bannerConfig[t].elementId] = true; });
+
+        Object.keys(allElementIds).forEach(function(eid) {
+            var banner = document.getElementById(eid);
             if (!banner) return;
-            var count = counts[type] || 0;
-            if (count === 0) {
+            var info = byElement[eid];
+            if (!info || info.count === 0) {
                 banner.innerHTML = '';
                 return;
             }
+            var labelStr = info.labels.join('、');
             banner.innerHTML = '<div class="share-banner" onclick="Friends.openShareInbox()">' +
                 '<span class="share-banner-icon">📬</span>' +
-                '<span class="share-banner-text">你收到 ' + count + ' 条好友分享的' + cfg.label + '</span>' +
+                '<span class="share-banner-text">你收到 ' + info.count + ' 条好友分享的' + labelStr + '</span>' +
                 '<span class="share-banner-arrow">\u203A</span>' +
             '</div>';
         });
     }
 
-    function openShareInbox() {
+    async function openShareInbox() {
+        // 确保数据已加载，防止铃铛点开空白
+        if (sharedItems.length === 0) {
+            await loadSharedInbox();
+        }
+
         var isMobile = window.innerWidth <= 768;
 
         if (isMobile) {
@@ -402,28 +422,56 @@ var Friends = (function() {
                 if (typeof switchPage === 'function') switchPage('todo');
                 setTimeout(function() {
                     if (typeof openTaskDetail === 'function') openTaskDetail(newId);
-                }, 500);
+                }, 600);
                 break;
+
             case 'review':
                 if (typeof switchPage === 'function') switchPage('review');
+                setTimeout(function() {
+                    // 尝试高亮新条目，否则 toast 提示
+                    var el = document.querySelector('[data-review-id="' + newId + '"]');
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        el.classList.add('item-new-flash');
+                    } else {
+                        if (typeof showToast === 'function') showToast('例行事项已收下，在例行审视页面可见', 'info');
+                    }
+                }, 700);
                 break;
+
             case 'routine':
                 if (typeof switchPage === 'function') switchPage('todo');
+                setTimeout(function() {
+                    // 刷新 routines 列表，然后高亮新条目
+                    if (typeof loadRoutines === 'function') loadRoutines();
+                    setTimeout(function() {
+                        var el = document.querySelector('[data-routine-id="' + newId + '"]');
+                        if (el) {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            el.classList.add('item-new-flash');
+                        } else {
+                            if (typeof showToast === 'function') showToast('日常例行已收下，在今日页面下方可见', 'info');
+                        }
+                    }, 400);
+                }, 400);
                 break;
+
             case 'scenario':
                 if (typeof switchPage === 'function') switchPage('english');
                 setTimeout(function() {
                     if (typeof English !== 'undefined') English.openDetail(newId);
-                }, 500);
+                }, 600);
                 break;
+
             case 'expense':
                 if (typeof switchPage === 'function') switchPage('life');
                 setTimeout(function() {
                     if (typeof Life !== 'undefined') Life.openFeature('expense');
-                    setTimeout(function() {
-                        if (typeof Expense !== 'undefined') Expense.openDetail(newId);
-                    }, 500);
-                }, 500);
+                    // 记录 pendingOpenId，让 Expense 模块数据加载后自动打开
+                    if (typeof Expense !== 'undefined') {
+                        Expense.pendingOpenId = newId;
+                    }
+                }, 400);
                 break;
         }
     }
@@ -461,13 +509,9 @@ var Friends = (function() {
                     if (wrapper) wrapper.style.display = 'none';
                 }
             }
-        } catch (e) {}
-    }
-
-    function escapeHtml(str) {
-        var div = document.createElement('div');
-        div.textContent = str || '';
-        return div.innerHTML;
+        } catch (e) {
+            console.error('[friends] updateInboxBadge:', e);
+        }
     }
 
     // Auto-check inbox badge on load

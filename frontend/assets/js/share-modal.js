@@ -2,6 +2,8 @@
 var ShareModal = (function() {
     var _mode = null; // 'share' | 'collaborate'
     var _friendsCache = null;
+    var _friendsCacheTime = 0;
+    var FRIENDS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
     var _shareContext = { itemType: '', itemId: '' };
     var _collabOptions = null;
 
@@ -29,6 +31,9 @@ var ShareModal = (function() {
             + '<h3>分享给好友</h3>'
             + '<div class="share-friends-list" id="share-friends-list">'
             + '<div class="share-loading">加载中...</div>'
+            + '</div>'
+            + '<div class="share-message-area">'
+            + '<input type="text" id="share-message-input" class="share-message-input" placeholder="附言（可选）" maxlength="200" />'
             + '</div>'
             + '<div class="share-modal-close">'
             + '<button class="btn btn-secondary" onclick="ShareModal.close()">取消</button>'
@@ -101,15 +106,19 @@ var ShareModal = (function() {
     // ─── Cache ───
     function invalidateCache() {
         _friendsCache = null;
+        _friendsCacheTime = 0;
     }
 
     // ─── Load friends (cached) ───
     async function _loadFriends() {
-        if (_friendsCache) return _friendsCache;
+        if (_friendsCache && (Date.now() - _friendsCacheTime < FRIENDS_CACHE_TTL)) {
+            return _friendsCache;
+        }
         try {
             var resp = await API.getFriends();
             if (resp.success) {
                 _friendsCache = resp.items || [];
+                _friendsCacheTime = Date.now();
                 return _friendsCache;
             }
         } catch (e) {
@@ -140,7 +149,7 @@ var ShareModal = (function() {
                     });
                 }
             }
-        } catch (e) {}
+        } catch (e) { console.error('[share-modal] parseFriends:', e); }
 
         container.innerHTML = friends.map(function(f) {
             var name = f.display_name || f.username;
@@ -192,7 +201,9 @@ var ShareModal = (function() {
     // ─── Share action ───
     async function _doShare(friendId) {
         try {
-            var resp = await API.shareItem(friendId, _shareContext.itemType, _shareContext.itemId);
+            var msgInput = document.getElementById('share-message-input');
+            var message = msgInput ? msgInput.value.trim() : '';
+            var resp = await API.shareItem(friendId, _shareContext.itemType, _shareContext.itemId, message || undefined);
             if (resp.success) {
                 showToast('分享成功', 'success');
                 close();
