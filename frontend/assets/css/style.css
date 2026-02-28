@@ -9706,6 +9706,40 @@ body.dark-mode .action-sheet-cancel {
     font-size: 0.85rem;
 }
 
+/* 新条目闪烁高亮（分享收下后定位用） */
+@keyframes newItemFlash {
+    0%   { background: rgba(88, 166, 255, 0.30); box-shadow: 0 0 0 2px rgba(88,166,255,0.4); }
+    50%  { background: rgba(88, 166, 255, 0.10); box-shadow: 0 0 0 2px rgba(88,166,255,0.2); }
+    100% { background: transparent; box-shadow: none; }
+}
+.item-new-flash {
+    animation: newItemFlash 1.2s ease-out 2;
+    border-radius: 6px;
+}
+
+/* 分享附言输入框 */
+.share-message-area {
+    padding: 8px 0 4px;
+}
+.share-message-input {
+    width: 100%;
+    background: var(--bg-secondary, #21262d);
+    border: 1px solid var(--border-color, #30363d);
+    border-radius: 8px;
+    color: var(--text-primary, #e6edf3);
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.share-message-input:focus {
+    border-color: var(--primary-color, #58a6ff);
+}
+.share-message-input::placeholder {
+    color: var(--text-secondary, #8b949e);
+}
+
 .mobile-nav-icon {
     position: relative;
 }
@@ -9779,3 +9813,18 @@ body.dark-mode .action-sheet-cancel {
     opacity: 0.8;
 }
 .guest-ai-badge.exhausted { color: #f85149; }
+.guest-disabled {
+    opacity: 0.5;
+    cursor: not-allowed !important;
+    pointer-events: none;
+}
+/* Guest AI remaining hint (inline next to AI buttons) */
+.guest-ai-hint {
+    font-size: 12px;
+    color: var(--text-secondary, #888);
+    margin-left: 4px;
+}
+.guest-ai-warning {
+    color: #e67e22;
+    font-weight: 600;
+}

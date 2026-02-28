@@ -128,6 +128,12 @@ var Expense = (function() {
                 log('loadEntries', { range: range, count: _entries.length });
                 renderList();
                 loadSummary();
+                // 收下分享后跳转：数据就绪时自动打开指定 detail
+                if (Expense.pendingOpenId) {
+                    var pid = Expense.pendingOpenId;
+                    Expense.pendingOpenId = null;
+                    openDetail(pid);
+                }
             }
         } catch(e) {
             log('loadEntries ERROR', e.message || e);
@@ -176,7 +182,7 @@ var Expense = (function() {
                 renderTagsFilter();
             }
         } catch(e) {
-            // ignore
+            console.error('[expense] loadTags:', e);
         }
     }
 
@@ -342,6 +348,7 @@ var Expense = (function() {
     // ===== Add Entry =====
 
     function openAddModal() {
+        if (isGuestRestricted('添加记账')) return;
         _pendingPhotos = [];
         _editingId = null;
         _previewData = null;
@@ -836,7 +843,8 @@ var Expense = (function() {
                 }
             }
         } catch(e) {
-            // ignore check failure, proceed with save
+            console.error('[expense] checkDuplicate:', e);
+            // proceed with save even if check fails
         }
         return false;
     }
@@ -892,7 +900,9 @@ var Expense = (function() {
                 var uploadResult = await uploadPhotos(entryId, _pendingPhotos);
                 log('submitEntry uploadPhotos result', uploadResult);
                 // Trigger AI parse in background
-                API.parseExpenseReceipts(entryId).catch(function() {});
+                API.parseExpenseReceipts(entryId).catch(function(e) {
+                    console.error('[expense] parseReceipts:', e);
+                });
             }
 
             closeAddModal();
@@ -932,7 +942,9 @@ var Expense = (function() {
                 // Upload new photos if any
                 if (_pendingPhotos.length > 0) {
                     await uploadPhotos(_editingId, _pendingPhotos);
-                    API.parseExpenseReceipts(_editingId).catch(function() {});
+                    API.parseExpenseReceipts(_editingId).catch(function(e) {
+                        console.error('[expense] parseReceipts:', e);
+                    });
                 }
                 closeAddModal();
                 showToast('已更新', 'success');
@@ -1068,16 +1080,23 @@ var Expense = (function() {
         var canAnalyze = hasPhotos && !detail.ai_processed;
         if (canAnalyze) {
             var aiHint = '';
-            if (window._userStatus === 'guest' && window._guestAiRemaining !== undefined) {
-                aiHint = ' (剩余' + window._guestAiRemaining + '次)';
+            var aiGuestAttr = '';
+            if (window._userStatus === 'guest') {
+                var _r = window._guestAiRemaining;
+                var _hintText = (_r !== undefined && _r > 0) ? '(剩余' + _r + '次)' : (_r !== undefined ? '(已用完)' : '');
+                var _warnCls = (_r !== undefined && _r <= 3) ? ' guest-ai-warning' : '';
+                aiHint = ' <span class="guest-ai-hint' + _warnCls + '">' + _hintText + '</span>';
+                aiGuestAttr = ' data-guest-ai-action="1"';
             }
             footer.innerHTML =
                 '<button class="btn btn-danger-text" onclick="Expense.deleteEntry()">删除</button>' +
-                '<button class="btn btn-primary" onclick="Expense.analyzeExisting()" style="background:linear-gradient(135deg,#667eea,#764ba2)">阿宝分析 ✨' + aiHint + '</button>' +
+                '<button class="btn btn-primary" onclick="Expense.analyzeExisting()"' + aiGuestAttr + ' style="background:linear-gradient(135deg,#667eea,#764ba2)">阿宝分析 ✨' + aiHint + '</button>' +
+                '<button class="btn btn-secondary" onclick="Expense.shareCurrentEntry()">📤</button>' +
                 '<button class="btn btn-secondary" onclick="Expense.editEntry()">编辑</button>';
         } else {
             footer.innerHTML =
                 '<button class="btn btn-danger-text" onclick="Expense.deleteEntry()">删除</button>' +
+                '<button class="btn btn-secondary" onclick="Expense.shareCurrentEntry()">📤</button>' +
                 '<button class="btn btn-primary" onclick="Expense.editEntry()">编辑</button>';
         }
     }
@@ -1096,7 +1115,7 @@ var Expense = (function() {
             log('analyzeExisting result', result);
             if (result.ai_remaining !== undefined) {
                 window._guestAiRemaining = result.ai_remaining;
-                if (typeof updateGuestAiCount === 'function') updateGuestAiCount(result.ai_remaining);
+                if (typeof updateAllGuestAiHints === 'function') updateAllGuestAiHints();
             }
             // Reload the detail
             var data = await API.getExpense(_currentDetailId);
@@ -1112,6 +1131,13 @@ var Expense = (function() {
             showToast('分析失败: ' + (e.message || '请稍后重试'), 'error');
             // Reload detail to restore state
             if (_currentDetailId) openDetail(_currentDetailId);
+        }
+    }
+
+    function shareCurrentEntry() {
+        if (!_currentDetailId) return;
+        if (typeof Friends !== 'undefined') {
+            Friends.openShareModal('expense', _currentDetailId);
         }
     }
 
@@ -1324,5 +1350,6 @@ var Expense = (function() {
         setCurrency: setCurrency,
         toggleAnalytics: toggleAnalytics,
         getCurrentDetailId: function() { return _currentDetailId; },
+        shareCurrentEntry: shareCurrentEntry,
     };
 })();

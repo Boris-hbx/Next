@@ -880,6 +880,16 @@ html.sidebar-will-collapse .sidebar-hint {
     background: #e5e7eb;
     color: #374151;
 }
+.header-btn.share-btn {
+    background: transparent;
+    color: var(--text-secondary, #8b949e);
+    font-size: 16px;
+    padding: 6px 10px;
+}
+.header-btn.share-btn:hover {
+    background: var(--bg-hover, rgba(99,179,237,0.1));
+    color: var(--primary-color, #58a6ff);
+}
 .task-modal-body {
     display: flex;
     flex: 1;
@@ -3064,4 +3074,51 @@ html.sidebar-will-collapse .sidebar-hint {
 .notif-banner-primary:hover {
     background: #7b93ff;
     color: #fff;
+}
+
+/* ========== AI Model Selection ========== */
+.setting-desc {
+    font-size: 13px;
+    color: var(--text-muted, #999);
+    margin: 0 0 12px 0;
+}
+.ai-model-options {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.ai-model-btn {
+    flex: 1;
+    min-width: 90px;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color, #e0e0e0);
+    background: var(--bg-secondary, #f8f9fa);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+}
+.ai-model-btn:hover:not(.ai-model-disabled) {
+    border-color: var(--primary-color, #667eea);
+}
+.ai-model-btn.active {
+    border-color: var(--primary-color, #667eea);
+    background: rgba(102, 126, 234, 0.1);
+}
+.ai-model-btn.ai-model-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+.ai-model-name {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary, #333);
+}
+.ai-model-desc {
+    display: block;
+    font-size: 11px;
+    color: var(--text-muted, #999);
+    margin-top: 4px;
 }

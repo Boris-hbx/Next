@@ -4,6 +4,13 @@ var modalMode = 'view';  // 'view', 'edit', 'create'
 var modalTaskId = null;
 var modalTaskItem = null;
 
+function shareCurrentTask() {
+    if (!modalTaskId) return;
+    if (typeof Friends !== 'undefined') {
+        Friends.openShareModal('todo', modalTaskId);
+    }
+}
+
 function showAddModal() {
     openTaskModal('create', null, currentTab, 'important-urgent');
 }
@@ -105,7 +112,9 @@ function openTaskModal(mode, item, tab, quadrant) {
             try {
                 var d = new Date(r.remind_at);
                 timeStr = d.toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-            } catch(e) {}
+            } catch(e) {
+                console.error('[modal] parse remind_at:', e);
+            }
             var statusLabel = r.status === 'triggered' ? ' (已触发)' : '';
             reminderText.textContent = timeStr + statusLabel;
             reminderBtn.textContent = '修改';
@@ -184,6 +193,8 @@ function setModalMode(mode) {
 
     document.getElementById('header-edit-btn').style.display = (mode === 'view') ? 'inline-block' : 'none';
     document.getElementById('modal-footer-edit').style.display = (mode !== 'view') ? 'flex' : 'none';
+    var shareBtn = document.getElementById('header-share-btn');
+    if (shareBtn) shareBtn.style.display = (mode === 'view' && modalTaskId) ? 'inline-block' : 'none';
 
     var saveBtn = document.getElementById('modal-save-btn');
     saveBtn.textContent = (mode === 'create') ? '创建' : '保存';
@@ -454,7 +465,10 @@ function loadModalCollaborators(todoId) {
     if (!todoId || typeof _collabAPI === "undefined") return;
     _collabAPI.listCollaborators(todoId).then(function(data) {
         if (data.success) { _modalCollaborators = data.items || []; renderModalCollaborators(_modalCollaborators); }
-    }).catch(function() { renderModalCollaborators([]); });
+    }).catch(function(e) {
+        console.error('[modal] loadCollaborators:', e);
+        renderModalCollaborators([]);
+    });
 }
 
 function renderModalCollaborators(collabs) {
