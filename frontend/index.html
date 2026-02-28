@@ -10,7 +10,7 @@
     <title>Next - Focus on the Right Thing</title>
     <link rel="stylesheet" href="assets/css/base.css?v=20260228a">
     <link rel="stylesheet" href="assets/css/style.css?v=20260228a">
-    <link rel="stylesheet" href="assets/css/components.css?v=20260228a">
+    <link rel="stylesheet" href="assets/css/components.css?v=20260228b">
     <link rel="stylesheet" href="assets/css/mobile.css?v=20260228a">
     <link rel="stylesheet" href="assets/css/abao.css?v=20260228a">
     <link rel="stylesheet" href="assets/css/english.css?v=20260228a">
@@ -18,7 +18,7 @@
     <link rel="manifest" href="assets/manifest.json">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
     <script>
-    // æ—©æœŸæ‰§è¡Œï¼šåœ¨é¡µé¢æ¸²æŸ“å‰åº”ç”¨ä¸»é¢˜å’Œä¾§è¾¹æ çŠ¶æ€ï¼Œé¿å…é—ªçƒ
+    // æ-©æœŸæ‰§è¡Œï¼šåœ¨é¡µé¢æ¸²æŸ"å‰åº"ç"¨ä¸»é¢˜å'Œä¾§è¾¹æ çŠ¶æ€ï¼Œé¿å…é-ªçƒ
     (function() {
         var theme = localStorage.getItem('theme');
         if (theme) {
@@ -26,7 +26,7 @@
         } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
             document.documentElement.setAttribute('data-theme', 'dark');
         }
-        // é€šè¿‡ CSS ç±»æå‰æ ‡è®°ä¾§è¾¹æ çŠ¶æ€
+        // é€šè¿‡ CSS ç±»æå‰æ ‡è®°ä¾§è¾¹æ çŠ¶æ€
         if (localStorage.getItem('sidebarCollapsed') === 'true') {
             document.documentElement.classList.add('sidebar-will-collapse');
         }
@@ -34,17 +34,17 @@
     </script>
 </head>
 <body>
-    <!-- è´¦æˆ·å®¡æ ¸ä¸­æ¨ªå¹… -->
-    <div class="pending-banner" id="pending-banner" style="display:none;">è´¦æˆ·å®¡æ ¸ä¸­ - ä½ å¯ä»¥æµè§ˆå†…å®¹ï¼Œä½†æš‚æ—¶æ— æ³•åˆ›å»ºæˆ–ä¿®æ”¹æ•°æ®ã€‚å®¡æ ¸é€šè¿‡åŽåˆ·æ–°é¡µé¢å³å¯æ­£å¸¸ä½¿ç”¨ã€‚</div>
-    <!-- Guest ä½“éªŒæ¨¡å¼æ¨ªå¹… -->
+    <!-- è´¦æˆ·å®¡æ ¸ä¸­æ¨ªå¹… -->
+    <div class="pending-banner" id="pending-banner" style="display:none;">è´¦æˆ·å®¡æ ¸ä¸­ - ä½ å¯ä»¥æµè§ˆå†…å®¹ï¼Œä½†æš'æ-¶æ- æ³•åˆ›å»ºæˆ-ä¿®æ"¹æ•°æ®ã€'å®¡æ ¸é€šè¿‡åŽåˆ·æ-°é¡µé¢å³å¯æ­£å¸¸ä½¿ç"¨ã€'</div>
+    <!-- Guest ä½"éªŒæ¨¡å¼æ¨ªå¹… -->
     <div class="guest-banner" id="guest-banner" style="display:none;">
-        <span>ä½“éªŒæ¨¡å¼ â€” æ•°æ®å°†åœ¨ 24 å°æ—¶åŽæ¸…é™¤ Â· AI å‰©ä½™ <b id="guest-ai-count">21</b> æ¬¡</span>
+        <span>ä½"éªŒæ¨¡å¼ â€" æ•°æ®å°†åœ¨ 24 å°æ-¶åŽæ¸…é™¤ Â· AI å‰©ä½™ <b id="guest-ai-count">21</b> æ¬¡</span>
         <button class="guest-register-btn" onclick="location.href='/login.html'">æ³¨å†Œè´¦æˆ·</button>
     </div>
-    <!-- ç²’å­åŠ¨ç”»ç”»å¸ƒï¼ˆè¦†ç›–é¡¶æ +ä¾§è¾¹æ çš„Lå½¢åŒºåŸŸï¼‰ -->
+    <!-- ç²'å­åŠ¨ç"»ç"»å¸ƒï¼ˆè¦†ç›-é¡¶æ +ä¾§è¾¹æ çš"Lå½¢åŒºåŸŸï¼‰ -->
     <canvas id="header-particles" class="particles-canvas-extended"></canvas>
 
-    <!-- GitHubé£Žæ ¼é¡¶éƒ¨å¯¼èˆªæ  -->
+    <!-- GitHubé£Žæ ¼é¡¶éƒ¨å¯¼èˆªæ  -->
     <header class="top-header" id="top-header">
         <div class="header-left">
             <span class="moment-icon" id="moment-icon"></span>
@@ -55,7 +55,7 @@
                 <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
                 <span class="inbox-badge" id="inbox-badge" style="display:none">0</span>
             </div>
-            <div class="header-refresh-btn" id="header-refresh-btn" onclick="refreshCurrentPage()" title="åˆ·æ–°">
+            <div class="header-refresh-btn" id="header-refresh-btn" onclick="refreshCurrentPage()" title="åˆ·æ-°">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             </div>
             <div class="header-avatar-wrapper">
@@ -65,16 +65,16 @@
                 </div>
                 <div class="avatar-menu" id="avatar-menu">
                     <a class="avatar-menu-item" onclick="Abao.toggle(); closeAvatarMenu()">
-                        <span>ðŸ¾</span> é—®é˜¿å®
+                        <span>ðŸ¾</span> é-®é˜¿å®
                     </a>
                     <a class="avatar-menu-item" onclick="switchPage('settings'); closeAvatarMenu()">
                         <span>âš™</span> è®¾ç½®
                     </a>
                     <a class="avatar-menu-item" onclick="if(typeof openAbout==='function')openAbout(); closeAvatarMenu()">
-                        <span>â„¹</span> å…³äºŽ
+                        <span>â"¹</span> å…³äºŽ
                     </a>
                     <a class="avatar-menu-item" onclick="if(typeof openSecurity==='function')openSecurity(); closeAvatarMenu()">
-                        <span>ðŸ”’</span> å®‰å…¨å£°æ˜Ž
+                        <span>ðŸ"'</span> å®‰å…¨å£°æ˜Ž
                     </a>
                     <div class="avatar-menu-divider"></div>
                     <a class="avatar-menu-item" onclick="doLogout()">
@@ -85,16 +85,16 @@
         </div>
     </header>
 
-    <!-- Living Line Canvasï¼ˆæ›¿ä»£æ—§çš„å‘¼å¸çº¿ï¼‰ -->
+    <!-- Living Line Canvasï¼ˆæ›¿ä»£æ-§çš"å'¼å¸çº¿ï¼‰ -->
     <canvas id="living-line"></canvas>
 
     <div class="container">
-        <!-- å·¦ä¾§æç¤ºæ¡ - ä¾§è¾¹æ æ”¶èµ·æ—¶æ˜¾ç¤º -->
+        <!-- å·¦ä¾§æç¤ºæ¡ - ä¾§è¾¹æ æ"¶èµ·æ-¶æ˜¾ç¤º -->
         <div class="sidebar-hint" id="sidebar-hint">
             <div class="hint-glow"></div>
         </div>
 
-        <!-- å°å® ç‰© - å§‹ç»ˆå¯è§ -->
+        <!-- å°å® ç‰© - å§‹ç»ˆå¯è§ -->
         <div class="pet" id="pet">
             <div class="pet-eye"></div>
             <div class="pet-eye"></div>
@@ -107,30 +107,30 @@
             <div class="nav-links">
                 <a class="nav-link active" data-page="todo" onclick="switchPage('todo')">Todo</a>
                 <a class="nav-link" data-page="review" onclick="switchPage('review')">ä¾‹è¡Œ</a>
-                <a class="nav-link" data-page="english" onclick="switchPage('english')">å­¦ä¹ </a>
-                <a class="nav-link" data-page="life" onclick="switchPage('life')">ç”Ÿæ´»</a>
+                <a class="nav-link" data-page="english" onclick="switchPage('english')">å­¦ä¹ </a>
+                <a class="nav-link" data-page="life" onclick="switchPage('life')">ç"Ÿæ´»</a>
             </div>
 
             <!-- åº•éƒ¨åŒºåŸŸ -->
             <div class="sidebar-bottom-section">
-                <!-- æ—¶åŒºæ˜¾ç¤º -->
+                <!-- æ-¶åŒºæ˜¾ç¤º -->
                 <div class="timezone-panel" id="timezone-panel">
                     <div class="timezone-item">
-                        <span class="tz-city">åŒ—äº¬</span>
+                        <span class="tz-city">åŒ-äº¬</span>
                         <div class="tz-info">
                             <span class="tz-datetime" id="tz-beijing-date"></span>
                             <span class="tz-time" id="tz-beijing-time"></span>
                         </div>
                     </div>
                     <div class="timezone-item">
-                        <span class="tz-city">æ»‘é“å¢</span>
+                        <span class="tz-city">æ»'é"å¢</span>
                         <div class="tz-info">
                             <span class="tz-datetime" id="tz-waterloo-date"></span>
                             <span class="tz-time" id="tz-waterloo-time"></span>
                         </div>
                     </div>
                     <div class="timezone-item">
-                        <span class="tz-city">æ¸©å“¥åŽ</span>
+                        <span class="tz-city">æ¸©å"¥åŽ</span>
                         <div class="tz-info">
                             <span class="tz-datetime" id="tz-vancouver-date"></span>
                             <span class="tz-time" id="tz-vancouver-time"></span>
@@ -142,68 +142,68 @@
 
         <!-- Right Main Content -->
         <main class="main-content" id="main-content">
-            
+
     <div class="toast-container" id="toast-container"></div>
 
-    <!-- æ¯æ—¥ä¾‹è¡Œé¢æ¿ -->
+    <!-- æ¯æ-¥ä¾‹è¡Œé¢æ¿ -->
     <div class="routine-panel-overlay" id="routine-panel-overlay" style="display:none;" onclick="toggleRoutinePanel()">
         <div class="routine-panel" onclick="event.stopPropagation()">
             <div class="routine-header">
-                <h3>ðŸ”¥ ä½ çœŸæ˜¯å¼ºçš„å¯æ€•</h3>
+                <h3>ðŸ"¥ ä½ çœŸæ˜¯å¼ºçš"å¯æ€•</h3>
                 <button class="routine-close" onclick="toggleRoutinePanel()">ç¡®è®¤</button>
             </div>
             <div class="routine-list" id="routine-list">
-                <div class="routine-empty">æš‚æ— ä¾‹è¡Œä»»åŠ¡</div>
+                <div class="routine-empty">æš'æ- ä¾‹è¡Œä»»åŠ¡</div>
             </div>
             <div class="routine-footer">
-                <input type="text" id="routine-input" placeholder="æ·»åŠ ä¾‹è¡Œä»»åŠ¡..." onkeypress="if(event.key==='Enter')addRoutine()">
+                <input type="text" id="routine-input" placeholder="æ·»åŠ ä¾‹è¡Œä»»åŠ¡..." onkeypress="if(event.key==='Enter')addRoutine()">
                 <button class="btn-add-routine" onclick="addRoutine()">+</button>
             </div>
         </div>
     </div>
 
-    <!-- About å…³äºŽå¼¹çª— -->
+    <!-- About å…³äºŽå¼¹çª- -->
     <div class="about-overlay" id="about-overlay" style="display:none;" onclick="closeAbout()">
         <div class="about-dialog" onclick="event.stopPropagation()">
             <img class="about-logo" src="assets/icons/icon.png" alt="Next" onerror="this.style.display='none'">
             <h1 class="about-title">Next</h1>
             <p class="about-tagline">Focus on the Right Thing</p>
             <div class="about-divider"></div>
-            <span class="about-version" onclick="copyVersion()" title="ç‚¹å‡»å¤åˆ¶ç‰ˆæœ¬å·">
+            <span class="about-version" onclick="copyVersion()" title="ç'¹å‡»å¤åˆ¶ç‰ˆæœ¬å·">
                 Version 1.2.0 Â· 2026.2.10
             </span>
             <div class="about-copyright">Â© 2026 Baoxing Huai 00827228<br>Huaibaoxing@huawei.com</div>
         </div>
     </div>
 
-    <!-- Security å®‰å…¨å£°æ˜Žå¼¹çª— -->
+    <!-- Security å®‰å…¨å£°æ˜Žå¼¹çª- -->
     <div class="about-overlay" id="security-overlay" style="display:none;" onclick="closeSecurity()">
         <div class="security-dialog" onclick="event.stopPropagation()">
             <div class="security-header">
-                <span class="security-icon">ðŸ”’</span>
+                <span class="security-icon">ðŸ"'</span>
                 <h2 class="security-title">å®‰å…¨ä¸Žéšç§</h2>
             </div>
             <ul class="security-list">
-                <li>å¯†ç ç» <strong>Argon2id</strong> åŠ å¯†å­˜å‚¨ï¼Œä»»ä½•äººï¼ˆåŒ…æ‹¬å¼€å‘è€…ï¼‰éƒ½æ— æ³•æŸ¥çœ‹</li>
-                <li>å…¨ç¨‹ <strong>HTTPS</strong> åŠ å¯†ä¼ è¾“ï¼Œå¯ç”¨ä¸¥æ ¼æµè§ˆå™¨å®‰å…¨ç­–ç•¥</li>
-                <li>ä½ çš„æ•°æ®ä¸Žå…¶ä»–ç”¨æˆ·<strong>å®Œå…¨éš”ç¦»</strong></li>
-                <li>ç™»å½•ä¿æŠ¤ï¼šè¿žç»­è¾“é”™å¯†ç å°†ä¸´æ—¶é”å®šï¼Œé˜²æ­¢æš´åŠ›ç ´è§£</li>
-                <li>æ³¨å†ŒæµæŽ§ï¼šæ¯æ—¥è‡ªåŠ¨é€šè¿‡åé¢æœ‰é™ï¼Œè¶…å‡ºåŽéœ€ç®¡ç†å‘˜å®¡æ‰¹ï¼Œé˜²æ­¢æ»¥ç”¨</li>
-                <li>æ–‡ä»¶è®¿é—®ä¸¥æ ¼æ ¡éªŒè·¯å¾„ï¼Œé˜²æ­¢è¶Šæƒè¯»å–</li>
-                <li>é˜¿å®ç”± Claude AI é©±åŠ¨ï¼Œå¯¹è¯é€šè¿‡åŠ å¯†è¿žæŽ¥å¤„ç†</li>
+                <li>å¯†ç ç» <strong>Argon2id</strong> åŠ å¯†å­˜å'¨ï¼Œä»»ä½•äººï¼ˆåŒ…æ‹¬å¼€å'è€…ï¼‰éƒ½æ- æ³•æŸ¥çœ‹</li>
+                <li>å…¨ç¨‹ <strong>HTTPS</strong> åŠ å¯†ä¼ è¾"ï¼Œå¯ç"¨ä¸¥æ ¼æµè§ˆå™¨å®‰å…¨ç­-ç•¥</li>
+                <li>ä½ çš"æ•°æ®ä¸Žå…¶ä»-ç"¨æˆ·<strong>å®Œå…¨éš"ç¦»</strong></li>
+                <li>ç™»å½•ä¿æŠ¤ï¼šè¿žç»­è¾"é"™å¯†ç å°†ä¸´æ-¶é"å®šï¼Œé˜²æ­¢æš´åŠ›ç ´è§£</li>
+                <li>æ³¨å†ŒæµæŽ§ï¼šæ¯æ-¥è‡ªåŠ¨é€šè¿‡åé¢æœ‰é™ï¼Œè¶…å‡ºåŽéœ€ç®¡ç†å'˜å®¡æ‰¹ï¼Œé˜²æ­¢æ»¥ç"¨</li>
+                <li>æ-‡ä»¶è®¿é-®ä¸¥æ ¼æ ¡éªŒè·¯å¾"ï¼Œé˜²æ­¢è¶Šæƒè¯»å-</li>
+                <li>é˜¿å®ç"± Claude AI é©±åŠ¨ï¼Œå¯¹è¯é€šè¿‡åŠ å¯†è¿žæŽ¥å¤"ç†</li>
             </ul>
             <div class="security-section">
-                <div class="security-section-title">ðŸ›¡ é˜²æ”»å‡»æŽªæ–½</div>
-                <p class="security-section-desc">å·²é’ˆå¯¹ä»¥ä¸‹æ”»å‡»åœºæ™¯éƒ¨ç½²å¤šå±‚é˜²æŠ¤ï¼š</p>
+                <div class="security-section-title">ðŸ›¡ é˜²æ"»å‡»æŽªæ-½</div>
+                <p class="security-section-desc">å·²é'ˆå¯¹ä»¥ä¸‹æ"»å‡»åœºæ™¯éƒ¨ç½²å¤šå±'é˜²æŠ¤ï¼š</p>
                 <ul class="security-attack-list">
-                    <li><span class="attack-name">SQL æ³¨å…¥</span><span class="attack-defense">å…¨éƒ¨ä½¿ç”¨å‚æ•°åŒ–æŸ¥è¯¢</span></li>
-                    <li><span class="attack-name">è·¨ç«™è„šæœ¬ (XSS)</span><span class="attack-defense">å†…å®¹å®‰å…¨ç­–ç•¥ (CSP) + è¾“å…¥è¿‡æ»¤</span></li>
-                    <li><span class="attack-name">æš´åŠ›ç ´è§£</span><span class="attack-defense">IP é™é€Ÿ + è´¦æˆ·é”å®šåŒé‡é˜²æŠ¤</span></li>
-                    <li><span class="attack-name">ä¸­é—´äººæ”»å‡»</span><span class="attack-defense">HTTPS å¼ºåˆ¶ + HSTS ç­–ç•¥</span></li>
-                    <li><span class="attack-name">ç‚¹å‡»åŠ«æŒ</span><span class="attack-defense">X-Frame-Options DENY</span></li>
+                    <li><span class="attack-name">SQL æ³¨å…¥</span><span class="attack-defense">å…¨éƒ¨ä½¿ç"¨å'æ•°åŒ-æŸ¥è¯¢</span></li>
+                    <li><span class="attack-name">è·¨ç«™è"šæœ¬ (XSS)</span><span class="attack-defense">å†…å®¹å®‰å…¨ç­-ç•¥ (CSP) + è¾"å…¥è¿‡æ»¤</span></li>
+                    <li><span class="attack-name">æš´åŠ›ç ´è§£</span><span class="attack-defense">IP é™é€Ÿ + è´¦æˆ·é"å®šåŒé‡é˜²æŠ¤</span></li>
+                    <li><span class="attack-name">ä¸­é-´äººæ"»å‡»</span><span class="attack-defense">HTTPS å¼ºåˆ¶ + HSTS ç­-ç•¥</span></li>
+                    <li><span class="attack-name">ç'¹å‡»åŠ«æŒ</span><span class="attack-defense">X-Frame-Options DENY</span></li>
                     <li><span class="attack-name">ä¼šè¯åŠ«æŒ</span><span class="attack-defense">HttpOnly + Secure + SameSite Cookie</span></li>
-                    <li><span class="attack-name">è·¯å¾„ç©¿è¶Š</span><span class="attack-defense">æ–‡ä»¶åä¸¥æ ¼æ ¡éªŒï¼Œç¦æ­¢ ../ éåŽ†</span></li>
-                    <li><span class="attack-name">æ³¨å†Œæ»¥ç”¨</span><span class="attack-defense">æ¯æ—¥é™é¢ + ç®¡ç†å‘˜å®¡æ‰¹æœºåˆ¶</span></li>
+                    <li><span class="attack-name">è·¯å¾"ç©¿è¶Š</span><span class="attack-defense">æ-‡ä»¶åä¸¥æ ¼æ ¡éªŒï¼Œç¦æ­¢ ../ éåŽ†</span></li>
+                    <li><span class="attack-name">æ³¨å†Œæ»¥ç"¨</span><span class="attack-defense">æ¯æ-¥é™é¢ + ç®¡ç†å'˜å®¡æ‰¹æœºåˆ¶</span></li>
                 </ul>
             </div>
         </div>
@@ -212,7 +212,7 @@
     <div class="todo-main-layout" id="todo-view">
     <div id="todo-share-banner"></div>
     <div class="todo-matrix-container">
-        <!-- åè¨€æ  -->
+        <!-- åè¨€æ  -->
         <div class="page-header compact">
             <div class="header-left">
                 <p class="quote-text" id="quote-text">Loading...</p>
@@ -243,13 +243,13 @@
         <div class="eisenhower-matrix">
             <!-- Matrix Grid -->
             <div class="matrix-grid">
-                <!-- Quadrant 1: ä¼˜å…ˆå¤„ç† (é»˜è®¤å±•å¼€) -->
+                <!-- Quadrant 1: ä¼˜å…ˆå¤"ç† (é»˜è®¤å±•å¼€) -->
                 <div class="quadrant q1" data-quadrant="important-urgent"
                      ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="dropItem(event)">
                     <div class="quadrant-header" onclick="toggleQuadrant(this)" ondragover="allowDrop(event)" ondrop="dropItem(event)">
-                        <span class="quadrant-toggle">â–¼</span>
-                        <span class="quadrant-icon">ðŸ”¥</span>
-                        <span class="quadrant-title">ä¼˜å…ˆå¤„ç†</span>
+                        <span class="quadrant-toggle">â-¼</span>
+                        <span class="quadrant-icon">ðŸ"¥</span>
+                        <span class="quadrant-title">ä¼˜å…ˆå¤"ç†</span>
                         <span class="quadrant-count" id="qcount-important-urgent"></span>
                         <button class="btn-quadrant-add" onclick="event.stopPropagation(); showAddModalForQuadrant('important-urgent')">+</button>
                     </div>
@@ -257,13 +257,13 @@
                          ondragover="allowDrop(event)" ondrop="dropItem(event)"></div>
                 </div>
 
-                <!-- Quadrant 2: å°±ç­‰ä½ ç¿»ç‰Œå­äº† (é»˜è®¤æŠ˜å ) -->
+                <!-- Quadrant 2: å°±ç­‰ä½ ç¿»ç‰Œå­äº† (é»˜è®¤æŠ˜å ) -->
                 <div class="quadrant q2 collapsed" data-quadrant="important-not-urgent"
                      ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="dropItem(event)">
                     <div class="quadrant-header" onclick="toggleQuadrant(this)" ondragover="allowDrop(event)" ondrop="dropItem(event)">
-                        <span class="quadrant-toggle">â–¼</span>
+                        <span class="quadrant-toggle">â-¼</span>
                         <span class="quadrant-icon">ðŸŽ¯</span>
-                        <span class="quadrant-title">å°±ç­‰ä½ ç¿»ç‰Œå­äº†</span>
+                        <span class="quadrant-title">å°±ç­‰ä½ ç¿»ç‰Œå­äº†</span>
                         <span class="quadrant-count" id="qcount-important-not-urgent"></span>
                         <button class="btn-quadrant-add" onclick="event.stopPropagation(); showAddModalForQuadrant('important-not-urgent')">+</button>
                     </div>
@@ -271,12 +271,12 @@
                          ondragover="allowDrop(event)" ondrop="dropItem(event)"></div>
                 </div>
 
-                <!-- Quadrant 3: å¾…åˆ†ç±» (é»˜è®¤æŠ˜å ) -->
+                <!-- Quadrant 3: å¾…åˆ†ç±» (é»˜è®¤æŠ˜å ) -->
                 <div class="quadrant q3 collapsed" data-quadrant="not-important-urgent"
                      ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="dropItem(event)">
                     <div class="quadrant-header" onclick="toggleQuadrant(this)" ondragover="allowDrop(event)" ondrop="dropItem(event)">
-                        <span class="quadrant-toggle">â–¼</span>
-                        <span class="quadrant-icon">ðŸ“¥</span>
+                        <span class="quadrant-toggle">â-¼</span>
+                        <span class="quadrant-icon">ðŸ"¥</span>
                         <span class="quadrant-title">å¾…åˆ†ç±»</span>
                         <span class="quadrant-count" id="qcount-not-important-urgent"></span>
                         <button class="btn-quadrant-add" onclick="event.stopPropagation(); showAddModalForQuadrant('not-important-urgent')">+</button>
@@ -285,11 +285,11 @@
                          ondragover="allowDrop(event)" ondrop="dropItem(event)"></div>
                 </div>
 
-                <!-- Quadrant 4: çŸ­å¹³å¿« (é»˜è®¤æŠ˜å ) -->
+                <!-- Quadrant 4: çŸ­å¹³å¿« (é»˜è®¤æŠ˜å ) -->
                 <div class="quadrant q4 collapsed" data-quadrant="not-important-not-urgent"
                      ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="dropItem(event)">
                     <div class="quadrant-header" onclick="toggleQuadrant(this)" ondragover="allowDrop(event)" ondrop="dropItem(event)">
-                        <span class="quadrant-toggle">â–¼</span>
+                        <span class="quadrant-toggle">â-¼</span>
                         <span class="quadrant-icon">âš¡</span>
                         <span class="quadrant-title">çŸ­å¹³å¿«</span>
                         <span class="quadrant-count" id="qcount-not-important-not-urgent"></span>
@@ -302,15 +302,15 @@
         </div>
 
     </div>
-    <!-- æ‰‹æœºç«¯æ‰å¹³åˆ—è¡¨ï¼ˆJS æŽ§åˆ¶æ˜¾ç¤º/éšè—ï¼‰ -->
+    <!-- æ‰‹æœºç«¯æ‰å¹³åˆ-è¡¨ï¼ˆJS æŽ§åˆ¶æ˜¾ç¤º/éšè-ï¼‰ -->
     <div class="flat-list-view" id="flat-list-view" style="display:none;"></div>
-    <!-- å³ä¾§è¾¹æ  -->
+    <!-- å³ä¾§è¾¹æ  -->
     <div class="right-sidebar">
-        <!-- å¾…å¤„ç†äº‹é¡¹æ”¶é›†ç®± -->
+        <!-- å¾…å¤"ç†äº‹é¡¹æ"¶é›†ç®± -->
         <div class="sidebar-section expanded" id="pending-section">
             <div class="section-header" onclick="toggleSidebarSection('pending-section')">
-                <h3><span>ðŸ“‹</span> å¾…å¤„ç†</h3>
-                <span class="expand-icon">â–¶</span>
+                <h3><span>ðŸ"‹</span> å¾…å¤"ç†</h3>
+                <span class="expand-icon">â-¶</span>
             </div>
             <div class="section-content">
                 <div class="pending-input-row">
@@ -324,18 +324,18 @@
         <!-- å·²å®ŒæˆåŒº -->
         <div class="sidebar-section" id="completed-section">
             <div class="section-header" onclick="toggleSidebarSection('completed-section')">
-                <h3><span>âœ“</span> å·²å®Œæˆ</h3>
-                <span class="expand-icon">â–¶</span>
+                <h3><span>âœ"</span> å·²å®Œæˆ</h3>
+                <span class="expand-icon">â-¶</span>
             </div>
             <div class="section-content">
                 <div class="section-list" id="completed-list"></div>
             </div>
         </div>
-        <!-- å·²åˆ é™¤åŒº -->
+        <!-- å·²åˆ é™¤åŒº -->
         <div class="sidebar-section" id="deleted-section">
             <div class="section-header" onclick="toggleSidebarSection('deleted-section')">
-                <h3><span>ðŸ—‘</span> å·²åˆ é™¤</h3>
-                <span class="expand-icon">â–¶</span>
+                <h3><span>ðŸ-'</span> å·²åˆ é™¤</h3>
+                <span class="expand-icon">â-¶</span>
             </div>
             <div class="section-content">
                 <div class="section-list" id="deleted-list"></div>
@@ -344,8 +344,8 @@
         <!-- å¥½å‹åˆ†äº«åŒº -->
         <div class="sidebar-section" id="shared-section" style="display:none">
             <div class="section-header" onclick="toggleSidebarSection('shared-section')">
-                <h3><span>ðŸ“¬</span> å¥½å‹åˆ†äº«</h3>
-                <span class="expand-icon">â–¶</span>
+                <h3><span>ðŸ"¬</span> å¥½å‹åˆ†äº«</h3>
+                <span class="expand-icon">â-¶</span>
             </div>
             <div class="section-content">
                 <div id="shared-inbox-section"></div>
@@ -358,34 +358,34 @@
     <div class="review-main-layout" id="review-view" style="display:none;">
         <div id="review-share-banner"></div>
         <div class="review-container">
-            <!-- é¡¶æ  -->
+            <!-- é¡¶æ  -->
             <div class="review-header">
                 <h2 class="review-title">ä¾‹è¡Œå®¡è§†</h2>
                 <div class="review-actions">
                     <div class="review-filter-buttons" id="review-filter-buttons">
                         <button class="review-filter-btn" data-filter="all" onclick="setReviewFilter('all')">å…¨éƒ¨</button>
-                        <button class="review-filter-btn active" data-filter="daily" onclick="setReviewFilter('daily')">æ¯æ—¥</button>
-                        <button class="review-filter-btn" data-filter="weekly" onclick="setReviewFilter('weekly')">æ¯å‘¨</button>
+                        <button class="review-filter-btn active" data-filter="daily" onclick="setReviewFilter('daily')">æ¯æ-¥</button>
+                        <button class="review-filter-btn" data-filter="weekly" onclick="setReviewFilter('weekly')">æ¯å'¨</button>
                         <button class="review-filter-btn" data-filter="monthly" onclick="setReviewFilter('monthly')">æ¯æœˆ</button>
                         <button class="review-filter-btn" data-filter="yearly" onclick="setReviewFilter('yearly')">æ¯å¹´</button>
                     </div>
-                    <button class="btn-add-review" onclick="openReviewModal('create')">+ æ–°å»º</button>
+                    <button class="btn-add-review" onclick="openReviewModal('create')">+ æ-°å»º</button>
                 </div>
             </div>
 
-            <!-- å¾…å¤„ç†åŒº -->
+            <!-- å¾…å¤"ç†åŒº -->
             <div class="review-due-section" id="review-due-section">
-                <div class="review-section-title">âš  å¾…å¤„ç†</div>
+                <div class="review-section-title">âš  å¾…å¤"ç†</div>
                 <div class="review-due-list" id="review-due-list"></div>
             </div>
 
-            <!-- æŒ‰é¢‘çŽ‡åˆ†ç»„åˆ—è¡¨ -->
+            <!-- æŒ‰é¢'çŽ‡åˆ†ç»"åˆ-è¡¨ -->
             <div class="review-group" id="review-group-daily">
-                <div class="review-group-header">æ¯æ—¥ä¾‹è¡Œ</div>
+                <div class="review-group-header">æ¯æ-¥ä¾‹è¡Œ</div>
                 <div class="review-group-list" id="review-list-daily"></div>
             </div>
             <div class="review-group" id="review-group-weekly">
-                <div class="review-group-header">æ¯å‘¨ä¾‹è¡Œ</div>
+                <div class="review-group-header">æ¯å'¨ä¾‹è¡Œ</div>
                 <div class="review-group-list" id="review-list-weekly"></div>
             </div>
             <div class="review-group" id="review-group-monthly">
@@ -435,7 +435,7 @@
                         </div>
                     </div>
                     <label class="avatar-upload-btn">
-                        ðŸ“· ä¸Šä¼ è‡ªå®šä¹‰å¤´åƒ
+                        ðŸ"· ä¸Šä¼ è‡ªå®šä¹‰å¤´åƒ
                         <input type="file" accept="image/*" onchange="handleAvatarUpload(event)" style="display:none">
                     </label>
                 </div>
@@ -444,7 +444,7 @@
             <div class="settings-section">
                 <h4>è´¦æˆ·ä¿¡æ¯</h4>
                 <div class="setting-group">
-                    <label>ç”¨æˆ·å</label>
+                    <label>ç"¨æˆ·å</label>
                     <div class="settings-value" id="settings-username">--</div>
                 </div>
                 <div class="setting-group">
@@ -452,24 +452,24 @@
                     <div class="settings-value" id="settings-display-name">--</div>
                 </div>
             </div>
-            <!-- ä¿®æ”¹å¯†ç  -->
+            <!-- ä¿®æ"¹å¯†ç  -->
             <div class="settings-section" id="settings-password-section">
-                <h4>ä¿®æ”¹å¯†ç </h4>
+                <h4>ä¿®æ"¹å¯†ç </h4>
                 <div class="setting-group">
-                    <label>å½“å‰å¯†ç </label>
-                    <input type="password" id="settings-old-password" placeholder="è¾“å…¥å½“å‰å¯†ç ">
+                    <label>å½"å‰å¯†ç </label>
+                    <input type="password" id="settings-old-password" placeholder="è¾"å…¥å½"å‰å¯†ç ">
                 </div>
                 <div class="setting-group">
-                    <label>æ–°å¯†ç </label>
-                    <input type="password" id="settings-new-password" placeholder="è‡³å°‘ 8 ä¸ªå­—ç¬¦">
+                    <label>æ-°å¯†ç </label>
+                    <input type="password" id="settings-new-password" placeholder="è‡³å°' 8 ä¸ªå­-ç¬¦">
                 </div>
                 <div class="setting-group">
-                    <label>ç¡®è®¤æ–°å¯†ç </label>
-                    <input type="password" id="settings-confirm-password" placeholder="å†æ¬¡è¾“å…¥æ–°å¯†ç ">
+                    <label>ç¡®è®¤æ-°å¯†ç </label>
+                    <input type="password" id="settings-confirm-password" placeholder="å†æ¬¡è¾"å…¥æ-°å¯†ç ">
                 </div>
-                <div class="settings-password-hint">è¯·åŠ¡å¿…ç‰¢è®°æ–°å¯†ç ã€‚"æ‰¾å›žå¯†ç "åŠŸèƒ½å°šåœ¨å¼€å‘ä¸­ï¼Œå¦‚å¿˜è®°å¯†ç å°†æš‚æ—¶æ— æ³•æ‰¾å›žã€‚</div>
+                <div class="settings-password-hint">è¯·åŠ¡å¿…ç‰¢è®°æ-°å¯†ç ã€'"æ‰¾å›žå¯†ç "åŠŸèƒ½å°šåœ¨å¼€å'ä¸­ï¼Œå¦'å¿˜è®°å¯†ç å°†æš'æ-¶æ- æ³•æ‰¾å›žã€'</div>
                 <button class="btn btn-primary settings-change-pwd-btn"
-                        onclick="changePassword()">ä¿®æ”¹å¯†ç </button>
+                        onclick="changePassword()">ä¿®æ"¹å¯†ç </button>
             </div>
             <!-- å¥½å‹ -->
             <div class="settings-section" id="settings-friends-section">
@@ -478,12 +478,12 @@
                 <div id="friends-list">
                     <div class="friends-empty">è¿˜æ²¡æœ‰å¥½å‹</div>
                 </div>
-                <button class="btn btn-primary settings-add-friend-btn" id="add-friend-btn">+ æ·»åŠ å¥½å‹</button>
+                <button class="btn btn-primary settings-add-friend-btn" id="add-friend-btn">+ æ·»åŠ å¥½å‹</button>
             </div>
             <!-- AI æ¨¡åž‹ -->
             <div class="settings-section" id="settings-ai-section">
                 <h4>AI æ¨¡åž‹</h4>
-                <p class="setting-desc">æ¨¡åž‹åˆ‡æ¢åŠŸèƒ½å¼€å‘ä¸­ï¼Œæ•¬è¯·æœŸå¾…</p>
+                <p class="setting-desc">æ¨¡åž‹åˆ‡æ¢åŠŸèƒ½å¼€å'ä¸­ï¼Œæ•¬è¯·æœŸå¾…</p>
                 <div class="ai-model-options" id="ai-model-options">
                     <button class="ai-model-btn ai-model-disabled active" data-model="auto" disabled>
                         <span class="ai-model-name">è‡ªåŠ¨</span>
@@ -518,10 +518,10 @@
                 <h4 style="margin:0 0 12px 0;">Admin Dashboard</h4>
                 <div id="admin-pending-section" style="display:none;margin-bottom:16px;"></div>
                 <div id="admin-dashboard-content">
-                    <div class="admin-loading">åŠ è½½ä¸­...</div>
+                    <div class="admin-loading">åŠ è½½ä¸­...</div>
                 </div>
             </div>
-            <!-- åº”ç”¨ä¿¡æ¯ -->
+            <!-- åº"ç"¨ä¿¡æ¯ -->
             <div class="settings-section settings-about">
                 <div class="settings-app-name">Next</div>
                 <div class="settings-app-tagline">Focus on the Right Thing</div>
@@ -530,116 +530,116 @@
         </div>
     </div>
 
-    <!-- å­¦ä¹ é¡µé¢ -->
+    <!-- å­¦ä¹ é¡µé¢ -->
     <div class="english-main-layout" id="english-view" style="display:none;">
         <!-- å¥½å‹åˆ†äº«æ¨ªå¹… -->
         <div id="english-share-banner"></div>
-        <!-- åˆ—è¡¨é¡µ -->
+        <!-- åˆ-è¡¨é¡µ -->
         <div class="english-list-view">
             <div class="english-header">
-                <h2>å­¦ä¹ ç¬”è®°</h2>
+                <h2>å­¦ä¹ ç¬"è®°</h2>
             </div>
             <!-- åˆ†ç±»ç­›é€‰ -->
             <div class="learn-category-filters" id="learn-category-filters"></div>
             <!-- ç©ºçŠ¶æ€ -->
             <div class="english-empty-state" id="english-empty-state">
-                <div class="empty-icon">ðŸ“’</div>
-                <h3>è¿˜æ²¡æœ‰å­¦ä¹ ç¬”è®°</h3>
-                <p>ç‚¹å‡» + åˆ›å»ºä½ çš„ç¬¬ä¸€æ¡ç¬”è®°</p>
+                <div class="empty-icon">ðŸ"'</div>
+                <h3>è¿˜æ²¡æœ‰å­¦ä¹ ç¬"è®°</h3>
+                <p>ç'¹å‡» + åˆ›å»ºä½ çš"ç¬¬ä¸€æ¡ç¬"è®°</p>
             </div>
-            <!-- ç¬”è®°åˆ—è¡¨ -->
+            <!-- ç¬"è®°åˆ-è¡¨ -->
             <div class="english-scenarios" id="english-scenarios"></div>
         </div>
 
-        <!-- è¯¦æƒ…é¡µï¼ˆé˜…è¯»/ç¼–è¾‘åŒæ¨¡å¼ï¼‰ -->
+        <!-- è¯¦æƒ…é¡µï¼ˆé˜…è¯»/ç¼-è¾'åŒæ¨¡å¼ï¼‰ -->
         <div class="english-detail-view">
             <div class="english-detail-header">
                 <div class="english-detail-header-left">
                     <button class="english-back-btn" id="english-back-btn">&larr;</button>
-                    <!-- é˜…è¯»æ¨¡å¼ï¼šæ ‡é¢˜æ–‡æœ¬ -->
+                    <!-- é˜…è¯»æ¨¡å¼ï¼šæ ‡é¢˜æ-‡æœ¬ -->
                     <h2 class="learn-detail-title" id="learn-detail-title-view"></h2>
-                    <!-- ç¼–è¾‘æ¨¡å¼ï¼šæ ‡é¢˜è¾“å…¥æ¡† -->
-                    <input type="text" class="learn-detail-title-input" id="learn-detail-title-edit" placeholder="ç¬”è®°æ ‡é¢˜" style="display:none;">
+                    <!-- ç¼-è¾'æ¨¡å¼ï¼šæ ‡é¢˜è¾"å…¥æ¡† -->
+                    <input type="text" class="learn-detail-title-input" id="learn-detail-title-edit" placeholder="ç¬"è®°æ ‡é¢˜" style="display:none;">
                 </div>
-                <!-- é˜…è¯»æ¨¡å¼æŒ‰é’® -->
+                <!-- é˜…è¯»æ¨¡å¼æŒ‰é'® -->
                 <div class="english-detail-actions" id="learn-actions-view">
-                    <button class="btn-icon" id="learn-edit-mode-btn" title="ç¼–è¾‘">âœï¸</button>
+                    <button class="btn-icon" id="learn-edit-mode-btn" title="ç¼-è¾'">âœï¸</button>
                     <button class="btn-icon" id="english-ai-btn" title="è®©é˜¿å®æ•´ç†">âœ¨</button>
-                    <button class="btn-icon" id="english-share-btn" title="åˆ†äº«">ðŸ“¤</button>
+                    <button class="btn-icon" id="english-share-btn" title="åˆ†äº«">ðŸ"¤</button>
                 </div>
-                <!-- ç¼–è¾‘æ¨¡å¼æŒ‰é’® -->
+                <!-- ç¼-è¾'æ¨¡å¼æŒ‰é'® -->
                 <div class="english-detail-actions" id="learn-actions-edit" style="display:none;">
-                    <button class="learn-btn-cancel" id="learn-edit-cancel-btn">å–æ¶ˆ</button>
+                    <button class="learn-btn-cancel" id="learn-edit-cancel-btn">å-æ¶ˆ</button>
                     <button class="learn-btn-save" id="learn-edit-save-btn">ä¿å­˜</button>
                 </div>
             </div>
 
-            <!-- åˆ†ç±»æ ‡ç­¾ + æ—¶é—´ï¼ˆé˜…è¯»æ¨¡å¼ï¼‰ -->
+            <!-- åˆ†ç±»æ ‡ç­¾ + æ-¶é-´ï¼ˆé˜…è¯»æ¨¡å¼ï¼‰ -->
             <div class="learn-detail-meta-bar" id="learn-meta-bar">
                 <span id="learn-category-badge"></span>
                 <span class="learn-meta-time" id="learn-meta-time"></span>
             </div>
 
-            <!-- é˜…è¯»æ¨¡å¼ï¼šæ¸²æŸ“å†…å®¹ -->
+            <!-- é˜…è¯»æ¨¡å¼ï¼šæ¸²æŸ"å†…å®¹ -->
             <div class="learn-reading-view" id="learn-reading-view">
                 <div class="english-content" id="learn-content-rendered"></div>
-                <!-- ç¬”è®°å±•ç¤ºï¼ˆæœ‰ç¬”è®°æ—¶æ‰æ˜¾ç¤ºï¼‰ -->
+                <!-- ç¬"è®°å±•ç¤ºï¼ˆæœ‰ç¬"è®°æ-¶æ‰æ˜¾ç¤ºï¼‰ -->
                 <div class="learn-notes-display" id="learn-notes-display" style="display:none;">
-                    <h4>æˆ‘çš„ç¬”è®°</h4>
+                    <h4>æˆ'çš"ç¬"è®°</h4>
                     <div class="learn-notes-text" id="learn-notes-text"></div>
                 </div>
             </div>
 
-            <!-- ç¼–è¾‘æ¨¡å¼ï¼šè¡¨å• -->
+            <!-- ç¼-è¾'æ¨¡å¼ï¼šè¡¨å• -->
             <div class="learn-editing-view" id="learn-editing-view" style="display:none;">
                 <div class="learn-edit-section">
                     <div class="learn-edit-field">
                         <label>å†…å®¹</label>
-                        <textarea id="learn-edit-content" rows="12" placeholder="ç²˜è´´ä»Žè±†åŒ…ç­‰åº”ç”¨å¤åˆ¶çš„å†…å®¹ï¼Œæˆ–ç›´æŽ¥è¾“å…¥..."></textarea>
+                        <textarea id="learn-edit-content" rows="12" placeholder="ç²˜è´´ä»Žè±†åŒ…ç­‰åº"ç"¨å¤åˆ¶çš"å†…å®¹ï¼Œæˆ-ç›´æŽ¥è¾"å…¥..."></textarea>
                     </div>
                     <div class="learn-edit-field">
-                        <label>æˆ‘çš„ç¬”è®°</label>
-                        <textarea id="learn-edit-notes" rows="4" placeholder="è®°å½•ä½ çš„å­¦ä¹ å¿ƒå¾—..."></textarea>
+                        <label>æˆ'çš"ç¬"è®°</label>
+                        <textarea id="learn-edit-notes" rows="4" placeholder="è®°å½•ä½ çš"å­¦ä¹ å¿ƒå¾-..."></textarea>
                     </div>
                     <div class="learn-edit-field learn-category-field">
                         <label>åˆ†ç±»</label>
                         <div class="learn-detail-categories" id="learn-detail-categories"></div>
                     </div>
                 </div>
-                <!-- åˆ é™¤ï¼šæœ€åº•éƒ¨ï¼Œä¸æ˜¾çœ¼ -->
+                <!-- åˆ é™¤ï¼šæœ€åº•éƒ¨ï¼Œä¸æ˜¾çœ¼ -->
                 <div class="learn-danger-zone">
-                    <button class="learn-btn-danger" id="english-delete-btn">åˆ é™¤æ­¤ç¬”è®°</button>
+                    <button class="learn-btn-danger" id="english-delete-btn">åˆ é™¤æ­¤ç¬"è®°</button>
                 </div>
             </div>
         </div>
 
-        <!-- FAB æŒ‰é’® -->
+        <!-- FAB æŒ‰é'® -->
         <button class="learn-fab" id="learn-fab" onclick="English.openCreateModal()">+</button>
     </div>
 
-    <!-- ç”Ÿæ´» Hub -->
+    <!-- ç"Ÿæ´» Hub -->
     <div class="life-main-layout" id="life-view" style="display:none;">
         <div id="life-share-banner"></div>
         <!-- Hub é¡µé¢ -->
         <div class="life-hub" id="life-hub">
             <div class="life-hub-header">
-                <h2>ç”Ÿæ´»</h2>
+                <h2>ç"Ÿæ´»</h2>
             </div>
             <div class="life-hub-grid">
                 <div class="life-hub-card" onclick="Life.openFeature('expense')">
-                    <div class="life-hub-card-icon">ðŸ’°</div>
+                    <div class="life-hub-card-icon">ðŸ'°</div>
                     <div class="life-hub-card-title">è®°è´¦</div>
-                    <div class="life-hub-card-desc">è®°å½•æ¯ä¸€ç¬”æ¶ˆè´¹</div>
+                    <div class="life-hub-card-desc">è®°å½•æ¯ä¸€ç¬"æ¶ˆè´¹</div>
                 </div>
                 <div class="life-hub-card" onclick="Life.openFeature('trip')">
                     <div class="life-hub-card-icon">âœˆï¸</div>
-                    <div class="life-hub-card-title">å·®æ—…</div>
-                    <div class="life-hub-card-desc">å‡ºå·®è¡Œç¨‹ä¸ŽæŠ¥é”€</div>
+                    <div class="life-hub-card-title">å·®æ-…</div>
+                    <div class="life-hub-card-desc">å‡ºå·®è¡Œç¨‹ä¸ŽæŠ¥é"€</div>
                 </div>
                 <div class="life-hub-card" onclick="Life.openFeature('health')">
                     <div class="life-hub-card-icon">ðŸ¥</div>
                     <div class="life-hub-card-title">å¥åº·</div>
-                    <div class="life-hub-card-desc">å…«æ®µé”¦ Â· ç»ç»œ</div>
+                    <div class="life-hub-card-desc">å…«æ®µé"¦ Â· ç»ç»œ</div>
                 </div>
             </div>
         </div>
@@ -648,17 +648,17 @@
         <div class="expense-view" id="expense-view" style="display:none;">
             <div class="expense-header">
                 <div class="expense-header-left">
-                    <button class="expense-back-btn" onclick="Life.showHub()">&larr; ç”Ÿæ´»</button>
+                    <button class="expense-back-btn" onclick="Life.showHub()">&larr; ç"Ÿæ´»</button>
                     <h2 class="expense-title">è®°è´¦</h2>
                 </div>
                 <div class="expense-period-tabs">
-                    <button class="expense-period-btn active" data-period="day" onclick="Expense.switchPeriod('day')">æ—¥</button>
-                    <button class="expense-period-btn" data-period="week" onclick="Expense.switchPeriod('week')">å‘¨</button>
+                    <button class="expense-period-btn active" data-period="day" onclick="Expense.switchPeriod('day')">æ-¥</button>
+                    <button class="expense-period-btn" data-period="week" onclick="Expense.switchPeriod('week')">å'¨</button>
                     <button class="expense-period-btn" data-period="month" onclick="Expense.switchPeriod('month')">æœˆ</button>
                 </div>
-                <button class="expense-analytics-btn" id="expense-analytics-btn" onclick="Expense.toggleAnalytics()">ðŸ“Š</button>
+                <button class="expense-analytics-btn" id="expense-analytics-btn" onclick="Expense.toggleAnalytics()">ðŸ"Š</button>
             </div>
-            <!-- æ—¥æœŸå¯¼èˆª -->
+            <!-- æ-¥æœŸå¯¼èˆª -->
             <div class="expense-date-nav">
                 <button class="expense-nav-btn" onclick="Expense.navigateDate(-1)">&lsaquo;</button>
                 <span class="expense-date-label" id="expense-date-label">ä»Šå¤©</span>
@@ -667,25 +667,25 @@
             <!-- æ±‡æ€»å¡ç‰‡ -->
             <div class="expense-summary" id="expense-summary">
                 <div class="expense-summary-total">
-                    <span class="expense-summary-label">æ€»æ”¯å‡º</span>
+                    <span class="expense-summary-label">æ€»æ"¯å‡º</span>
                     <span class="expense-summary-amount" id="expense-total-amount">Â¥0.00</span>
                 </div>
             </div>
-            <!-- æ ‡ç­¾ç­›é€‰ -->
+            <!-- æ ‡ç­¾ç­›é€‰ -->
             <div class="expense-tags-filter" id="expense-tags-filter"></div>
-            <!-- æ¡ç›®åˆ—è¡¨ -->
+            <!-- æ¡ç›®åˆ-è¡¨ -->
             <div class="expense-list" id="expense-list">
                 <div class="expense-empty">
-                    <div class="expense-empty-icon">ðŸ’°</div>
+                    <div class="expense-empty-icon">ðŸ'°</div>
                     <p>è¿˜æ²¡æœ‰è®°è´¦è®°å½•</p>
-                    <p class="expense-empty-hint">ç‚¹å‡» + è®°ä¸€ç¬”</p>
+                    <p class="expense-empty-hint">ç'¹å‡» + è®°ä¸€ç¬"</p>
                 </div>
             </div>
 
             <!-- ç»Ÿè®¡å­è§†å›¾ -->
             <div class="expense-analytics-view" id="expense-analytics-view" style="display:none;">
                 <div class="expense-analytics-period-tabs">
-                    <button class="expense-analytics-period-btn active" data-period="week" onclick="ExpenseAnalytics.switchPeriod('week')">å‘¨</button>
+                    <button class="expense-analytics-period-btn active" data-period="week" onclick="ExpenseAnalytics.switchPeriod('week')">å'¨</button>
                     <button class="expense-analytics-period-btn" data-period="month" onclick="ExpenseAnalytics.switchPeriod('month')">æœˆ</button>
                 </div>
                 <div class="expense-analytics-date-nav">
@@ -695,29 +695,29 @@
                 </div>
                 <div class="expense-analytics-total" id="expense-analytics-total"></div>
                 <div class="expense-analytics-chart-section">
-                    <h4 class="expense-analytics-section-title">åˆ†ç±»å æ¯”</h4>
+                    <h4 class="expense-analytics-section-title">åˆ†ç±»å æ¯"</h4>
                     <div class="expense-analytics-pie-wrapper">
                         <canvas id="expense-pie-canvas"></canvas>
                     </div>
                     <div class="expense-analytics-legend" id="expense-analytics-legend"></div>
                 </div>
                 <div class="expense-analytics-chart-section">
-                    <h4 class="expense-analytics-section-title">æ¯æ—¥è¶‹åŠ¿</h4>
+                    <h4 class="expense-analytics-section-title">æ¯æ-¥è¶‹åŠ¿</h4>
                     <div class="expense-analytics-bar-wrapper">
                         <canvas id="expense-bar-canvas"></canvas>
                     </div>
                 </div>
                 <div class="expense-analytics-empty" id="expense-analytics-empty" style="display:none;">
-                    <p>æš‚æ— æ¶ˆè´¹è®°å½•</p>
+                    <p>æš'æ- æ¶ˆè´¹è®°å½•</p>
                 </div>
             </div>
         </div>
 
-        <!-- è®°ä¸€ç¬”å¼¹çª— -->
+        <!-- è®°ä¸€ç¬"å¼¹çª- -->
         <div class="expense-add-overlay" id="expense-add-overlay" style="display:none;" onclick="Expense.closeAddModal()">
             <div class="expense-add-modal" onclick="event.stopPropagation()">
                 <div class="expense-add-header">
-                    <h3 id="expense-modal-title">è®°ä¸€ç¬”</h3>
+                    <h3 id="expense-modal-title">è®°ä¸€ç¬"</h3>
                     <button class="expense-add-close" onclick="Expense.closeAddModal()">&times;</button>
                 </div>
                 <div class="expense-add-body">
@@ -729,7 +729,7 @@
                             <input type="number" id="expense-amount-input" class="expense-amount-input" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
                         </div>
                         <div class="expense-add-field">
-                            <label>æ—¥æœŸ</label>
+                            <label>æ-¥æœŸ</label>
                             <input type="date" id="expense-date-input">
                         </div>
                         <div class="expense-add-field">
@@ -737,11 +737,11 @@
                             <input type="text" id="expense-notes-input" placeholder="ä¹°äº†ä»€ä¹ˆ...">
                         </div>
                         <div class="expense-add-field">
-                            <label>ç…§ç‰‡ï¼ˆæ”¶æ®/å°ç¥¨ï¼‰</label>
+                            <label>ç…§ç‰‡ï¼ˆæ"¶æ®/å°ç¥¨ï¼‰</label>
                             <div class="expense-photo-area" id="expense-photo-area">
                                 <div class="expense-photo-grid" id="expense-photo-grid"></div>
                                 <label class="expense-photo-add-btn" id="expense-photo-add-btn">
-                                    <span>+ æ·»åŠ ç…§ç‰‡</span>
+                                    <span>+ æ·»åŠ ç…§ç‰‡</span>
                                     <input type="file" multiple accept="image/*" id="expense-photo-input" style="display:none" onchange="Expense.handlePhotoSelect(event)">
                                 </label>
                             </div>
@@ -762,13 +762,13 @@
                     <div id="expense-state-preview" style="display:none"></div>
                 </div>
                 <div class="expense-add-footer" id="expense-add-footer">
-                    <button class="btn btn-secondary" onclick="Expense.closeAddModal()">å–æ¶ˆ</button>
+                    <button class="btn btn-secondary" onclick="Expense.closeAddModal()">å-æ¶ˆ</button>
                     <button class="btn btn-primary" onclick="Expense.submitEntry()">ä¿å­˜</button>
                 </div>
             </div>
         </div>
 
-        <!-- æ¡ç›®è¯¦æƒ…å¼¹çª— -->
+        <!-- æ¡ç›®è¯¦æƒ…å¼¹çª- -->
         <div class="expense-detail-overlay" id="expense-detail-overlay" style="display:none;" onclick="Expense.closeDetail()">
             <div class="expense-detail-modal" onclick="event.stopPropagation()">
                 <div class="expense-detail-header">
@@ -777,8 +777,8 @@
                 </div>
                 <div class="expense-detail-body" id="expense-detail-body"></div>
                 <div class="expense-detail-footer" id="expense-detail-footer">
-                    <button class="btn btn-danger-text" onclick="Expense.deleteEntry()">åˆ é™¤</button>
-                    <button class="btn btn-primary" onclick="Expense.editEntry()">ç¼–è¾‘</button>
+                    <button class="btn btn-danger-text" onclick="Expense.deleteEntry()">åˆ é™¤</button>
+                    <button class="btn btn-primary" onclick="Expense.editEntry()">ç¼-è¾'</button>
                 </div>
             </div>
         </div>
@@ -786,12 +786,12 @@
         <!-- è®°è´¦ FAB -->
         <button class="expense-fab" id="expense-fab" style="display:none;" onclick="Expense.openAddModal()">+</button>
 
-        <!-- å·®æ—…å­è§†å›¾ -->
+        <!-- å·®æ-…å­è§†å›¾ -->
         <div class="trip-view" id="trip-view" style="display:none;">
             <div id="trip-list-view">
                 <div class="trip-header">
-                    <button class="trip-back-btn" onclick="Life.showHub()">&larr; ç”Ÿæ´»</button>
-                    <h2>å·®æ—…</h2>
+                    <button class="trip-back-btn" onclick="Life.showHub()">&larr; ç"Ÿæ´»</button>
+                    <h2>å·®æ-…</h2>
                 </div>
                 <div id="trip-list"></div>
             </div>
@@ -802,7 +802,7 @@
             </div>
         </div>
 
-        <!-- å·®æ—… FAB -->
+        <!-- å·®æ-… FAB -->
         <button class="trip-fab" id="trip-fab" style="display:none;" onclick="Trip.handleFab()">+</button>
 
         <!-- å¥åº·å­è§†å›¾ -->
@@ -810,37 +810,37 @@
             <!-- å¥åº· Hub -->
             <div id="health-hub">
                 <div class="health-hub-header">
-                    <button class="health-back-btn" onclick="Life.showHub()">&larr; ç”Ÿæ´»</button>
+                    <button class="health-back-btn" onclick="Life.showHub()">&larr; ç"Ÿæ´»</button>
                     <h2>å¥åº·</h2>
                 </div>
                 <div class="health-hub-grid">
                     <div class="health-hub-card" onclick="Health.openCategory('baduanjin')">
                         <div class="health-hub-card-icon">ðŸ§˜</div>
-                        <div class="health-hub-card-title">å…«æ®µé”¦</div>
-                        <div class="health-hub-card-desc">8å¼å…»ç”ŸåŠŸæ³•</div>
+                        <div class="health-hub-card-title">å…«æ®µé"¦</div>
+                        <div class="health-hub-card-desc">8å¼å…»ç"ŸåŠŸæ³•</div>
                     </div>
                     <div class="health-hub-card health-hub-card-disabled">
-                        <div class="health-hub-card-icon">ðŸ“¿</div>
+                        <div class="health-hub-card-icon">ðŸ"¿</div>
                         <div class="health-hub-card-title">ç»ç»œ</div>
                         <div class="health-hub-card-desc">14ç»ç»œç©´ä½</div>
                     </div>
                     <div class="health-hub-card health-hub-card-disabled">
-                        <div class="health-hub-card-icon">ðŸ’ª</div>
-                        <div class="health-hub-card-title">æ˜“ç­‹ç»</div>
-                        <div class="health-hub-card-desc">å¾…å¼€æ”¾</div>
+                        <div class="health-hub-card-icon">ðŸ'ª</div>
+                        <div class="health-hub-card-title">æ˜"ç­‹ç»</div>
+                        <div class="health-hub-card-desc">å¾…å¼€æ"¾</div>
                     </div>
                     <div class="health-hub-card health-hub-card-disabled">
                         <div class="health-hub-card-icon">ðŸ§</div>
                         <div class="health-hub-card-title">ç«™æ¡©</div>
-                        <div class="health-hub-card-desc">å¾…å¼€æ”¾</div>
+                        <div class="health-hub-card-desc">å¾…å¼€æ"¾</div>
                     </div>
                 </div>
             </div>
-            <!-- åˆ†ç±»è¯¦æƒ… (å…«æ®µé”¦) -->
+            <!-- åˆ†ç±»è¯¦æƒ… (å…«æ®µé"¦) -->
             <div class="health-category-view" id="health-category" style="display:none;">
                 <div class="health-category-header">
                     <button class="health-back-btn" onclick="Health.backToHub()">&larr; å¥åº·</button>
-                    <h2>å…«æ®µé”¦</h2>
+                    <h2>å…«æ®µé"¦</h2>
                 </div>
                 <div class="health-action-cards" id="health-action-cards"></div>
                 <div class="health-canvas-wrap">
@@ -859,76 +859,76 @@
         </div>
     </div>
 
-    <!-- å·®æ—…å¼¹çª— -->
+    <!-- å·®æ-…å¼¹çª- -->
     <div class="trip-modal-overlay" id="trip-modal-overlay" style="display:none;"></div>
     <div class="trip-modal-overlay" id="trip-item-modal-overlay" style="display:none;"></div>
 
-    <!-- å­¦ä¹ ç¬”è®°åˆ›å»ºå¼¹çª— -->
+    <!-- å­¦ä¹ ç¬"è®°åˆ›å»ºå¼¹çª- -->
     <div class="english-modal-overlay" id="english-modal-overlay">
         <div class="english-modal" onclick="event.stopPropagation()">
-            <h3>æ–°å»ºç¬”è®°</h3>
+            <h3>æ-°å»ºç¬"è®°</h3>
             <div class="english-modal-field">
-                <label>æ ‡é¢˜</label>
-                <input type="text" id="english-modal-title" placeholder="ç¬”è®°æ ‡é¢˜">
+                <label>æ ‡é¢˜</label>
+                <input type="text" id="english-modal-title" placeholder="ç¬"è®°æ ‡é¢˜">
             </div>
             <div class="english-modal-field">
                 <label>å†…å®¹</label>
-                <textarea id="english-modal-content" rows="6" placeholder="ç²˜è´´ä»Žè±†åŒ…ç­‰åº”ç”¨å¤åˆ¶çš„å†…å®¹ï¼Œæˆ–ç›´æŽ¥è¾“å…¥..."></textarea>
+                <textarea id="english-modal-content" rows="6" placeholder="ç²˜è´´ä»Žè±†åŒ…ç­‰åº"ç"¨å¤åˆ¶çš"å†…å®¹ï¼Œæˆ-ç›´æŽ¥è¾"å…¥..."></textarea>
             </div>
             <div class="english-modal-field">
                 <label>åˆ†ç±»ï¼ˆå¯é€‰ï¼‰</label>
                 <div class="learn-modal-categories" id="learn-modal-categories"></div>
             </div>
             <div class="english-modal-actions">
-                <button class="btn btn-secondary" id="english-modal-cancel">å–æ¶ˆ</button>
+                <button class="btn btn-secondary" id="english-modal-cancel">å-æ¶ˆ</button>
                 <button class="btn btn-primary" id="english-modal-submit">ä¿å­˜</button>
             </div>
         </div>
     </div>
 
-    <!-- å¥½å‹æœç´¢å¼¹çª— -->
+    <!-- å¥½å‹æœç´¢å¼¹çª- -->
     <div class="friend-search-overlay" id="friend-search-overlay" style="display:none;">
         <div class="friend-search-modal" onclick="event.stopPropagation()">
-            <h3>æ·»åŠ å¥½å‹</h3>
-            <input type="text" id="friend-search-input" placeholder="æœç´¢ç”¨æˆ·å..." class="friend-search-input">
+            <h3>æ·»åŠ å¥½å‹</h3>
+            <input type="text" id="friend-search-input" placeholder="æœç´¢ç"¨æˆ·å..." class="friend-search-input">
             <div id="friend-search-results" class="friend-search-results"></div>
             <div class="friend-search-close">
-                <button class="btn btn-secondary" onclick="Friends.closeShareModal(); document.getElementById('friend-search-overlay').style.display='none'">å…³é—­</button>
+                <button class="btn btn-secondary" onclick="Friends.closeShareModal(); document.getElementById('friend-search-overlay').style.display='none'">å…³é-­</button>
             </div>
         </div>
     </div>
 
-    <!-- ç»Ÿä¸€åˆ†äº«å¼¹çª— (ShareModal åŠ¨æ€æ¸²æŸ“) -->
+    <!-- ç»Ÿä¸€åˆ†äº«å¼¹çª- (ShareModal åŠ¨æ€æ¸²æŸ") -->
     <div class="share-modal-overlay" id="share-modal-overlay" style="display:none;" onclick="ShareModal.close()"></div>
 
-    <!-- ä¾‹è¡Œå®¡è§† æ–°å»º/ç¼–è¾‘å¼¹çª— -->
+    <!-- ä¾‹è¡Œå®¡è§† æ-°å»º/ç¼-è¾'å¼¹çª- -->
     <div class="review-modal-overlay" id="review-modal-overlay" style="display:none;" onclick="closeReviewModal()">
         <div class="review-modal" onclick="event.stopPropagation()">
             <div class="review-modal-header">
-                <h3 id="review-modal-title">æ–°å»ºä¾‹è¡Œäº‹é¡¹</h3>
-                <button class="header-btn close-btn" onclick="closeReviewModal()">Ã—</button>
+                <h3 id="review-modal-title">æ-°å»ºä¾‹è¡Œäº‹é¡¹</h3>
+                <button class="header-btn close-btn" onclick="closeReviewModal()">Ã-</button>
             </div>
             <div class="review-modal-body">
                 <div class="review-field">
                     <label>äº‹é¡¹åç§°</label>
-                    <input type="text" id="review-text" placeholder="ä¾‹å¦‚ï¼šä¿¡ç”¨å¡è¿˜æ¬¾">
+                    <input type="text" id="review-text" placeholder="ä¾‹å¦'ï¼šä¿¡ç"¨å¡è¿˜æ¬¾">
                 </div>
                 <div class="review-field">
-                    <label>é‡å¤é¢‘çŽ‡</label>
+                    <label>é‡å¤é¢'çŽ‡</label>
                     <div class="frequency-selector" id="frequency-selector">
-                        <button class="freq-btn active" data-freq="daily" onclick="selectFrequency('daily')">æ¯æ—¥</button>
-                        <button class="freq-btn" data-freq="weekly" onclick="selectFrequency('weekly')">æ¯å‘¨</button>
+                        <button class="freq-btn active" data-freq="daily" onclick="selectFrequency('daily')">æ¯æ-¥</button>
+                        <button class="freq-btn" data-freq="weekly" onclick="selectFrequency('weekly')">æ¯å'¨</button>
                         <button class="freq-btn" data-freq="monthly" onclick="selectFrequency('monthly')">æ¯æœˆ</button>
                         <button class="freq-btn" data-freq="yearly" onclick="selectFrequency('yearly')">æ¯å¹´</button>
                     </div>
                 </div>
                 <div class="review-field" id="freq-config-field" style="display:none;">
-                    <label id="freq-config-label">å…·ä½“æ—¥æœŸ</label>
+                    <label id="freq-config-label">å…·ä½"æ-¥æœŸ</label>
                     <div id="freq-config-content"></div>
                 </div>
                 <div class="review-field">
                     <label>åˆ†ç±»ï¼ˆå¯é€‰ï¼‰</label>
-                    <input type="text" id="review-category" placeholder="ä¾‹å¦‚ï¼šè´¢åŠ¡ã€å¥åº·">
+                    <input type="text" id="review-category" placeholder="ä¾‹å¦'ï¼šè´¢åŠ¡ã€å¥åº·">
                 </div>
                 <div class="review-field">
                     <label>å¤‡æ³¨ï¼ˆå¯é€‰ï¼‰</label>
@@ -936,50 +936,51 @@
                 </div>
             </div>
             <div class="review-modal-footer">
-                <button class="task-modal-btn secondary" onclick="closeReviewModal()">å–æ¶ˆ</button>
+                <button class="task-modal-btn secondary" onclick="closeReviewModal()">å-æ¶ˆ</button>
                 <button class="task-modal-btn primary" onclick="saveReview()">ä¿å­˜</button>
             </div>
         </div>
     </div>
 
-    <!-- ç»Ÿä¸€ä»»åŠ¡å¼¹çª—ï¼ˆæŸ¥çœ‹/ç¼–è¾‘/æ–°å»ºï¼‰ -->
+    <!-- ç»Ÿä¸€ä»»åŠ¡å¼¹çª-ï¼ˆæŸ¥çœ‹/ç¼-è¾'/æ-°å»ºï¼‰ -->
     <div class="task-modal-overlay" id="task-modal-overlay" style="display:none;" onclick="closeTaskModal()">
         <div class="task-modal" onclick="event.stopPropagation()">
-            <!-- æ ‡é¢˜æ  -->
+            <!-- æ ‡é¢˜æ  -->
             <div class="task-modal-header">
-                <textarea id="modal-title" class="title-input" placeholder="ä»»åŠ¡æ ‡é¢˜ï¼ˆé™50å­—ï¼‰" maxlength="50" rows="2"></textarea>
+                <textarea id="modal-title" class="title-input" placeholder="ä»»åŠ¡æ ‡é¢˜ï¼ˆé™50å­-ï¼‰" maxlength="50" rows="2"></textarea>
                 <div class="header-actions">
-                    <button class="header-btn edit-btn" id="header-edit-btn" onclick="switchToEditMode()">ç¼–è¾‘</button>
+                    <button class="header-btn share-btn" id="header-share-btn" onclick="shareCurrentTask()" title="&#x5206;&#x4EAB;&#x7ED9;&#x597D;&#x53CB;" style="display:none">&#x1F4E4;</button>
+                    <button class="header-btn edit-btn" id="header-edit-btn" onclick="switchToEditMode()">ç¼–è¾'</button>
                     <button class="header-btn close-btn" onclick="closeTaskModal()">å…³é—­</button>
                 </div>
             </div>
-            <!-- ä¸»ä½“ï¼šå·¦å±žæ€§ + å³å†…å®¹ -->
+            <!-- ä¸»ä½"ï¼šå·¦å±žæ€§ + å³å†…å®¹ -->
             <div class="task-modal-body">
-                <!-- å·¦æ ï¼šå±žæ€§ -->
+                <!-- å·¦æ ï¼šå±žæ€§ -->
                 <div class="task-modal-left">
                     <div class="prop-group">
-                        <label>ðŸ“… è®¡åˆ’å®Œæˆ</label>
+                        <label>ðŸ"… è®¡åˆ'å®Œæˆ</label>
                         <div class="smart-date-picker" id="smart-date-picker">
                             <button type="button" class="date-display" id="date-display" onclick="toggleDatePicker()">
-                                <span class="date-text" id="date-text">è®¾ç½®æ—¥æœŸ</span>
+                                <span class="date-text" id="date-text">è®¾ç½®æ-¥æœŸ</span>
                                 <span class="date-clear" id="date-clear" onclick="clearDueDate(event)" style="display:none;">&times;</span>
                             </button>
                             <input type="hidden" id="modal-due-date">
                             <div class="date-popover" id="date-popover" style="display:none;">
                                 <div class="date-chips" id="date-chips"></div>
-                                <input type="text" class="date-nl-input" id="date-nl-input" placeholder="è¾“å…¥: 3d, ä¸‹å‘¨ä¸€, friday...">
+                                <input type="text" class="date-nl-input" id="date-nl-input" placeholder="è¾"å…¥: 3d, ä¸‹å'¨ä¸€, friday...">
                                 <div class="date-nl-preview" id="date-nl-preview"></div>
                                 <div class="date-calendar" id="date-calendar"></div>
-                                <button type="button" class="date-clear-btn" onclick="clearDueDate()">æ¸…é™¤æ—¥æœŸ</button>
+                                <button type="button" class="date-clear-btn" onclick="clearDueDate()">æ¸…é™¤æ-¥æœŸ</button>
                             </div>
                         </div>
                     </div>
                     <div class="prop-group">
-                        <label>ðŸ‘¤ ç›¸å…³äºº</label>
-                        <input type="text" id="modal-assignee" placeholder="ç›¸å…³äººå‘˜">
+                        <label>ðŸ'¤ ç›¸å…³äºº</label>
+                        <input type="text" id="modal-assignee" placeholder="ç›¸å…³äººå'˜">
                     </div>
                     <div class="prop-group">
-                        <label>ðŸ• æ—¶é—´æ®µ</label>
+                        <label>ðŸ• æ-¶é-´æ®µ</label>
                         <div class="tab-buttons" id="modal-tab-buttons">
                             <button type="button" class="tab-btn selected" data-tab="today">Today</button>
                             <button type="button" class="tab-btn" data-tab="week">Week</button>
@@ -987,19 +988,19 @@
                         </div>
                     </div>
                     <div class="prop-group">
-                        <label>ðŸ“Š è±¡é™</label>
+                        <label>ðŸ"Š è±¡é™</label>
                         <div class="quadrant-select-compact" id="modal-quadrant-select">
                             <label class="q-option selected" data-q="important-urgent">
                                 <input type="radio" name="modal-quadrant" value="important-urgent" checked>
-                                <span class="q-icon">ðŸ”¥</span><span class="q-text">ä¼˜å…ˆå¤„ç†</span>
+                                <span class="q-icon">ðŸ"¥</span><span class="q-text">ä¼˜å…ˆå¤"ç†</span>
                             </label>
                             <label class="q-option" data-q="important-not-urgent">
                                 <input type="radio" name="modal-quadrant" value="important-not-urgent">
-                                <span class="q-icon">ðŸŽ¯</span><span class="q-text">ç­‰ä½ ç¿»ç‰Œ</span>
+                                <span class="q-icon">ðŸŽ¯</span><span class="q-text">ç­‰ä½ ç¿»ç‰Œ</span>
                             </label>
                             <label class="q-option" data-q="not-important-urgent">
                                 <input type="radio" name="modal-quadrant" value="not-important-urgent">
-                                <span class="q-icon">ðŸ“¥</span><span class="q-text">å¾…åˆ†ç±»</span>
+                                <span class="q-icon">ðŸ"¥</span><span class="q-text">å¾…åˆ†ç±»</span>
                             </label>
                             <label class="q-option" data-q="not-important-not-urgent">
                                 <input type="radio" name="modal-quadrant" value="not-important-not-urgent">
@@ -1017,7 +1018,7 @@
                     <!-- å…ƒä¿¡æ¯ -->
                     <div class="meta-section" id="modal-meta-section">
                         <div class="meta-item" id="modal-created-at">
-                            <span>ðŸ“…</span>
+                            <span>ðŸ"…</span>
                             <span class="meta-text">åˆ›å»ºäºŽ --</span>
                         </div>
                         <div class="meta-item" id="modal-completed-at" style="display:none;">
@@ -1025,29 +1026,29 @@
                             <span class="meta-text">å®ŒæˆäºŽ --</span>
                         </div>
                         <div class="meta-item meta-reminder" id="modal-reminder-row" style="display:none;">
-                            <span>ðŸ””</span>
-                            <span class="meta-text" id="modal-reminder-text">æ— æé†’</span>
-                            <button class="meta-reminder-btn" id="modal-set-reminder-btn" onclick="openSetReminderUI()">è®¾ç½®æé†’</button>
+                            <span>ðŸ""</span>
+                            <span class="meta-text" id="modal-reminder-text">æ- æé†'</span>
+                            <button class="meta-reminder-btn" id="modal-set-reminder-btn" onclick="openSetReminderUI()">è®¾ç½®æé†'</button>
                         </div>
                     </div>
-                    <!-- å¿«æ·è®¾ç½®æé†’ -->
+                    <!-- å¿«æ·è®¾ç½®æé†' -->
                     <div class="reminder-picker" id="modal-reminder-picker" style="display:none;">
                         <div class="reminder-picker-row">
                             <input type="datetime-local" id="reminder-datetime-input" class="reminder-datetime-input">
                             <select id="reminder-repeat-select" class="reminder-repeat-select">
                                 <option value="">ä¸é‡å¤</option>
                                 <option value="daily">æ¯å¤©</option>
-                                <option value="weekly">æ¯å‘¨</option>
+                                <option value="weekly">æ¯å'¨</option>
                                 <option value="monthly">æ¯æœˆ</option>
                             </select>
                         </div>
                         <div class="reminder-picker-actions">
-                            <button class="btn btn-sm" onclick="cancelReminderPicker()">å–æ¶ˆ</button>
+                            <button class="btn btn-sm" onclick="cancelReminderPicker()">å-æ¶ˆ</button>
                             <button class="btn btn-sm btn-primary" onclick="confirmSetReminder()">ç¡®å®š</button>
                         </div>
                     </div>
                 </div>
-                <!-- å³æ ï¼šå†…å®¹ -->
+                <!-- å³æ ï¼šå†…å®¹ -->
                 <div class="task-modal-right">
                     <div id="modal-content-view" class="modal-content-view"></div>
                     <textarea id="modal-content" placeholder="è¯¦ç»†æè¿°ã€å¤‡æ³¨ã€ç›¸å…³ä¿¡æ¯..." style="display:none;"></textarea>
@@ -1056,16 +1057,16 @@
             <!-- å˜æ›´è®°å½•ï¼ˆå…¨å®½ï¼‰ -->
             <div class="changelog-section changelog-full-width" id="modal-changelog-section">
                 <button class="changelog-toggle" id="changelog-toggle" onclick="toggleChangelog()">
-                    <span>ðŸ“‹ å˜æ›´è®°å½•</span>
-                    <span class="changelog-arrow" id="changelog-arrow">â–¼</span>
+                    <span>ðŸ"‹ å˜æ›´è®°å½•</span>
+                    <span class="changelog-arrow" id="changelog-arrow">â-¼</span>
                 </button>
                 <div class="changelog-list" id="modal-changelog">
-                    <div class="changelog-empty">æš‚æ— å˜æ›´è®°å½•</div>
+                    <div class="changelog-empty">æš'æ- å˜æ›´è®°å½•</div>
                 </div>
             </div>
-            <!-- åº•éƒ¨æŒ‰é’®ï¼ˆç¼–è¾‘/æ–°å»ºæ¨¡å¼æ˜¾ç¤ºï¼‰ -->
+            <!-- åº•éƒ¨æŒ‰é'®ï¼ˆç¼-è¾'/æ-°å»ºæ¨¡å¼æ˜¾ç¤ºï¼‰ -->
             <div class="task-modal-footer" id="modal-footer-edit" style="display:none;">
-                <button class="task-modal-btn secondary" onclick="closeTaskModal()">å–æ¶ˆ</button>
+                <button class="task-modal-btn secondary" onclick="closeTaskModal()">å-æ¶ˆ</button>
                 <button class="task-modal-btn primary" id="modal-save-btn" onclick="saveTask()">ä¿å­˜</button>
             </div>
         </div>
@@ -1082,20 +1083,20 @@
 
     <!-- Focus Mode Indicator -->
     <div class="focus-mode-indicator" id="focus-indicator">
-        ðŸŽ¯ ä¸“æ³¨æ¨¡å¼ Â· æŒ‰ Esc é€€å‡º
+        ðŸŽ¯ ä¸"æ³¨æ¨¡å¼ Â· æŒ‰ Esc é€€å‡º
     </div>
 
     <!-- Keyboard Shortcuts Modal -->
     <div class="shortcuts-modal" id="shortcuts-modal">
         <div class="shortcuts-content">
-            <div class="shortcuts-title">âŒ¨ï¸ é”®ç›˜å¿«æ·é”®</div>
+            <div class="shortcuts-title">âŒ¨ï¸ é"®ç›˜å¿«æ·é"®</div>
             <div class="shortcut-item">
                 <span class="shortcut-key"><kbd>N</kbd></span>
-                <span class="shortcut-desc">æ–°å»ºä»»åŠ¡</span>
+                <span class="shortcut-desc">æ-°å»ºä»»åŠ¡</span>
             </div>
             <div class="shortcut-item">
                 <span class="shortcut-key"><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></span>
-                <span class="shortcut-desc">åˆ‡æ¢æ ‡ç­¾é¡µ</span>
+                <span class="shortcut-desc">åˆ‡æ¢æ ‡ç­¾é¡µ</span>
             </div>
             <div class="shortcut-item">
                 <span class="shortcut-key"><kbd>D</kbd></span>
@@ -1103,15 +1104,15 @@
             </div>
             <div class="shortcut-item">
                 <span class="shortcut-key"><kbd>F</kbd></span>
-                <span class="shortcut-desc">ä¸“æ³¨æ¨¡å¼</span>
+                <span class="shortcut-desc">ä¸"æ³¨æ¨¡å¼</span>
             </div>
             <div class="shortcut-item">
                 <span class="shortcut-key"><kbd>?</kbd></span>
-                <span class="shortcut-desc">æ˜¾ç¤ºå¿«æ·é”®</span>
+                <span class="shortcut-desc">æ˜¾ç¤ºå¿«æ·é"®</span>
             </div>
             <div class="shortcut-item">
                 <span class="shortcut-key"><kbd>Esc</kbd></span>
-                <span class="shortcut-desc">å…³é—­å¼¹çª—</span>
+                <span class="shortcut-desc">å…³é-­å¼¹çª-</span>
             </div>
         </div>
     </div>
@@ -1138,18 +1139,18 @@
         </a>
         <a class="mobile-nav-item" data-page="english" onclick="switchPage('english'); activateMobileNav(this)">
             <span class="mobile-nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="12" y1="7" x2="12" y2="13"/></svg></span>
-            <span class="mobile-nav-label">å­¦ä¹ </span>
+            <span class="mobile-nav-label">å­¦ä¹ </span>
         </a>
         <a class="mobile-nav-item" data-page="life" onclick="switchPage('life'); activateMobileNav(this)">
             <span class="mobile-nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
-            <span class="mobile-nav-label">ç”Ÿæ´»</span>
+            <span class="mobile-nav-label">ç"Ÿæ´»</span>
         </a>
     </nav>
 
     <!-- é˜¿å®å¯¹è¯é¢æ¿ -->
     <div class="abao-overlay" id="abao-overlay"></div>
     <div class="abao-panel" id="abao-panel">
-        <!-- å†°æ™¶æ•ˆæžœå±‚ï¼ˆç§»åŠ¨ç«¯å¯è§ï¼‰ -->
+        <!-- å†°æ™¶æ•ˆæžœå±'ï¼ˆç§»åŠ¨ç«¯å¯è§ï¼‰ -->
         <div class="abao-refract-edge left"></div>
         <div class="abao-refract-edge right"></div>
         <div class="abao-refract-edge top"></div>
@@ -1170,19 +1171,19 @@
                 <span class="abao-header-title">é˜¿å®</span>
                 <span class="abao-header-status">Â· åœ¨çº¿</span>
             </div>
-            <!-- æŒ‰é’®å·²ç§»é™¤ï¼šå…³é—­ç”¨ä¸‹æ»‘æ‰‹åŠ¿ï¼Œæ–°å¯¹è¯ç§»åˆ°å¿«æ·åŒº -->
+            <!-- æŒ‰é'®å·²ç§»é™¤ï¼šå…³é-­ç"¨ä¸‹æ»'æ‰‹åŠ¿ï¼Œæ-°å¯¹è¯ç§»åˆ°å¿«æ·åŒº -->
         </div>
         <div class="abao-messages" id="abao-messages"></div>
-        <button class="abao-scroll-bottom" id="abao-scroll-bottom">â†“ å›žåˆ°åº•éƒ¨</button>
+        <button class="abao-scroll-bottom" id="abao-scroll-bottom">â†" å›žåˆ°åº•éƒ¨</button>
         <div class="abao-shortcuts">
-            <button class="abao-shortcut-btn" id="abao-new-chat" data-text="">ðŸ”„ æ–°å¯¹è¯</button>
-            <button class="abao-shortcut-btn" data-text="ä»Šå¤©æœ‰ä»€ä¹ˆä»»åŠ¡ï¼Ÿ">ä»Šæ—¥æ¦‚è§ˆ</button>
-            <button class="abao-shortcut-btn" data-text="å¸®æˆ‘æ•´ç†å¾…åˆ†ç±»ä»»åŠ¡">æ•´ç†åˆ†ç±»</button>
-            <button class="abao-shortcut-btn" data-text="è¿™å‘¨å®Œæˆäº†å¤šå°‘ï¼Ÿ">æœ¬å‘¨ç»Ÿè®¡</button>
+            <button class="abao-shortcut-btn" id="abao-new-chat" data-text="">ðŸ"" æ-°å¯¹è¯</button>
+            <button class="abao-shortcut-btn" data-text="ä»Šå¤©æœ‰ä»€ä¹ˆä»»åŠ¡ï¼Ÿ">ä»Šæ-¥æ¦'è§ˆ</button>
+            <button class="abao-shortcut-btn" data-text="å¸®æˆ'æ•´ç†å¾…åˆ†ç±»ä»»åŠ¡">æ•´ç†åˆ†ç±»</button>
+            <button class="abao-shortcut-btn" data-text="è¿™å'¨å®Œæˆäº†å¤šå°'ï¼Ÿ">æœ¬å'¨ç»Ÿè®¡</button>
         </div>
         <div class="abao-input-area">
-            <textarea class="abao-input" id="abao-input" placeholder="è·Ÿé˜¿å®è¯´ç‚¹ä»€ä¹ˆ..." rows="1"></textarea>
-            <button class="abao-send-btn" id="abao-send" title="å‘é€">
+            <textarea class="abao-input" id="abao-input" placeholder="è·Ÿé˜¿å®è¯´ç'¹ä»€ä¹ˆ..." rows="1"></textarea>
+            <button class="abao-send-btn" id="abao-send" title="å'é€">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 8L2 14V9L8 8L2 7V2L14 8Z" fill="currentColor"/></svg>
             </button>
         </div>
@@ -1195,14 +1196,14 @@
             <button class="notif-read-all" id="notif-read-all" onclick="Notifications.readAll()">å…¨éƒ¨å·²è¯»</button>
         </div>
         <div class="notif-panel-body" id="notif-panel-body">
-            <div class="notif-empty">æš‚æ— é€šçŸ¥</div>
+            <div class="notif-empty">æš'æ- é€šçŸ¥</div>
         </div>
     </div>
 
     <!-- Reminder Banner Container (top of screen, non-dismissible) -->
     <div class="notif-banner-container" id="notif-banner-container"></div>
 
-    <!-- æ“ä½œèœå• (SPEC-047) -->
+    <!-- æ"ä½œèœå• (SPEC-047) -->
     <div class="action-sheet-overlay" id="action-sheet-overlay" style="display:none">
         <div class="action-sheet" id="action-sheet"></div>
     </div>
@@ -1212,11 +1213,11 @@
     <script src="assets/js/utils.js?v=20260228a"></script>
     <script src="assets/js/app.js?v=20260228a"></script>
     <script src="assets/js/tasks.js?v=20260228a"></script>
-    <script src="assets/js/modal.js?v=20260228a"></script>
+    <script src="assets/js/modal.js?v=20260228b"></script>
     <script src="assets/js/datepicker.js?v=20260228a"></script>
     <script src="assets/js/drag.js?v=20260228a"></script>
     <script src="assets/js/actionsheet.js?v=20260228a"></script>
-    <script src="assets/js/share-modal.js?v=20260228a"></script>
+    <script src="assets/js/share-modal.js?v=20260228b"></script>
     <script src="assets/js/review.js?v=20260228a"></script>
     <script src="assets/js/routines.js?v=20260228a"></script>
     <script src="assets/js/features.js?v=20260228a"></script>
@@ -1225,7 +1226,7 @@
     <script src="assets/js/abao.js?v=20260228a"></script>
     <script src="assets/js/english.js?v=20260228a"></script>
     <script src="assets/js/life.js?v=20260228a"></script>
-    <script src="assets/js/expense.js?v=20260228a"></script>
+    <script src="assets/js/expense.js?v=20260228b"></script>
     <script src="assets/js/expense-analytics.js?v=20260228a"></script>
     <script src="assets/js/trip.js?v=20260228a"></script>
     <script src="assets/js/health-data.js?v=20260228a"></script>
@@ -1245,14 +1246,14 @@
     renderPendingItems();
     if (typeof Moment !== 'undefined') { Moment.load(); Moment.startAutoRefresh(); }
 
-    // åˆå§‹åŒ–å®ŒæˆåŽä¸»åŠ¨æ‹‰ä¸€æ¬¡æ”¶ä»¶ç®±ï¼ˆè¡¥è¶³ switchPage æœªè¢«è°ƒç”¨æ—¶çš„ç©ºç™½ï¼‰
+    // åˆå§‹åŒ-å®ŒæˆåŽä¸»åŠ¨æ‹‰ä¸€æ¬¡æ"¶ä»¶ç®±ï¼ˆè¡¥è¶³ switchPage æœªè¢«è°ƒç"¨æ-¶çš"ç©ºç™½ï¼‰
     setTimeout(function() {
         if (typeof Friends !== 'undefined' && Friends.loadSharedInbox) {
             Friends.loadSharedInbox();
         }
     }, 2500); // wait for auth IIFE (matches updateInboxBadge at 2000ms)
 
-    // Register Service Worker (ç‰ˆæœ¬å·å¼ºåˆ¶æ›´æ–°)
+    // Register Service Worker (ç‰ˆæœ¬å·å¼ºåˆ¶æ›´æ-°)
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(regs) {
             regs.forEach(function(r) { r.update(); });

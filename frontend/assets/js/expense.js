@@ -1091,10 +1091,12 @@ var Expense = (function() {
             footer.innerHTML =
                 '<button class="btn btn-danger-text" onclick="Expense.deleteEntry()">删除</button>' +
                 '<button class="btn btn-primary" onclick="Expense.analyzeExisting()"' + aiGuestAttr + ' style="background:linear-gradient(135deg,#667eea,#764ba2)">阿宝分析 ✨' + aiHint + '</button>' +
+                '<button class="btn btn-secondary" onclick="Expense.shareCurrentEntry()">📤</button>' +
                 '<button class="btn btn-secondary" onclick="Expense.editEntry()">编辑</button>';
         } else {
             footer.innerHTML =
                 '<button class="btn btn-danger-text" onclick="Expense.deleteEntry()">删除</button>' +
+                '<button class="btn btn-secondary" onclick="Expense.shareCurrentEntry()">📤</button>' +
                 '<button class="btn btn-primary" onclick="Expense.editEntry()">编辑</button>';
         }
     }
@@ -1129,6 +1131,13 @@ var Expense = (function() {
             showToast('分析失败: ' + (e.message || '请稍后重试'), 'error');
             // Reload detail to restore state
             if (_currentDetailId) openDetail(_currentDetailId);
+        }
+    }
+
+    function shareCurrentEntry() {
+        if (!_currentDetailId) return;
+        if (typeof Friends !== 'undefined') {
+            Friends.openShareModal('expense', _currentDetailId);
         }
     }
 
@@ -1341,5 +1350,6 @@ var Expense = (function() {
         setCurrency: setCurrency,
         toggleAnalytics: toggleAnalytics,
         getCurrentDetailId: function() { return _currentDetailId; },
+        shareCurrentEntry: shareCurrentEntry,
     };
 })();
