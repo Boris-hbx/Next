@@ -746,6 +746,817 @@ var HealthData = (function() {
         }
     ];
 
+    // =========================================================================
+    // 站桩 — 8 stances (zz-00 ~ zz-07)
+    // Static holds: each has only 2 keyframes (prep → stance)
+    // =========================================================================
+
+    var ZZ_STANDING = BDJ_STANDING; // Same shared standing pose
+
+    var ZHANZHUANG = [
+        // 0. 普通站立（基准对照）
+        {
+            id:'zz-00', name:'普通站立', category:'站桩',
+            description:'日常随意站立姿势，无特殊意念或骨骼排列要求。与站桩相比，缺乏"松沉"的内在要领——没有百会上领、尾闾内收、含胸拔背等结构对齐，呼吸为浅层胸式呼吸，肌肉紧张分布不均。虽外形与无极桩相似，但因无意念引导和结构调整，对经络的刺激极为有限，气血运行基本处于日常基础水平。',
+            benefits:['维持基本直立姿态','作为站桩效果的基准对照'],
+            stimulatedMeridians:[
+                {meridianId:'BL', intensity:'secondary', note:'维持直立姿态，脊旁肌群被动参与'},
+                {meridianId:'ST', intensity:'secondary', note:'下肢承重，胃经沿线被动受力'}
+            ],
+            keyAcupoints:['KI-1'],
+            insights:[
+                {label:'意念', content:'无特定意念引导，注意力分散于外界'},
+                {label:'骨骼排列', content:'习惯性姿态，脊柱常有前倾或侧弯代偿'},
+                {label:'松沉', content:'肌肉紧张分布不均，肩颈常不自觉耸起'},
+                {label:'呼吸', content:'浅层胸式呼吸，横膈膜运动幅度小'}
+            ],
+            keyframes:[
+                {time:0, pose:cp(ZZ_STANDING), label:'普通站立'},
+                {time:1, pose:cp(ZZ_STANDING), label:'普通站立——无特殊调整'}
+            ],
+            duration:1
+        },
+        // 1. 混元桩
+        {
+            id:'zz-01', name:'混元桩', category:'站桩',
+            description:'双臂环抱于胸前如抱球，含胸拔背。自然呼吸，渐进为腹式呼吸，意守丹田。',
+            benefits:['调和气血，培元固本','增强上肢及肩背耐力','改善呼吸深度与均匀性','安神定志，提升专注力'],
+            stimulatedMeridians:[
+                {meridianId:'RN', intensity:'primary', note:'含胸收腹激活任脉'},
+                {meridianId:'DU', intensity:'primary', note:'拔背伸脊刺激督脉'},
+                {meridianId:'PC', intensity:'secondary', note:'环抱姿势牵拉心包经'},
+                {meridianId:'LU', intensity:'secondary', note:'扩胸含胸间接刺激肺经'}
+            ],
+            keyAcupoints:['RN-6','DU-20','PC-8','RN-4'],
+            insights:[
+                {label:'意念', content:'意守丹田（RN-6），引导气沉入下腹'},
+                {label:'骨骼排列', content:'百会上领、尾闾内收、含胸拔背，任督二脉形成完整回路'},
+                {label:'松沉', content:'系统性放松肩、肘、腕，重力下沉至脚底涌泉（KI-1）'},
+                {label:'呼吸', content:'腹式深呼吸，吸气小腹微鼓，呼气自然内收'}
+            ],
+            videoUrl:'/assets/videos/zhanzhuang/zz-01.mp4',
+            keyframes:[
+                {time:0, pose:cp(ZZ_STANDING), label:'自然站立'},
+                {time:1, pose:{
+                    head:{x:0.50,y:0.06}, neck:{x:0.50,y:0.12},
+                    shoulderL:{x:0.37,y:0.18}, shoulderR:{x:0.63,y:0.18},
+                    elbowL:{x:0.30,y:0.26}, elbowR:{x:0.70,y:0.26},
+                    wristL:{x:0.40,y:0.28}, wristR:{x:0.60,y:0.28},
+                    hip:{x:0.50,y:0.47},
+                    kneeL:{x:0.43,y:0.67}, kneeR:{x:0.57,y:0.67},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'混元桩——双臂环抱胸前如抱球'}
+            ],
+            duration:15
+        },
+        // 2. 抱球桩
+        {
+            id:'zz-02', name:'抱球桩', category:'站桩',
+            description:'双臂在腹前环抱，掌心向内对脐。腹式呼吸为主，意注小腹。',
+            benefits:['培补脾胃元气','温养肾气','促进腹部气血运行','增强下肢稳定性'],
+            stimulatedMeridians:[
+                {meridianId:'RN', intensity:'primary', note:'掌心对脐激活任脉'},
+                {meridianId:'SP', intensity:'primary', note:'意注腹部培补脾经'},
+                {meridianId:'KI', intensity:'secondary', note:'站桩沉气温养肾经'},
+                {meridianId:'ST', intensity:'secondary', note:'腹前环抱间接刺激胃经'}
+            ],
+            keyAcupoints:['RN-8','RN-6','SP-6','KI-3'],
+            insights:[
+                {label:'意念', content:'意注神阙（肚脐），内视下丹田区域'},
+                {label:'骨骼排列', content:'手掌对脐形成"气场环"，任脉前侧通道被激活'},
+                {label:'松沉', content:'重心略低于混元桩，气更容易沉入下焦'},
+                {label:'呼吸', content:'深腹式呼吸，呼气时手掌微有内合之意'}
+            ],
+            videoUrl:'/assets/videos/zhanzhuang/zz-02.mp4',
+            keyframes:[
+                {time:0, pose:cp(ZZ_STANDING), label:'自然站立'},
+                {time:1, pose:{
+                    head:{x:0.50,y:0.06}, neck:{x:0.50,y:0.12},
+                    shoulderL:{x:0.37,y:0.18}, shoulderR:{x:0.63,y:0.18},
+                    elbowL:{x:0.32,y:0.32}, elbowR:{x:0.68,y:0.32},
+                    wristL:{x:0.42,y:0.38}, wristR:{x:0.58,y:0.38},
+                    hip:{x:0.50,y:0.47},
+                    kneeL:{x:0.43,y:0.67}, kneeR:{x:0.57,y:0.67},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'抱球桩——双臂腹前环抱，掌心对脐'}
+            ],
+            duration:15
+        },
+        // 3. 降气桩
+        {
+            id:'zz-03', name:'降气桩', category:'站桩',
+            description:'双手掌心向下置于腹前如按浮球。吸气时意守丹田，呼气时意念引气沿腿内侧降至涌泉。',
+            benefits:['引气下行，降虚火','增强肾气与下肢力量','促进消化吸收','安定心神，缓解焦虑'],
+            stimulatedMeridians:[
+                {meridianId:'KI', intensity:'primary', note:'引气至涌泉刺激肾经'},
+                {meridianId:'ST', intensity:'primary', note:'掌按腹前刺激胃经'},
+                {meridianId:'RN', intensity:'secondary', note:'意守丹田间接激活任脉'},
+                {meridianId:'BL', intensity:'secondary', note:'气沉下行间接刺激膀胱经'}
+            ],
+            keyAcupoints:['KI-1','ST-36','RN-6','BL-23'],
+            insights:[
+                {label:'意念', content:'呼气时意念引气从丹田沿腿内侧降至涌泉（KI-1）'},
+                {label:'骨骼排列', content:'掌心向下对地，形成向下的引导力线'},
+                {label:'松沉', content:'全身有意识地"放下"，特别适合虚火上浮者'},
+                {label:'呼吸', content:'呼气略长于吸气，助气下行'}
+            ],
+            videoUrl:'/assets/videos/zhanzhuang/zz-03.mp4',
+            keyframes:[
+                {time:0, pose:cp(ZZ_STANDING), label:'自然站立'},
+                {time:1, pose:{
+                    head:{x:0.50,y:0.06}, neck:{x:0.50,y:0.12},
+                    shoulderL:{x:0.37,y:0.18}, shoulderR:{x:0.63,y:0.18},
+                    elbowL:{x:0.34,y:0.30}, elbowR:{x:0.66,y:0.30},
+                    wristL:{x:0.38,y:0.42}, wristR:{x:0.62,y:0.42},
+                    hip:{x:0.50,y:0.47},
+                    kneeL:{x:0.43,y:0.67}, kneeR:{x:0.57,y:0.67},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'降气桩——掌心向下按于腹前如按浮球'}
+            ],
+            duration:15
+        },
+        // 4. 扶按桩
+        {
+            id:'zz-04', name:'扶按桩', category:'站桩',
+            description:'双手在身体两侧微微下按如按桌面。自然呼吸，呼气时加强下按意念。',
+            benefits:['疏通手三阳经','增强肩臂力量','调理气机升降','改善肩背僵硬'],
+            stimulatedMeridians:[
+                {meridianId:'LI', intensity:'primary', note:'手臂外展下按刺激大肠经'},
+                {meridianId:'SJ', intensity:'primary', note:'手臂侧张刺激三焦经'},
+                {meridianId:'SI', intensity:'secondary', note:'肩背张力间接刺激小肠经'},
+                {meridianId:'DU', intensity:'secondary', note:'挺脊立身间接刺激督脉'}
+            ],
+            keyAcupoints:['LI-11','SJ-5','SI-3','DU-14'],
+            insights:[
+                {label:'意念', content:'呼气时加强双手下按之意，如按水中浮球'},
+                {label:'骨骼排列', content:'双臂外展打开腋下，疏通手三阳经走行路线'},
+                {label:'松沉', content:'肩松坠肘，力达掌根而非指尖'},
+                {label:'呼吸', content:'自然呼吸，呼气配合下按动作的意念'}
+            ],
+            videoUrl:'/assets/videos/zhanzhuang/zz-04.mp4',
+            keyframes:[
+                {time:0, pose:cp(ZZ_STANDING), label:'自然站立'},
+                {time:1, pose:{
+                    head:{x:0.50,y:0.06}, neck:{x:0.50,y:0.12},
+                    shoulderL:{x:0.37,y:0.18}, shoulderR:{x:0.63,y:0.18},
+                    elbowL:{x:0.30,y:0.30}, elbowR:{x:0.70,y:0.30},
+                    wristL:{x:0.26,y:0.42}, wristR:{x:0.74,y:0.42},
+                    hip:{x:0.50,y:0.47},
+                    kneeL:{x:0.43,y:0.67}, kneeR:{x:0.57,y:0.67},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'扶按桩——双手体侧下按如按桌面'}
+            ],
+            duration:15
+        },
+        // 5. 提抱桩
+        {
+            id:'zz-05', name:'提抱桩', category:'站桩',
+            description:'双臂上提至胸前高度，掌心向上如托物。自然呼吸，吸气时微有上提之意。',
+            benefits:['提升脾胃清气','宣发肺气','增强上肢及胸部肌力','改善中气不足'],
+            stimulatedMeridians:[
+                {meridianId:'SP', intensity:'primary', note:'上提之意培补脾经升清之力'},
+                {meridianId:'LU', intensity:'primary', note:'展胸托掌宣发肺经'},
+                {meridianId:'ST', intensity:'secondary', note:'间接刺激胃经促进运化'},
+                {meridianId:'PC', intensity:'secondary', note:'掌心朝上间接刺激心包经'}
+            ],
+            keyAcupoints:['SP-6','LU-1','ST-36','PC-6'],
+            insights:[
+                {label:'意念', content:'吸气时微有上提之意，如双掌托起轻盈之物'},
+                {label:'骨骼排列', content:'掌心朝天，劳宫穴（PC-8）对天，接引清气'},
+                {label:'松沉', content:'上提而不耸肩，沉肩坠肘与上托形成矛盾统一'},
+                {label:'呼吸', content:'吸气稍深配合上提意念，呼气自然放松'}
+            ],
+            videoUrl:'/assets/videos/zhanzhuang/zz-05.mp4',
+            keyframes:[
+                {time:0, pose:cp(ZZ_STANDING), label:'自然站立'},
+                {time:1, pose:{
+                    head:{x:0.50,y:0.06}, neck:{x:0.50,y:0.12},
+                    shoulderL:{x:0.37,y:0.18}, shoulderR:{x:0.63,y:0.18},
+                    elbowL:{x:0.32,y:0.26}, elbowR:{x:0.68,y:0.26},
+                    wristL:{x:0.40,y:0.24}, wristR:{x:0.60,y:0.24},
+                    hip:{x:0.50,y:0.47},
+                    kneeL:{x:0.43,y:0.67}, kneeR:{x:0.57,y:0.67},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'提抱桩——掌心向上如托物于胸前'}
+            ],
+            duration:15
+        },
+        // 6. 马步桩
+        {
+            id:'zz-06', name:'马步桩', category:'站桩',
+            description:'两脚宽开深蹲，大腿接近水平。自然呼吸，意守丹田，忌憋气。',
+            benefits:['强化下肢肌力与耐力','增强膝关节稳定性','壮腰固肾','培养根基之力'],
+            stimulatedMeridians:[
+                {meridianId:'ST', intensity:'primary', note:'深蹲刺激大腿前侧胃经'},
+                {meridianId:'SP', intensity:'primary', note:'大腿内侧受力刺激脾经'},
+                {meridianId:'GB', intensity:'primary', note:'宽步站立拉伸胆经'},
+                {meridianId:'KI', intensity:'secondary', note:'沉腰坐胯间接温养肾经'},
+                {meridianId:'BL', intensity:'secondary', note:'腰背挺直间接刺激膀胱经'}
+            ],
+            keyAcupoints:['ST-36','SP-10','GB-34','KI-3','BL-40'],
+            insights:[
+                {label:'意念', content:'意守丹田，忌憋气——呼吸自然不与蹲姿对抗'},
+                {label:'骨骼排列', content:'宽步深蹲，大腿近水平，膝不超脚尖。对下肢三阴三阳经施加最强刺激'},
+                {label:'松沉', content:'腰胯放松下坐，非肌肉硬撑——"坐胯"而非"蹲腿"'},
+                {label:'呼吸', content:'自然呼吸为主，切忌在深蹲时闭气'}
+            ],
+            videoUrl:'/assets/videos/zhanzhuang/zz-06.mp4',
+            keyframes:[
+                {time:0, pose:cp(ZZ_STANDING), label:'自然站立'},
+                {time:1, pose:{
+                    head:{x:0.50,y:0.06}, neck:{x:0.50,y:0.12},
+                    shoulderL:{x:0.37,y:0.18}, shoulderR:{x:0.63,y:0.18},
+                    elbowL:{x:0.34,y:0.28}, elbowR:{x:0.66,y:0.28},
+                    wristL:{x:0.38,y:0.38}, wristR:{x:0.62,y:0.38},
+                    hip:{x:0.50,y:0.52},
+                    kneeL:{x:0.34,y:0.66}, kneeR:{x:0.66,y:0.66},
+                    ankleL:{x:0.34,y:0.88}, ankleR:{x:0.66,y:0.88}
+                }, label:'马步桩——宽步深蹲，大腿近水平'}
+            ],
+            duration:10
+        },
+        // 7. 无极桩
+        {
+            id:'zz-07', name:'无极桩', category:'站桩',
+            description:'双手自然下垂，最简朴的站桩。自然呼吸，不加任何意念，体悟无极之境。',
+            benefits:['回归自然，放松身心','沟通任督二脉','培养整体气感','适合初学者入门'],
+            stimulatedMeridians:[
+                {meridianId:'DU', intensity:'primary', note:'自然站立挺脊激活督脉'},
+                {meridianId:'RN', intensity:'primary', note:'松腹自然呼吸激活任脉'},
+                {meridianId:'BL', intensity:'secondary', note:'脊柱两侧放松间接刺激膀胱经'},
+                {meridianId:'KI', intensity:'secondary', note:'足踏实地间接温养肾经'}
+            ],
+            keyAcupoints:['DU-20','RN-6','KI-1','DU-4'],
+            insights:[
+                {label:'意念', content:'不加特定意念，体悟"无极"——但这种"无念"本身就是高级的内观状态'},
+                {label:'骨骼排列', content:'外形近似普通站立，但百会上领、下颌微收、尾闾内敛，脊柱如线贯珠'},
+                {label:'松沉', content:'全身系统性放松，逐节检查：从头顶松到脚底，与普通站立的"散"截然不同'},
+                {label:'呼吸', content:'自然呼吸不加干预，但因身体结构对齐，呼吸自然变深变匀'},
+                {label:'与普通站立的本质区别', content:'普通站立是无意识的习惯姿态；无极桩是有意识地"归于无极"——用最少的肌肉维持结构，让气血自然流通。两者外形差异仅在毫厘之间，对经络的激活程度却有天壤之别'}
+            ],
+            videoUrl:'/assets/videos/zhanzhuang/zz-07.mp4',
+            keyframes:[
+                {time:0, pose:cp(ZZ_STANDING), label:'自然站立'},
+                {time:1, pose:{
+                    head:{x:0.50,y:0.06}, neck:{x:0.50,y:0.12},
+                    shoulderL:{x:0.38,y:0.18}, shoulderR:{x:0.62,y:0.18},
+                    elbowL:{x:0.34,y:0.30}, elbowR:{x:0.66,y:0.30},
+                    wristL:{x:0.32,y:0.44}, wristR:{x:0.68,y:0.44},
+                    hip:{x:0.50,y:0.46},
+                    kneeL:{x:0.44,y:0.67}, kneeR:{x:0.56,y:0.67},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'无极桩——自然下垂，微屈膝'}
+            ],
+            duration:15
+        }
+    ];
+
+    // =========================================================================
+    // 易筋经 — 12 exercises (yjj-01 ~ yjj-12)
+    // Dynamic movements with 4-5 keyframes each
+    // =========================================================================
+
+    var YJJ_STANDING = BDJ_STANDING; // Same shared standing pose
+
+    var YIJINJING = [
+        // 1. 韦驮献杵第一势
+        {
+            id:'yjj-01', name:'韦驮献杵第一势', category:'易筋经',
+            description:'双手合十于胸前，宁心静气，调匀呼吸。此为易筋经起势，通过合掌聚气安定心神，贯通心包经与心经。',
+            benefits:['宁心安神','调匀呼吸','贯通心包经与心经','聚集内气于膻中'],
+            stimulatedMeridians:[
+                {meridianId:'PC', intensity:'primary', note:'合掌聚气刺激心包经'},
+                {meridianId:'HT', intensity:'primary', note:'手少阴心经通过掌心内侧贯通'},
+                {meridianId:'RN', intensity:'secondary', note:'膻中穴位于任脉，合掌间接刺激'}
+            ],
+            keyAcupoints:['PC-8','HT-7','RN-17'],
+            videoUrl:'/assets/videos/yijinjing/yjj-01.mp4',
+            keyframes:[
+                {time:0, pose:cp(YJJ_STANDING), label:'预备式'},
+                {time:0.25, pose:{
+                    head:{x:0.50,y:0.06}, neck:{x:0.50,y:0.12},
+                    shoulderL:{x:0.38,y:0.18}, shoulderR:{x:0.62,y:0.18},
+                    elbowL:{x:0.38,y:0.26}, elbowR:{x:0.62,y:0.26},
+                    wristL:{x:0.46,y:0.28}, wristR:{x:0.54,y:0.28},
+                    hip:{x:0.50,y:0.46},
+                    kneeL:{x:0.44,y:0.66}, kneeR:{x:0.56,y:0.66},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'双手提至胸前'},
+                {time:0.50, pose:{
+                    head:{x:0.50,y:0.06}, neck:{x:0.50,y:0.12},
+                    shoulderL:{x:0.38,y:0.18}, shoulderR:{x:0.62,y:0.18},
+                    elbowL:{x:0.40,y:0.26}, elbowR:{x:0.60,y:0.26},
+                    wristL:{x:0.48,y:0.22}, wristR:{x:0.52,y:0.22},
+                    hip:{x:0.50,y:0.46},
+                    kneeL:{x:0.44,y:0.66}, kneeR:{x:0.56,y:0.66},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'双手合十于胸前'},
+                {time:0.80, pose:{
+                    head:{x:0.50,y:0.06}, neck:{x:0.50,y:0.12},
+                    shoulderL:{x:0.38,y:0.18}, shoulderR:{x:0.62,y:0.18},
+                    elbowL:{x:0.40,y:0.26}, elbowR:{x:0.60,y:0.26},
+                    wristL:{x:0.48,y:0.22}, wristR:{x:0.52,y:0.22},
+                    hip:{x:0.50,y:0.46},
+                    kneeL:{x:0.44,y:0.66}, kneeR:{x:0.56,y:0.66},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'合掌静立，宁心聚气'},
+                {time:1, pose:cp(YJJ_STANDING), label:'还原'}
+            ],
+            duration:10
+        },
+        // 2. 韦驮献杵第二势
+        {
+            id:'yjj-02', name:'韦驮献杵第二势', category:'易筋经',
+            description:'双臂侧平举，掌心向上，展臂扩胸。充分伸展上肢内外侧经络，宣通肺气，疏理三焦。',
+            benefits:['宣通肺气','疏理三焦','增强上肢力量','扩展胸廓'],
+            stimulatedMeridians:[
+                {meridianId:'LU', intensity:'primary', note:'展臂扩胸直接拉伸肺经'},
+                {meridianId:'LI', intensity:'primary', note:'手臂外展刺激大肠经'},
+                {meridianId:'SJ', intensity:'secondary', note:'上肢外侧伸展间接刺激三焦经'}
+            ],
+            keyAcupoints:['LU-1','LI-4','SJ-5'],
+            videoUrl:'/assets/videos/yijinjing/yjj-02.mp4',
+            keyframes:[
+                {time:0, pose:cp(YJJ_STANDING), label:'预备式'},
+                {time:0.25, pose:{
+                    head:{x:0.50,y:0.06}, neck:{x:0.50,y:0.12},
+                    shoulderL:{x:0.38,y:0.18}, shoulderR:{x:0.62,y:0.18},
+                    elbowL:{x:0.30,y:0.22}, elbowR:{x:0.70,y:0.22},
+                    wristL:{x:0.24,y:0.30}, wristR:{x:0.76,y:0.30},
+                    hip:{x:0.50,y:0.46},
+                    kneeL:{x:0.44,y:0.66}, kneeR:{x:0.56,y:0.66},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'双臂向两侧展开'},
+                {time:0.50, pose:{
+                    head:{x:0.50,y:0.06}, neck:{x:0.50,y:0.12},
+                    shoulderL:{x:0.36,y:0.18}, shoulderR:{x:0.64,y:0.18},
+                    elbowL:{x:0.22,y:0.18}, elbowR:{x:0.78,y:0.18},
+                    wristL:{x:0.10,y:0.18}, wristR:{x:0.90,y:0.18},
+                    hip:{x:0.50,y:0.46},
+                    kneeL:{x:0.44,y:0.66}, kneeR:{x:0.56,y:0.66},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'双臂侧平举，掌心向上'},
+                {time:0.80, pose:{
+                    head:{x:0.50,y:0.06}, neck:{x:0.50,y:0.12},
+                    shoulderL:{x:0.36,y:0.18}, shoulderR:{x:0.64,y:0.18},
+                    elbowL:{x:0.22,y:0.18}, elbowR:{x:0.78,y:0.18},
+                    wristL:{x:0.10,y:0.18}, wristR:{x:0.90,y:0.18},
+                    hip:{x:0.50,y:0.46},
+                    kneeL:{x:0.44,y:0.66}, kneeR:{x:0.56,y:0.66},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'保持侧平举'},
+                {time:1, pose:cp(YJJ_STANDING), label:'还原'}
+            ],
+            duration:10
+        },
+        // 3. 韦驮献杵第三势
+        {
+            id:'yjj-03', name:'韦驮献杵第三势', category:'易筋经',
+            description:'双臂上举托天，掌心朝上，全身充分伸展。拉伸三焦经，贯通督脉，振奋阳气。',
+            benefits:['拉伸三焦经','贯通督脉','振奋全身阳气','伸展脊柱'],
+            stimulatedMeridians:[
+                {meridianId:'SJ', intensity:'primary', note:'双手上托直接拉伸三焦经'},
+                {meridianId:'DU', intensity:'primary', note:'脊柱伸展贯通督脉'},
+                {meridianId:'BL', intensity:'secondary', note:'背部伸展间接刺激膀胱经'},
+                {meridianId:'ST', intensity:'secondary', note:'腹部拉伸间接刺激胃经'}
+            ],
+            keyAcupoints:['SJ-5','DU-20','DU-14','ST-36'],
+            videoUrl:'/assets/videos/yijinjing/yjj-03.mp4',
+            keyframes:[
+                {time:0, pose:cp(YJJ_STANDING), label:'预备式'},
+                {time:0.20, pose:{
+                    head:{x:0.50,y:0.06}, neck:{x:0.50,y:0.12},
+                    shoulderL:{x:0.38,y:0.17}, shoulderR:{x:0.62,y:0.17},
+                    elbowL:{x:0.40,y:0.14}, elbowR:{x:0.60,y:0.14},
+                    wristL:{x:0.46,y:0.10}, wristR:{x:0.54,y:0.10},
+                    hip:{x:0.50,y:0.46},
+                    kneeL:{x:0.44,y:0.66}, kneeR:{x:0.56,y:0.66},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'双手经胸前上举'},
+                {time:0.45, pose:{
+                    head:{x:0.50,y:0.06}, neck:{x:0.50,y:0.11},
+                    shoulderL:{x:0.39,y:0.16}, shoulderR:{x:0.61,y:0.16},
+                    elbowL:{x:0.42,y:0.08}, elbowR:{x:0.58,y:0.08},
+                    wristL:{x:0.46,y:0.02}, wristR:{x:0.54,y:0.02},
+                    hip:{x:0.50,y:0.46},
+                    kneeL:{x:0.44,y:0.66}, kneeR:{x:0.56,y:0.66},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'双臂上举托天，掌心朝上'},
+                {time:0.70, pose:{
+                    head:{x:0.50,y:0.06}, neck:{x:0.50,y:0.11},
+                    shoulderL:{x:0.39,y:0.16}, shoulderR:{x:0.61,y:0.16},
+                    elbowL:{x:0.42,y:0.08}, elbowR:{x:0.58,y:0.08},
+                    wristL:{x:0.46,y:0.02}, wristR:{x:0.54,y:0.02},
+                    hip:{x:0.50,y:0.46},
+                    kneeL:{x:0.44,y:0.66}, kneeR:{x:0.56,y:0.66},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'充分伸展，上托'},
+                {time:1, pose:cp(YJJ_STANDING), label:'还原'}
+            ],
+            duration:10
+        },
+        // 4. 摘星换斗势
+        {
+            id:'yjj-04', name:'摘星换斗势', category:'易筋经',
+            description:'一手上举一手按腰，身体侧弯，左右交替。如摘星辰换北斗，拉伸体侧胆经，强肾固腰。',
+            benefits:['拉伸体侧胆经','强肾固腰','增强脊柱侧弯柔韧性','疏泄肝胆之气'],
+            stimulatedMeridians:[
+                {meridianId:'GB', intensity:'primary', note:'侧弯直接拉伸胆经'},
+                {meridianId:'KI', intensity:'primary', note:'手按腰部刺激肾经'},
+                {meridianId:'LR', intensity:'secondary', note:'体侧伸展间接刺激肝经'},
+                {meridianId:'BL', intensity:'secondary', note:'腰部动作间接刺激膀胱经'}
+            ],
+            keyAcupoints:['GB-34','KI-3','BL-23','LR-14'],
+            videoUrl:'/assets/videos/yijinjing/yjj-04.mp4',
+            keyframes:[
+                {time:0, pose:cp(YJJ_STANDING), label:'预备式'},
+                {time:0.20, pose:{
+                    head:{x:0.54,y:0.07}, neck:{x:0.52,y:0.13},
+                    shoulderL:{x:0.40,y:0.17}, shoulderR:{x:0.64,y:0.19},
+                    elbowL:{x:0.42,y:0.08}, elbowR:{x:0.64,y:0.32},
+                    wristL:{x:0.46,y:0.02}, wristR:{x:0.62,y:0.42},
+                    hip:{x:0.52,y:0.46},
+                    kneeL:{x:0.44,y:0.66}, kneeR:{x:0.56,y:0.66},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'左手上举，右手按腰，身体右倾'},
+                {time:0.45, pose:cp(YJJ_STANDING), label:'回正'},
+                {time:0.65, pose:{
+                    head:{x:0.46,y:0.07}, neck:{x:0.48,y:0.13},
+                    shoulderL:{x:0.36,y:0.19}, shoulderR:{x:0.60,y:0.17},
+                    elbowL:{x:0.36,y:0.32}, elbowR:{x:0.58,y:0.08},
+                    wristL:{x:0.38,y:0.42}, wristR:{x:0.54,y:0.02},
+                    hip:{x:0.48,y:0.46},
+                    kneeL:{x:0.44,y:0.66}, kneeR:{x:0.56,y:0.66},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'右手上举，左手按腰，身体左倾'},
+                {time:1, pose:cp(YJJ_STANDING), label:'还原'}
+            ],
+            duration:12
+        },
+        // 5. 倒拽九牛尾势
+        {
+            id:'yjj-05', name:'倒拽九牛尾势', category:'易筋经',
+            description:'弓步站立，前手握拳伸出，后手握拳回拽，如倒拽牛尾。左右交替，强化上肢筋骨，疏通手阳明大肠经与手太阳小肠经。',
+            benefits:['强化上肢筋骨','疏通大肠经与小肠经','增强臂力与握力','锻炼腰腿力量'],
+            stimulatedMeridians:[
+                {meridianId:'LI', intensity:'primary', note:'前拳伸出刺激大肠经'},
+                {meridianId:'SI', intensity:'primary', note:'后拳回拽刺激小肠经'},
+                {meridianId:'LU', intensity:'secondary', note:'手臂内侧伸展间接刺激肺经'},
+                {meridianId:'BL', intensity:'secondary', note:'弓步牵拉间接刺激膀胱经'}
+            ],
+            keyAcupoints:['LI-4','SI-3','LU-5','BL-40'],
+            videoUrl:'/assets/videos/yijinjing/yjj-05.mp4',
+            keyframes:[
+                {time:0, pose:cp(YJJ_STANDING), label:'预备式'},
+                {time:0.20, pose:{
+                    head:{x:0.50,y:0.06}, neck:{x:0.50,y:0.12},
+                    shoulderL:{x:0.36,y:0.18}, shoulderR:{x:0.64,y:0.18},
+                    elbowL:{x:0.22,y:0.20}, elbowR:{x:0.70,y:0.28},
+                    wristL:{x:0.12,y:0.20}, wristR:{x:0.74,y:0.38},
+                    hip:{x:0.50,y:0.48},
+                    kneeL:{x:0.38,y:0.64}, kneeR:{x:0.58,y:0.68},
+                    ankleL:{x:0.34,y:0.88}, ankleR:{x:0.60,y:0.88}
+                }, label:'左弓步，左拳前伸，右拳后拽'},
+                {time:0.45, pose:cp(YJJ_STANDING), label:'回正'},
+                {time:0.65, pose:{
+                    head:{x:0.50,y:0.06}, neck:{x:0.50,y:0.12},
+                    shoulderL:{x:0.36,y:0.18}, shoulderR:{x:0.64,y:0.18},
+                    elbowL:{x:0.30,y:0.28}, elbowR:{x:0.78,y:0.20},
+                    wristL:{x:0.26,y:0.38}, wristR:{x:0.88,y:0.20},
+                    hip:{x:0.50,y:0.48},
+                    kneeL:{x:0.42,y:0.68}, kneeR:{x:0.62,y:0.64},
+                    ankleL:{x:0.40,y:0.88}, ankleR:{x:0.66,y:0.88}
+                }, label:'右弓步，右拳前伸，左拳后拽'},
+                {time:1, pose:cp(YJJ_STANDING), label:'还原'}
+            ],
+            duration:12
+        },
+        // 6. 出爪亮翅势
+        {
+            id:'yjj-06', name:'出爪亮翅势', category:'易筋经',
+            description:'双手前推如鹰爪，指尖用力张开，再收回腋下。反复推出收回，强化手三阳经筋力，如雄鹰亮翅。',
+            benefits:['强化手三阳经筋力','增强指力与臂力','疏通大肠经与三焦经','改善上肢气血循环'],
+            stimulatedMeridians:[
+                {meridianId:'LI', intensity:'primary', note:'推掌张指直接刺激大肠经'},
+                {meridianId:'SJ', intensity:'primary', note:'手指张开拉伸三焦经'},
+                {meridianId:'LU', intensity:'secondary', note:'推掌时内侧间接刺激肺经'},
+                {meridianId:'SI', intensity:'secondary', note:'手指伸张间接刺激小肠经'}
+            ],
+            keyAcupoints:['LI-4','SJ-5','LU-7','SI-3'],
+            videoUrl:'/assets/videos/yijinjing/yjj-06.mp4',
+            keyframes:[
+                {time:0, pose:{
+                    head:{x:0.50,y:0.06}, neck:{x:0.50,y:0.12},
+                    shoulderL:{x:0.38,y:0.18}, shoulderR:{x:0.62,y:0.18},
+                    elbowL:{x:0.36,y:0.26}, elbowR:{x:0.64,y:0.26},
+                    wristL:{x:0.40,y:0.22}, wristR:{x:0.60,y:0.22},
+                    hip:{x:0.50,y:0.46},
+                    kneeL:{x:0.44,y:0.66}, kneeR:{x:0.56,y:0.66},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'双手置于腋下'},
+                {time:0.20, pose:{
+                    head:{x:0.50,y:0.06}, neck:{x:0.50,y:0.12},
+                    shoulderL:{x:0.38,y:0.18}, shoulderR:{x:0.62,y:0.18},
+                    elbowL:{x:0.38,y:0.22}, elbowR:{x:0.62,y:0.22},
+                    wristL:{x:0.38,y:0.20}, wristR:{x:0.62,y:0.20},
+                    hip:{x:0.50,y:0.46},
+                    kneeL:{x:0.44,y:0.66}, kneeR:{x:0.56,y:0.66},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'双手前推，指尖张开如鹰爪'},
+                {time:0.45, pose:{
+                    head:{x:0.50,y:0.06}, neck:{x:0.50,y:0.12},
+                    shoulderL:{x:0.38,y:0.18}, shoulderR:{x:0.62,y:0.18},
+                    elbowL:{x:0.36,y:0.26}, elbowR:{x:0.64,y:0.26},
+                    wristL:{x:0.40,y:0.22}, wristR:{x:0.60,y:0.22},
+                    hip:{x:0.50,y:0.46},
+                    kneeL:{x:0.44,y:0.66}, kneeR:{x:0.56,y:0.66},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'收回腋下'},
+                {time:0.65, pose:{
+                    head:{x:0.50,y:0.06}, neck:{x:0.50,y:0.12},
+                    shoulderL:{x:0.38,y:0.18}, shoulderR:{x:0.62,y:0.18},
+                    elbowL:{x:0.38,y:0.22}, elbowR:{x:0.62,y:0.22},
+                    wristL:{x:0.38,y:0.20}, wristR:{x:0.62,y:0.20},
+                    hip:{x:0.50,y:0.46},
+                    kneeL:{x:0.44,y:0.66}, kneeR:{x:0.56,y:0.66},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'再次前推亮爪'},
+                {time:1, pose:cp(YJJ_STANDING), label:'还原'}
+            ],
+            duration:10
+        },
+        // 7. 九鬼拔马刀势
+        {
+            id:'yjj-07', name:'九鬼拔马刀势', category:'易筋经',
+            description:'一手从头后绕至对侧耳部，另一手从背后上探，扭转脊柱。左右交替，强化肩背筋骨，疏通小肠经与督脉。',
+            benefits:['强化肩背筋骨','疏通小肠经与督脉','增强脊柱旋转灵活性','改善肩关节活动度'],
+            stimulatedMeridians:[
+                {meridianId:'SI', intensity:'primary', note:'手臂后绕直接拉伸小肠经'},
+                {meridianId:'DU', intensity:'primary', note:'脊柱扭转刺激督脉'},
+                {meridianId:'BL', intensity:'secondary', note:'背部扭转间接刺激膀胱经'},
+                {meridianId:'SJ', intensity:'secondary', note:'上臂外旋间接刺激三焦经'}
+            ],
+            keyAcupoints:['SI-9','DU-14','BL-11','SJ-14'],
+            videoUrl:'/assets/videos/yijinjing/yjj-07.mp4',
+            keyframes:[
+                {time:0, pose:cp(YJJ_STANDING), label:'预备式'},
+                {time:0.20, pose:{
+                    head:{x:0.48,y:0.06}, neck:{x:0.49,y:0.12},
+                    shoulderL:{x:0.38,y:0.18}, shoulderR:{x:0.62,y:0.18},
+                    elbowL:{x:0.46,y:0.10}, elbowR:{x:0.58,y:0.32},
+                    wristL:{x:0.56,y:0.08}, wristR:{x:0.52,y:0.36},
+                    hip:{x:0.50,y:0.46},
+                    kneeL:{x:0.44,y:0.66}, kneeR:{x:0.56,y:0.66},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'左手绕头后触右耳，右手背后上探，左转'},
+                {time:0.45, pose:cp(YJJ_STANDING), label:'回正'},
+                {time:0.65, pose:{
+                    head:{x:0.52,y:0.06}, neck:{x:0.51,y:0.12},
+                    shoulderL:{x:0.38,y:0.18}, shoulderR:{x:0.62,y:0.18},
+                    elbowL:{x:0.42,y:0.32}, elbowR:{x:0.54,y:0.10},
+                    wristL:{x:0.48,y:0.36}, wristR:{x:0.44,y:0.08},
+                    hip:{x:0.50,y:0.46},
+                    kneeL:{x:0.44,y:0.66}, kneeR:{x:0.56,y:0.66},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'右手绕头后触左耳，左手背后上探，右转'},
+                {time:1, pose:cp(YJJ_STANDING), label:'还原'}
+            ],
+            duration:12
+        },
+        // 8. 三盘落地势
+        {
+            id:'yjj-08', name:'三盘落地势', category:'易筋经',
+            description:'宽步站立，深蹲马步，双手下按至膝侧。上中下三盘同时下沉，强化脾胃肾三脏，增强下肢力量。',
+            benefits:['强化脾胃肾三脏','增强下肢力量','培补下元之气','改善消化与泌尿功能'],
+            stimulatedMeridians:[
+                {meridianId:'SP', intensity:'primary', note:'深蹲牵拉脾经'},
+                {meridianId:'ST', intensity:'primary', note:'马步站立刺激胃经'},
+                {meridianId:'KI', intensity:'primary', note:'下蹲蓄气强化肾经'},
+                {meridianId:'LR', intensity:'secondary', note:'大腿内侧伸展间接刺激肝经'},
+                {meridianId:'RN', intensity:'secondary', note:'下丹田蓄气间接刺激任脉'}
+            ],
+            keyAcupoints:['SP-6','ST-36','KI-1','RN-6'],
+            videoUrl:'/assets/videos/yijinjing/yjj-08.mp4',
+            keyframes:[
+                {time:0, pose:cp(YJJ_STANDING), label:'预备式'},
+                {time:0.15, pose:{
+                    head:{x:0.50,y:0.06}, neck:{x:0.50,y:0.12},
+                    shoulderL:{x:0.38,y:0.18}, shoulderR:{x:0.62,y:0.18},
+                    elbowL:{x:0.34,y:0.30}, elbowR:{x:0.66,y:0.30},
+                    wristL:{x:0.34,y:0.40}, wristR:{x:0.66,y:0.40},
+                    hip:{x:0.50,y:0.48},
+                    kneeL:{x:0.38,y:0.66}, kneeR:{x:0.62,y:0.66},
+                    ankleL:{x:0.38,y:0.88}, ankleR:{x:0.62,y:0.88}
+                }, label:'开步站立'},
+                {time:0.40, pose:{
+                    head:{x:0.50,y:0.10}, neck:{x:0.50,y:0.16},
+                    shoulderL:{x:0.38,y:0.22}, shoulderR:{x:0.62,y:0.22},
+                    elbowL:{x:0.36,y:0.34}, elbowR:{x:0.64,y:0.34},
+                    wristL:{x:0.38,y:0.46}, wristR:{x:0.62,y:0.46},
+                    hip:{x:0.50,y:0.52},
+                    kneeL:{x:0.36,y:0.66}, kneeR:{x:0.64,y:0.66},
+                    ankleL:{x:0.38,y:0.88}, ankleR:{x:0.62,y:0.88}
+                }, label:'深蹲马步，双手下按至膝侧'},
+                {time:0.65, pose:{
+                    head:{x:0.50,y:0.10}, neck:{x:0.50,y:0.16},
+                    shoulderL:{x:0.38,y:0.22}, shoulderR:{x:0.62,y:0.22},
+                    elbowL:{x:0.36,y:0.34}, elbowR:{x:0.64,y:0.34},
+                    wristL:{x:0.38,y:0.46}, wristR:{x:0.62,y:0.46},
+                    hip:{x:0.50,y:0.52},
+                    kneeL:{x:0.36,y:0.66}, kneeR:{x:0.64,y:0.66},
+                    ankleL:{x:0.38,y:0.88}, ankleR:{x:0.62,y:0.88}
+                }, label:'保持深蹲，三盘落地'},
+                {time:0.85, pose:{
+                    head:{x:0.50,y:0.06}, neck:{x:0.50,y:0.12},
+                    shoulderL:{x:0.38,y:0.18}, shoulderR:{x:0.62,y:0.18},
+                    elbowL:{x:0.34,y:0.30}, elbowR:{x:0.66,y:0.30},
+                    wristL:{x:0.34,y:0.40}, wristR:{x:0.66,y:0.40},
+                    hip:{x:0.50,y:0.48},
+                    kneeL:{x:0.38,y:0.66}, kneeR:{x:0.62,y:0.66},
+                    ankleL:{x:0.38,y:0.88}, ankleR:{x:0.62,y:0.88}
+                }, label:'起身'},
+                {time:1, pose:cp(YJJ_STANDING), label:'还原'}
+            ],
+            duration:10
+        },
+        // 9. 青龙探爪势
+        {
+            id:'yjj-09', name:'青龙探爪势', category:'易筋经',
+            description:'一手从腰侧经胸前向对侧伸出，同时转腰，如青龙探爪。左右交替，疏通肝胆经络，活络腰部。',
+            benefits:['疏通肝胆经络','活络腰部','增强腰部旋转灵活性','促进气血运行'],
+            stimulatedMeridians:[
+                {meridianId:'LR', intensity:'primary', note:'转腰探爪直接刺激肝经'},
+                {meridianId:'GB', intensity:'primary', note:'体侧旋转拉伸胆经'},
+                {meridianId:'SP', intensity:'secondary', note:'腰腹旋转间接刺激脾经'},
+                {meridianId:'PC', intensity:'secondary', note:'手臂前伸间接刺激心包经'}
+            ],
+            keyAcupoints:['LR-3','GB-34','SP-6','PC-6'],
+            videoUrl:'/assets/videos/yijinjing/yjj-09.mp4',
+            keyframes:[
+                {time:0, pose:cp(YJJ_STANDING), label:'预备式'},
+                {time:0.20, pose:{
+                    head:{x:0.54,y:0.06}, neck:{x:0.52,y:0.12},
+                    shoulderL:{x:0.40,y:0.18}, shoulderR:{x:0.62,y:0.18},
+                    elbowL:{x:0.50,y:0.22}, elbowR:{x:0.66,y:0.30},
+                    wristL:{x:0.64,y:0.20}, wristR:{x:0.70,y:0.42},
+                    hip:{x:0.50,y:0.46},
+                    kneeL:{x:0.44,y:0.66}, kneeR:{x:0.56,y:0.66},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'左手探向右侧，转腰向左'},
+                {time:0.45, pose:cp(YJJ_STANDING), label:'回正'},
+                {time:0.65, pose:{
+                    head:{x:0.46,y:0.06}, neck:{x:0.48,y:0.12},
+                    shoulderL:{x:0.38,y:0.18}, shoulderR:{x:0.60,y:0.18},
+                    elbowL:{x:0.34,y:0.30}, elbowR:{x:0.50,y:0.22},
+                    wristL:{x:0.30,y:0.42}, wristR:{x:0.36,y:0.20},
+                    hip:{x:0.50,y:0.46},
+                    kneeL:{x:0.44,y:0.66}, kneeR:{x:0.56,y:0.66},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'右手探向左侧，转腰向右'},
+                {time:1, pose:cp(YJJ_STANDING), label:'还原'}
+            ],
+            duration:12
+        },
+        // 10. 卧虎扑食势
+        {
+            id:'yjj-10', name:'卧虎扑食势', category:'易筋经',
+            description:'弓步前扑，双手撑地，身体前倾如虎扑食。再弓背上拱，锻炼督脉与膀胱经，强化腰背力量。',
+            benefits:['强化腰背力量','锻炼督脉与膀胱经','增强上肢支撑力','改善脊柱柔韧性'],
+            stimulatedMeridians:[
+                {meridianId:'DU', intensity:'primary', note:'弓背拱腰直接刺激督脉'},
+                {meridianId:'BL', intensity:'primary', note:'背部伸展拉伸膀胱经'},
+                {meridianId:'ST', intensity:'secondary', note:'弓步前扑间接刺激胃经'},
+                {meridianId:'LI', intensity:'secondary', note:'双手撑地间接刺激大肠经'}
+            ],
+            keyAcupoints:['DU-4','BL-23','ST-36','LI-11'],
+            videoUrl:'/assets/videos/yijinjing/yjj-10.mp4',
+            keyframes:[
+                {time:0, pose:cp(YJJ_STANDING), label:'预备式'},
+                {time:0.20, pose:{
+                    head:{x:0.50,y:0.06}, neck:{x:0.50,y:0.12},
+                    shoulderL:{x:0.38,y:0.18}, shoulderR:{x:0.62,y:0.18},
+                    elbowL:{x:0.34,y:0.30}, elbowR:{x:0.66,y:0.30},
+                    wristL:{x:0.30,y:0.42}, wristR:{x:0.70,y:0.42},
+                    hip:{x:0.50,y:0.48},
+                    kneeL:{x:0.38,y:0.64}, kneeR:{x:0.58,y:0.68},
+                    ankleL:{x:0.34,y:0.88}, ankleR:{x:0.62,y:0.88}
+                }, label:'弓步前迈'},
+                {time:0.45, pose:{
+                    head:{x:0.50,y:0.22}, neck:{x:0.50,y:0.26},
+                    shoulderL:{x:0.42,y:0.30}, shoulderR:{x:0.58,y:0.30},
+                    elbowL:{x:0.40,y:0.44}, elbowR:{x:0.60,y:0.44},
+                    wristL:{x:0.40,y:0.58}, wristR:{x:0.60,y:0.58},
+                    hip:{x:0.50,y:0.48},
+                    kneeL:{x:0.38,y:0.64}, kneeR:{x:0.58,y:0.68},
+                    ankleL:{x:0.34,y:0.88}, ankleR:{x:0.62,y:0.88}
+                }, label:'前扑，双手撑地，身体前倾'},
+                {time:0.70, pose:{
+                    head:{x:0.50,y:0.14}, neck:{x:0.50,y:0.20},
+                    shoulderL:{x:0.40,y:0.24}, shoulderR:{x:0.60,y:0.24},
+                    elbowL:{x:0.38,y:0.36}, elbowR:{x:0.62,y:0.36},
+                    wristL:{x:0.40,y:0.50}, wristR:{x:0.60,y:0.50},
+                    hip:{x:0.50,y:0.42},
+                    kneeL:{x:0.42,y:0.66}, kneeR:{x:0.58,y:0.66},
+                    ankleL:{x:0.40,y:0.88}, ankleR:{x:0.60,y:0.88}
+                }, label:'弓背上拱'},
+                {time:1, pose:cp(YJJ_STANDING), label:'起身还原'}
+            ],
+            duration:12
+        },
+        // 11. 打躬势
+        {
+            id:'yjj-11', name:'打躬势', category:'易筋经',
+            description:'双手抱头，弯腰深深前屈如打躬。拉伸整条膀胱经与督脉，刺激头顶百会穴及足底涌泉穴。',
+            benefits:['拉伸膀胱经全程','刺激督脉','增强腰部与腿部后侧柔韧性','改善脑部血液循环'],
+            stimulatedMeridians:[
+                {meridianId:'BL', intensity:'primary', note:'前屈直接拉伸膀胱经全程'},
+                {meridianId:'DU', intensity:'primary', note:'弯腰前屈拉伸督脉'},
+                {meridianId:'KI', intensity:'secondary', note:'深度前屈间接刺激肾经'},
+                {meridianId:'GB', intensity:'secondary', note:'抱头动作间接刺激胆经'}
+            ],
+            keyAcupoints:['BL-40','DU-20','KI-1','GB-20'],
+            videoUrl:'/assets/videos/yijinjing/yjj-11.mp4',
+            keyframes:[
+                {time:0, pose:cp(YJJ_STANDING), label:'预备式'},
+                {time:0.20, pose:{
+                    head:{x:0.50,y:0.06}, neck:{x:0.50,y:0.12},
+                    shoulderL:{x:0.38,y:0.18}, shoulderR:{x:0.62,y:0.18},
+                    elbowL:{x:0.36,y:0.12}, elbowR:{x:0.64,y:0.12},
+                    wristL:{x:0.44,y:0.06}, wristR:{x:0.56,y:0.06},
+                    hip:{x:0.50,y:0.46},
+                    kneeL:{x:0.44,y:0.66}, kneeR:{x:0.56,y:0.66},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'双手抱头'},
+                {time:0.50, pose:{
+                    head:{x:0.50,y:0.36}, neck:{x:0.50,y:0.30},
+                    shoulderL:{x:0.42,y:0.32}, shoulderR:{x:0.58,y:0.32},
+                    elbowL:{x:0.38,y:0.28}, elbowR:{x:0.62,y:0.28},
+                    wristL:{x:0.44,y:0.32}, wristR:{x:0.56,y:0.32},
+                    hip:{x:0.50,y:0.46},
+                    kneeL:{x:0.44,y:0.66}, kneeR:{x:0.56,y:0.66},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'弯腰深深前屈'},
+                {time:0.75, pose:{
+                    head:{x:0.50,y:0.06}, neck:{x:0.50,y:0.12},
+                    shoulderL:{x:0.38,y:0.18}, shoulderR:{x:0.62,y:0.18},
+                    elbowL:{x:0.36,y:0.12}, elbowR:{x:0.64,y:0.12},
+                    wristL:{x:0.44,y:0.06}, wristR:{x:0.56,y:0.06},
+                    hip:{x:0.50,y:0.46},
+                    kneeL:{x:0.44,y:0.66}, kneeR:{x:0.56,y:0.66},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'起身直立'},
+                {time:1, pose:cp(YJJ_STANDING), label:'还原'}
+            ],
+            duration:10
+        },
+        // 12. 掉尾势
+        {
+            id:'yjj-12', name:'掉尾势', category:'易筋经',
+            description:'双手攀足前屈，起身后微微后仰。前屈时拉伸膀胱经与肾经，后仰时刺激督脉与任脉，为易筋经收势。',
+            benefits:['拉伸膀胱经与肾经','疏通督脉与任脉','增强腰部柔韧性','调和全身气血'],
+            stimulatedMeridians:[
+                {meridianId:'BL', intensity:'primary', note:'前屈攀足拉伸膀胱经'},
+                {meridianId:'KI', intensity:'primary', note:'足底用力刺激肾经'},
+                {meridianId:'DU', intensity:'secondary', note:'后仰间接刺激督脉'},
+                {meridianId:'RN', intensity:'secondary', note:'后仰伸展间接刺激任脉'}
+            ],
+            keyAcupoints:['BL-40','KI-1','DU-4','RN-6'],
+            videoUrl:'/assets/videos/yijinjing/yjj-12.mp4',
+            keyframes:[
+                {time:0, pose:cp(YJJ_STANDING), label:'预备式'},
+                {time:0.30, pose:{
+                    head:{x:0.50,y:0.46}, neck:{x:0.50,y:0.40},
+                    shoulderL:{x:0.44,y:0.40}, shoulderR:{x:0.56,y:0.40},
+                    elbowL:{x:0.43,y:0.56}, elbowR:{x:0.57,y:0.56},
+                    wristL:{x:0.43,y:0.74}, wristR:{x:0.57,y:0.74},
+                    hip:{x:0.50,y:0.46},
+                    kneeL:{x:0.44,y:0.66}, kneeR:{x:0.56,y:0.66},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'前屈弯腰，双手攀足'},
+                {time:0.55, pose:{
+                    head:{x:0.50,y:0.52}, neck:{x:0.50,y:0.46},
+                    shoulderL:{x:0.44,y:0.44}, shoulderR:{x:0.56,y:0.44},
+                    elbowL:{x:0.43,y:0.62}, elbowR:{x:0.57,y:0.62},
+                    wristL:{x:0.43,y:0.82}, wristR:{x:0.57,y:0.82},
+                    hip:{x:0.50,y:0.46},
+                    kneeL:{x:0.44,y:0.66}, kneeR:{x:0.56,y:0.66},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'充分前屈，触及足部'},
+                {time:0.75, pose:{
+                    head:{x:0.50,y:0.04}, neck:{x:0.50,y:0.10},
+                    shoulderL:{x:0.38,y:0.16}, shoulderR:{x:0.62,y:0.16},
+                    elbowL:{x:0.34,y:0.28}, elbowR:{x:0.66,y:0.28},
+                    wristL:{x:0.30,y:0.40}, wristR:{x:0.70,y:0.40},
+                    hip:{x:0.50,y:0.46},
+                    kneeL:{x:0.44,y:0.66}, kneeR:{x:0.56,y:0.66},
+                    ankleL:{x:0.43,y:0.88}, ankleR:{x:0.57,y:0.88}
+                }, label:'起身后微微后仰'},
+                {time:1, pose:cp(YJJ_STANDING), label:'还原收势'}
+            ],
+            duration:10
+        }
+    ];
+
     // Helper: find meridian by ID
     function getMeridianById(id) {
         for (var i = 0; i < MERIDIANS.length; i++) {
@@ -771,6 +1582,8 @@ var HealthData = (function() {
         JOINT_KEYS: JOINT_KEYS,
         MERIDIANS: MERIDIANS,
         BADUANJIN: BADUANJIN,
+        ZHANZHUANG: ZHANZHUANG,
+        YIJINJING: YIJINJING,
         lerpPose: lerpPose,
         mirrorPose: mirrorPose,
         getMeridianById: getMeridianById,

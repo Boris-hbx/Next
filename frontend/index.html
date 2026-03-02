@@ -1,4 +1,4 @@
-﻿﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN" data-theme="">
 <head>
     <meta charset="UTF-8">
@@ -8,17 +8,17 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Next">
     <title>Next - Focus on the Right Thing</title>
-    <link rel="stylesheet" href="assets/css/base.css?v=20260228a">
-    <link rel="stylesheet" href="assets/css/style.css?v=20260228a">
-    <link rel="stylesheet" href="assets/css/components.css?v=20260228b">
-    <link rel="stylesheet" href="assets/css/mobile.css?v=20260228a">
-    <link rel="stylesheet" href="assets/css/abao.css?v=20260228a">
-    <link rel="stylesheet" href="assets/css/english.css?v=20260228a">
-    <link rel="stylesheet" href="assets/css/health.css?v=20260228a">
+    <link rel="stylesheet" href="assets/css/base.css?v=20260302h">
+    <link rel="stylesheet" href="assets/css/style.css?v=20260302h">
+    <link rel="stylesheet" href="assets/css/components.css?v=20260302h">
+    <link rel="stylesheet" href="assets/css/mobile.css?v=20260302h">
+    <link rel="stylesheet" href="assets/css/abao.css?v=20260302h">
+    <link rel="stylesheet" href="assets/css/english.css?v=20260302h">
+    <link rel="stylesheet" href="assets/css/health.css?v=20260302h">
     <link rel="manifest" href="assets/manifest.json">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
     <script>
-    // æ-©æœŸæ‰§è¡Œï¼šåœ¨é¡µé¢æ¸²æŸ"å‰åº"ç"¨ä¸»é¢˜å'Œä¾§è¾¹æ çŠ¶æ€ï¼Œé¿å…é-ªçƒ
+    // 早期执行：在页面渲染前应用主题和侧边栏状态，避免闪烁
     (function() {
         var theme = localStorage.getItem('theme');
         if (theme) {
@@ -26,7 +26,7 @@
         } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
             document.documentElement.setAttribute('data-theme', 'dark');
         }
-        // é€šè¿‡ CSS ç±»æå‰æ ‡è®°ä¾§è¾¹æ çŠ¶æ€
+        // 通过 CSS 类提前标记侧边栏状态
         if (localStorage.getItem('sidebarCollapsed') === 'true') {
             document.documentElement.classList.add('sidebar-will-collapse');
         }
@@ -34,28 +34,28 @@
     </script>
 </head>
 <body>
-    <!-- è´¦æˆ·å®¡æ ¸ä¸­æ¨ªå¹… -->
-    <div class="pending-banner" id="pending-banner" style="display:none;">è´¦æˆ·å®¡æ ¸ä¸­ - ä½ å¯ä»¥æµè§ˆå†…å®¹ï¼Œä½†æš'æ-¶æ- æ³•åˆ›å»ºæˆ-ä¿®æ"¹æ•°æ®ã€'å®¡æ ¸é€šè¿‡åŽåˆ·æ-°é¡µé¢å³å¯æ­£å¸¸ä½¿ç"¨ã€'</div>
-    <!-- Guest ä½"éªŒæ¨¡å¼æ¨ªå¹… -->
+    <!-- 账户审核中横幅 -->
+    <div class="pending-banner" id="pending-banner" style="display:none;">账户审核中 - 你可以浏览内容，但暂时无法创建或修改数据。审核通过后刷新页面即可正常使用。</div>
+    <!-- Guest 体验模式横幅 -->
     <div class="guest-banner" id="guest-banner" style="display:none;">
-        <span>ä½"éªŒæ¨¡å¼ â€" æ•°æ®å°†åœ¨ 24 å°æ-¶åŽæ¸…é™¤ Â· AI å‰©ä½™ <b id="guest-ai-count">21</b> æ¬¡</span>
-        <button class="guest-register-btn" onclick="location.href='/login.html'">æ³¨å†Œè´¦æˆ·</button>
+        <span>体验模式 — 数据将在 24 小时后清除 · AI 剩余 <b id="guest-ai-count">21</b> 次</span>
+        <button class="guest-register-btn" onclick="location.href='/login.html'">注册账户</button>
     </div>
-    <!-- ç²'å­åŠ¨ç"»ç"»å¸ƒï¼ˆè¦†ç›-é¡¶æ +ä¾§è¾¹æ çš"Lå½¢åŒºåŸŸï¼‰ -->
+    <!-- 粒子动画画布（覆盖顶栏+侧边栏的L形区域） -->
     <canvas id="header-particles" class="particles-canvas-extended"></canvas>
 
-    <!-- GitHubé£Žæ ¼é¡¶éƒ¨å¯¼èˆªæ  -->
+    <!-- GitHub风格顶部导航栏 -->
     <header class="top-header" id="top-header">
         <div class="header-left">
             <span class="moment-icon" id="moment-icon"></span>
             <span class="moment-text" id="moment-text"></span>
         </div>
         <div class="header-right">
-            <div class="inbox-bell-wrapper" id="inbox-bell-wrapper" onclick="Friends.openShareInbox()" style="position:relative;cursor:pointer;display:none" title="å¥½å‹åˆ†äº«">
+            <div class="inbox-bell-wrapper" id="inbox-bell-wrapper" onclick="Friends.openShareInbox()" style="position:relative;cursor:pointer;display:none" title="好友分享">
                 <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
                 <span class="inbox-badge" id="inbox-badge" style="display:none">0</span>
             </div>
-            <div class="header-refresh-btn" id="header-refresh-btn" onclick="refreshCurrentPage()" title="åˆ·æ-°">
+            <div class="header-refresh-btn" id="header-refresh-btn" onclick="refreshCurrentPage()" title="刷新">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             </div>
             <div class="header-avatar-wrapper">
@@ -64,37 +64,37 @@
                     <img class="avatar-img" id="avatar-img" src="" style="display:none">
                 </div>
                 <div class="avatar-menu" id="avatar-menu">
-                    <a class="avatar-menu-item" onclick="Abao.toggle(); closeAvatarMenu()">
-                        <span>ðŸ¾</span> é-®é˜¿å®
+                    <a class="avatar-menu-item avatar-menu-desktop-only" onclick="Abao.toggle(); closeAvatarMenu()">
+                        <span>🐾</span> 问二狗
                     </a>
                     <a class="avatar-menu-item" onclick="switchPage('settings'); closeAvatarMenu()">
-                        <span>âš™</span> è®¾ç½®
+                        <span>⚙</span> 设置
                     </a>
                     <a class="avatar-menu-item" onclick="if(typeof openAbout==='function')openAbout(); closeAvatarMenu()">
-                        <span>â"¹</span> å…³äºŽ
+                        <span>ℹ</span> 关于
                     </a>
                     <a class="avatar-menu-item" onclick="if(typeof openSecurity==='function')openSecurity(); closeAvatarMenu()">
-                        <span>ðŸ"'</span> å®‰å…¨å£°æ˜Ž
+                        <span>🔒</span> 安全声明
                     </a>
                     <div class="avatar-menu-divider"></div>
                     <a class="avatar-menu-item" onclick="doLogout()">
-                        <span>ðŸšª</span> é€€å‡ºç™»å½•
+                        <span>🚪</span> 退出登录
                     </a>
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- Living Line Canvasï¼ˆæ›¿ä»£æ-§çš"å'¼å¸çº¿ï¼‰ -->
+    <!-- Living Line Canvas（替代旧的呼吸线） -->
     <canvas id="living-line"></canvas>
 
     <div class="container">
-        <!-- å·¦ä¾§æç¤ºæ¡ - ä¾§è¾¹æ æ"¶èµ·æ-¶æ˜¾ç¤º -->
+        <!-- 左侧提示条 - 侧边栏收起时显示 -->
         <div class="sidebar-hint" id="sidebar-hint">
             <div class="hint-glow"></div>
         </div>
 
-        <!-- å°å® ç‰© - å§‹ç»ˆå¯è§ -->
+        <!-- 小宠物 - 始终可见 -->
         <div class="pet" id="pet">
             <div class="pet-eye"></div>
             <div class="pet-eye"></div>
@@ -106,31 +106,31 @@
         <nav class="sidebar" id="sidebar">
             <div class="nav-links">
                 <a class="nav-link active" data-page="todo" onclick="switchPage('todo')">Todo</a>
-                <a class="nav-link" data-page="review" onclick="switchPage('review')">ä¾‹è¡Œ</a>
-                <a class="nav-link" data-page="english" onclick="switchPage('english')">å­¦ä¹ </a>
-                <a class="nav-link" data-page="life" onclick="switchPage('life')">ç"Ÿæ´»</a>
+                <a class="nav-link" data-page="review" onclick="switchPage('review')">例行</a>
+                <a class="nav-link" data-page="english" onclick="switchPage('english')">学习</a>
+                <a class="nav-link" data-page="life" onclick="switchPage('life')">生活</a>
             </div>
 
-            <!-- åº•éƒ¨åŒºåŸŸ -->
+            <!-- 底部区域 -->
             <div class="sidebar-bottom-section">
-                <!-- æ-¶åŒºæ˜¾ç¤º -->
+                <!-- 时区显示 -->
                 <div class="timezone-panel" id="timezone-panel">
                     <div class="timezone-item">
-                        <span class="tz-city">åŒ-äº¬</span>
+                        <span class="tz-city">北京</span>
                         <div class="tz-info">
                             <span class="tz-datetime" id="tz-beijing-date"></span>
                             <span class="tz-time" id="tz-beijing-time"></span>
                         </div>
                     </div>
                     <div class="timezone-item">
-                        <span class="tz-city">æ»'é"å¢</span>
+                        <span class="tz-city">滑铁卢</span>
                         <div class="tz-info">
                             <span class="tz-datetime" id="tz-waterloo-date"></span>
                             <span class="tz-time" id="tz-waterloo-time"></span>
                         </div>
                     </div>
                     <div class="timezone-item">
-                        <span class="tz-city">æ¸©å"¥åŽ</span>
+                        <span class="tz-city">温哥华</span>
                         <div class="tz-info">
                             <span class="tz-datetime" id="tz-vancouver-date"></span>
                             <span class="tz-time" id="tz-vancouver-time"></span>
@@ -142,68 +142,68 @@
 
         <!-- Right Main Content -->
         <main class="main-content" id="main-content">
-
+            
     <div class="toast-container" id="toast-container"></div>
 
-    <!-- æ¯æ-¥ä¾‹è¡Œé¢æ¿ -->
+    <!-- 每日例行面板 -->
     <div class="routine-panel-overlay" id="routine-panel-overlay" style="display:none;" onclick="toggleRoutinePanel()">
         <div class="routine-panel" onclick="event.stopPropagation()">
             <div class="routine-header">
-                <h3>ðŸ"¥ ä½ çœŸæ˜¯å¼ºçš"å¯æ€•</h3>
-                <button class="routine-close" onclick="toggleRoutinePanel()">ç¡®è®¤</button>
+                <h3>🔥 你真是强的可怕</h3>
+                <button class="routine-close" onclick="toggleRoutinePanel()">确认</button>
             </div>
             <div class="routine-list" id="routine-list">
-                <div class="routine-empty">æš'æ- ä¾‹è¡Œä»»åŠ¡</div>
+                <div class="routine-empty">暂无例行任务</div>
             </div>
             <div class="routine-footer">
-                <input type="text" id="routine-input" placeholder="æ·»åŠ ä¾‹è¡Œä»»åŠ¡..." onkeypress="if(event.key==='Enter')addRoutine()">
+                <input type="text" id="routine-input" placeholder="添加例行任务..." onkeypress="if(event.key==='Enter')addRoutine()">
                 <button class="btn-add-routine" onclick="addRoutine()">+</button>
             </div>
         </div>
     </div>
 
-    <!-- About å…³äºŽå¼¹çª- -->
+    <!-- About 关于弹窗 -->
     <div class="about-overlay" id="about-overlay" style="display:none;" onclick="closeAbout()">
         <div class="about-dialog" onclick="event.stopPropagation()">
             <img class="about-logo" src="assets/icons/icon.png" alt="Next" onerror="this.style.display='none'">
             <h1 class="about-title">Next</h1>
             <p class="about-tagline">Focus on the Right Thing</p>
             <div class="about-divider"></div>
-            <span class="about-version" onclick="copyVersion()" title="ç'¹å‡»å¤åˆ¶ç‰ˆæœ¬å·">
-                Version 1.2.0 Â· 2026.2.10
+            <span class="about-version" onclick="copyVersion()" title="点击复制版本号">
+                Version 1.2.0 · 2026.2.10
             </span>
-            <div class="about-copyright">Â© 2026 Baoxing Huai 00827228<br>Huaibaoxing@huawei.com</div>
+            <div class="about-copyright">© 2026 Baoxing Huai 00827228<br>Huaibaoxing@huawei.com</div>
         </div>
     </div>
 
-    <!-- Security å®‰å…¨å£°æ˜Žå¼¹çª- -->
+    <!-- Security 安全声明弹窗 -->
     <div class="about-overlay" id="security-overlay" style="display:none;" onclick="closeSecurity()">
         <div class="security-dialog" onclick="event.stopPropagation()">
             <div class="security-header">
-                <span class="security-icon">ðŸ"'</span>
-                <h2 class="security-title">å®‰å…¨ä¸Žéšç§</h2>
+                <span class="security-icon">🔒</span>
+                <h2 class="security-title">安全与隐私</h2>
             </div>
             <ul class="security-list">
-                <li>å¯†ç ç» <strong>Argon2id</strong> åŠ å¯†å­˜å'¨ï¼Œä»»ä½•äººï¼ˆåŒ…æ‹¬å¼€å'è€…ï¼‰éƒ½æ- æ³•æŸ¥çœ‹</li>
-                <li>å…¨ç¨‹ <strong>HTTPS</strong> åŠ å¯†ä¼ è¾"ï¼Œå¯ç"¨ä¸¥æ ¼æµè§ˆå™¨å®‰å…¨ç­-ç•¥</li>
-                <li>ä½ çš"æ•°æ®ä¸Žå…¶ä»-ç"¨æˆ·<strong>å®Œå…¨éš"ç¦»</strong></li>
-                <li>ç™»å½•ä¿æŠ¤ï¼šè¿žç»­è¾"é"™å¯†ç å°†ä¸´æ-¶é"å®šï¼Œé˜²æ­¢æš´åŠ›ç ´è§£</li>
-                <li>æ³¨å†ŒæµæŽ§ï¼šæ¯æ-¥è‡ªåŠ¨é€šè¿‡åé¢æœ‰é™ï¼Œè¶…å‡ºåŽéœ€ç®¡ç†å'˜å®¡æ‰¹ï¼Œé˜²æ­¢æ»¥ç"¨</li>
-                <li>æ-‡ä»¶è®¿é-®ä¸¥æ ¼æ ¡éªŒè·¯å¾"ï¼Œé˜²æ­¢è¶Šæƒè¯»å-</li>
-                <li>é˜¿å®ç"± Claude AI é©±åŠ¨ï¼Œå¯¹è¯é€šè¿‡åŠ å¯†è¿žæŽ¥å¤"ç†</li>
+                <li>密码经 <strong>Argon2id</strong> 加密存储，任何人（包括开发者）都无法查看</li>
+                <li>全程 <strong>HTTPS</strong> 加密传输，启用严格浏览器安全策略</li>
+                <li>你的数据与其他用户<strong>完全隔离</strong></li>
+                <li>登录保护：连续输错密码将临时锁定，防止暴力破解</li>
+                <li>注册流控：每日自动通过名额有限，超出后需管理员审批，防止滥用</li>
+                <li>文件访问严格校验路径，防止越权读取</li>
+                <li>二狗由 Claude AI 驱动，对话通过加密连接处理</li>
             </ul>
             <div class="security-section">
-                <div class="security-section-title">ðŸ›¡ é˜²æ"»å‡»æŽªæ-½</div>
-                <p class="security-section-desc">å·²é'ˆå¯¹ä»¥ä¸‹æ"»å‡»åœºæ™¯éƒ¨ç½²å¤šå±'é˜²æŠ¤ï¼š</p>
+                <div class="security-section-title">🛡 防攻击措施</div>
+                <p class="security-section-desc">已针对以下攻击场景部署多层防护：</p>
                 <ul class="security-attack-list">
-                    <li><span class="attack-name">SQL æ³¨å…¥</span><span class="attack-defense">å…¨éƒ¨ä½¿ç"¨å'æ•°åŒ-æŸ¥è¯¢</span></li>
-                    <li><span class="attack-name">è·¨ç«™è"šæœ¬ (XSS)</span><span class="attack-defense">å†…å®¹å®‰å…¨ç­-ç•¥ (CSP) + è¾"å…¥è¿‡æ»¤</span></li>
-                    <li><span class="attack-name">æš´åŠ›ç ´è§£</span><span class="attack-defense">IP é™é€Ÿ + è´¦æˆ·é"å®šåŒé‡é˜²æŠ¤</span></li>
-                    <li><span class="attack-name">ä¸­é-´äººæ"»å‡»</span><span class="attack-defense">HTTPS å¼ºåˆ¶ + HSTS ç­-ç•¥</span></li>
-                    <li><span class="attack-name">ç'¹å‡»åŠ«æŒ</span><span class="attack-defense">X-Frame-Options DENY</span></li>
-                    <li><span class="attack-name">ä¼šè¯åŠ«æŒ</span><span class="attack-defense">HttpOnly + Secure + SameSite Cookie</span></li>
-                    <li><span class="attack-name">è·¯å¾"ç©¿è¶Š</span><span class="attack-defense">æ-‡ä»¶åä¸¥æ ¼æ ¡éªŒï¼Œç¦æ­¢ ../ éåŽ†</span></li>
-                    <li><span class="attack-name">æ³¨å†Œæ»¥ç"¨</span><span class="attack-defense">æ¯æ-¥é™é¢ + ç®¡ç†å'˜å®¡æ‰¹æœºåˆ¶</span></li>
+                    <li><span class="attack-name">SQL 注入</span><span class="attack-defense">全部使用参数化查询</span></li>
+                    <li><span class="attack-name">跨站脚本 (XSS)</span><span class="attack-defense">内容安全策略 (CSP) + 输入过滤</span></li>
+                    <li><span class="attack-name">暴力破解</span><span class="attack-defense">IP 限速 + 账户锁定双重防护</span></li>
+                    <li><span class="attack-name">中间人攻击</span><span class="attack-defense">HTTPS 强制 + HSTS 策略</span></li>
+                    <li><span class="attack-name">点击劫持</span><span class="attack-defense">X-Frame-Options DENY</span></li>
+                    <li><span class="attack-name">会话劫持</span><span class="attack-defense">HttpOnly + Secure + SameSite Cookie</span></li>
+                    <li><span class="attack-name">路径穿越</span><span class="attack-defense">文件名严格校验，禁止 ../ 遍历</span></li>
+                    <li><span class="attack-name">注册滥用</span><span class="attack-defense">每日限额 + 管理员审批机制</span></li>
                 </ul>
             </div>
         </div>
@@ -212,12 +212,12 @@
     <div class="todo-main-layout" id="todo-view">
     <div id="todo-share-banner"></div>
     <div class="todo-matrix-container">
-        <!-- åè¨€æ  -->
+        <!-- 名言栏 -->
         <div class="page-header compact">
             <div class="header-left">
                 <p class="quote-text" id="quote-text">Loading...</p>
             </div>
-            <button class="btn-shuffle" onclick="shuffleQuote()">æ¢ä¸€ä¸ª</button>
+            <button class="btn-shuffle" onclick="shuffleQuote()">换一个</button>
         </div>
         <!-- Tab Navigation -->
         <div class="matrix-tabs">
@@ -243,13 +243,13 @@
         <div class="eisenhower-matrix">
             <!-- Matrix Grid -->
             <div class="matrix-grid">
-                <!-- Quadrant 1: ä¼˜å…ˆå¤"ç† (é»˜è®¤å±•å¼€) -->
+                <!-- Quadrant 1: 优先处理 (默认展开) -->
                 <div class="quadrant q1" data-quadrant="important-urgent"
                      ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="dropItem(event)">
                     <div class="quadrant-header" onclick="toggleQuadrant(this)" ondragover="allowDrop(event)" ondrop="dropItem(event)">
-                        <span class="quadrant-toggle">â-¼</span>
-                        <span class="quadrant-icon">ðŸ"¥</span>
-                        <span class="quadrant-title">ä¼˜å…ˆå¤"ç†</span>
+                        <span class="quadrant-toggle">▼</span>
+                        <span class="quadrant-icon">🔥</span>
+                        <span class="quadrant-title">优先处理</span>
                         <span class="quadrant-count" id="qcount-important-urgent"></span>
                         <button class="btn-quadrant-add" onclick="event.stopPropagation(); showAddModalForQuadrant('important-urgent')">+</button>
                     </div>
@@ -257,13 +257,13 @@
                          ondragover="allowDrop(event)" ondrop="dropItem(event)"></div>
                 </div>
 
-                <!-- Quadrant 2: å°±ç­‰ä½ ç¿»ç‰Œå­äº† (é»˜è®¤æŠ˜å ) -->
+                <!-- Quadrant 2: 就等你翻牌子了 (默认折叠) -->
                 <div class="quadrant q2 collapsed" data-quadrant="important-not-urgent"
                      ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="dropItem(event)">
                     <div class="quadrant-header" onclick="toggleQuadrant(this)" ondragover="allowDrop(event)" ondrop="dropItem(event)">
-                        <span class="quadrant-toggle">â-¼</span>
-                        <span class="quadrant-icon">ðŸŽ¯</span>
-                        <span class="quadrant-title">å°±ç­‰ä½ ç¿»ç‰Œå­äº†</span>
+                        <span class="quadrant-toggle">▼</span>
+                        <span class="quadrant-icon">🎯</span>
+                        <span class="quadrant-title">就等你翻牌子了</span>
                         <span class="quadrant-count" id="qcount-important-not-urgent"></span>
                         <button class="btn-quadrant-add" onclick="event.stopPropagation(); showAddModalForQuadrant('important-not-urgent')">+</button>
                     </div>
@@ -271,13 +271,13 @@
                          ondragover="allowDrop(event)" ondrop="dropItem(event)"></div>
                 </div>
 
-                <!-- Quadrant 3: å¾…åˆ†ç±» (é»˜è®¤æŠ˜å ) -->
+                <!-- Quadrant 3: 待分类 (默认折叠) -->
                 <div class="quadrant q3 collapsed" data-quadrant="not-important-urgent"
                      ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="dropItem(event)">
                     <div class="quadrant-header" onclick="toggleQuadrant(this)" ondragover="allowDrop(event)" ondrop="dropItem(event)">
-                        <span class="quadrant-toggle">â-¼</span>
-                        <span class="quadrant-icon">ðŸ"¥</span>
-                        <span class="quadrant-title">å¾…åˆ†ç±»</span>
+                        <span class="quadrant-toggle">▼</span>
+                        <span class="quadrant-icon">📥</span>
+                        <span class="quadrant-title">待分类</span>
                         <span class="quadrant-count" id="qcount-not-important-urgent"></span>
                         <button class="btn-quadrant-add" onclick="event.stopPropagation(); showAddModalForQuadrant('not-important-urgent')">+</button>
                     </div>
@@ -285,13 +285,13 @@
                          ondragover="allowDrop(event)" ondrop="dropItem(event)"></div>
                 </div>
 
-                <!-- Quadrant 4: çŸ­å¹³å¿« (é»˜è®¤æŠ˜å ) -->
+                <!-- Quadrant 4: 短平快 (默认折叠) -->
                 <div class="quadrant q4 collapsed" data-quadrant="not-important-not-urgent"
                      ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="dropItem(event)">
                     <div class="quadrant-header" onclick="toggleQuadrant(this)" ondragover="allowDrop(event)" ondrop="dropItem(event)">
-                        <span class="quadrant-toggle">â-¼</span>
-                        <span class="quadrant-icon">âš¡</span>
-                        <span class="quadrant-title">çŸ­å¹³å¿«</span>
+                        <span class="quadrant-toggle">▼</span>
+                        <span class="quadrant-icon">⚡</span>
+                        <span class="quadrant-title">短平快</span>
                         <span class="quadrant-count" id="qcount-not-important-not-urgent"></span>
                         <button class="btn-quadrant-add" onclick="event.stopPropagation(); showAddModalForQuadrant('not-important-not-urgent')">+</button>
                     </div>
@@ -302,50 +302,50 @@
         </div>
 
     </div>
-    <!-- æ‰‹æœºç«¯æ‰å¹³åˆ-è¡¨ï¼ˆJS æŽ§åˆ¶æ˜¾ç¤º/éšè-ï¼‰ -->
+    <!-- 手机端扁平列表（JS 控制显示/隐藏） -->
     <div class="flat-list-view" id="flat-list-view" style="display:none;"></div>
-    <!-- å³ä¾§è¾¹æ  -->
+    <!-- 右侧边栏 -->
     <div class="right-sidebar">
-        <!-- å¾…å¤"ç†äº‹é¡¹æ"¶é›†ç®± -->
+        <!-- 待处理事项收集箱 -->
         <div class="sidebar-section expanded" id="pending-section">
             <div class="section-header" onclick="toggleSidebarSection('pending-section')">
-                <h3><span>ðŸ"‹</span> å¾…å¤"ç†</h3>
-                <span class="expand-icon">â-¶</span>
+                <h3><span>📋</span> 待处理</h3>
+                <span class="expand-icon">▶</span>
             </div>
             <div class="section-content">
                 <div class="pending-input-row">
-                    <input type="text" id="pending-input" placeholder="å¿«é€Ÿè®°å½•..."
+                    <input type="text" id="pending-input" placeholder="快速记录..."
                            onkeypress="if(event.key==='Enter')addPendingItem()">
                     <button class="btn-add-pending" onclick="addPendingItem()">+</button>
                 </div>
                 <div class="section-list" id="pending-list"></div>
             </div>
         </div>
-        <!-- å·²å®ŒæˆåŒº -->
+        <!-- 已完成区 -->
         <div class="sidebar-section" id="completed-section">
             <div class="section-header" onclick="toggleSidebarSection('completed-section')">
-                <h3><span>âœ"</span> å·²å®Œæˆ</h3>
-                <span class="expand-icon">â-¶</span>
+                <h3><span>✓</span> 已完成</h3>
+                <span class="expand-icon">▶</span>
             </div>
             <div class="section-content">
                 <div class="section-list" id="completed-list"></div>
             </div>
         </div>
-        <!-- å·²åˆ é™¤åŒº -->
+        <!-- 已删除区 -->
         <div class="sidebar-section" id="deleted-section">
             <div class="section-header" onclick="toggleSidebarSection('deleted-section')">
-                <h3><span>ðŸ-'</span> å·²åˆ é™¤</h3>
-                <span class="expand-icon">â-¶</span>
+                <h3><span>🗑</span> 已删除</h3>
+                <span class="expand-icon">▶</span>
             </div>
             <div class="section-content">
                 <div class="section-list" id="deleted-list"></div>
             </div>
         </div>
-        <!-- å¥½å‹åˆ†äº«åŒº -->
+        <!-- 好友分享区 -->
         <div class="sidebar-section" id="shared-section" style="display:none">
             <div class="section-header" onclick="toggleSidebarSection('shared-section')">
-                <h3><span>ðŸ"¬</span> å¥½å‹åˆ†äº«</h3>
-                <span class="expand-icon">â-¶</span>
+                <h3><span>📬</span> 好友分享</h3>
+                <span class="expand-icon">▶</span>
             </div>
             <div class="section-content">
                 <div id="shared-inbox-section"></div>
@@ -354,61 +354,61 @@
     </div>
     </div>
 
-    <!-- ä¾‹è¡Œå®¡è§†è§†å›¾ -->
+    <!-- 例行审视视图 -->
     <div class="review-main-layout" id="review-view" style="display:none;">
         <div id="review-share-banner"></div>
         <div class="review-container">
-            <!-- é¡¶æ  -->
+            <!-- 顶栏 -->
             <div class="review-header">
-                <h2 class="review-title">ä¾‹è¡Œå®¡è§†</h2>
+                <h2 class="review-title">例行审视</h2>
                 <div class="review-actions">
                     <div class="review-filter-buttons" id="review-filter-buttons">
-                        <button class="review-filter-btn" data-filter="all" onclick="setReviewFilter('all')">å…¨éƒ¨</button>
-                        <button class="review-filter-btn active" data-filter="daily" onclick="setReviewFilter('daily')">æ¯æ-¥</button>
-                        <button class="review-filter-btn" data-filter="weekly" onclick="setReviewFilter('weekly')">æ¯å'¨</button>
-                        <button class="review-filter-btn" data-filter="monthly" onclick="setReviewFilter('monthly')">æ¯æœˆ</button>
-                        <button class="review-filter-btn" data-filter="yearly" onclick="setReviewFilter('yearly')">æ¯å¹´</button>
+                        <button class="review-filter-btn" data-filter="all" onclick="setReviewFilter('all')">全部</button>
+                        <button class="review-filter-btn active" data-filter="daily" onclick="setReviewFilter('daily')">每日</button>
+                        <button class="review-filter-btn" data-filter="weekly" onclick="setReviewFilter('weekly')">每周</button>
+                        <button class="review-filter-btn" data-filter="monthly" onclick="setReviewFilter('monthly')">每月</button>
+                        <button class="review-filter-btn" data-filter="yearly" onclick="setReviewFilter('yearly')">每年</button>
                     </div>
-                    <button class="btn-add-review" onclick="openReviewModal('create')">+ æ-°å»º</button>
+                    <button class="btn-add-review" onclick="openReviewModal('create')">+ 新建</button>
                 </div>
             </div>
 
-            <!-- å¾…å¤"ç†åŒº -->
+            <!-- 待处理区 -->
             <div class="review-due-section" id="review-due-section">
-                <div class="review-section-title">âš  å¾…å¤"ç†</div>
+                <div class="review-section-title">⚠ 待处理</div>
                 <div class="review-due-list" id="review-due-list"></div>
             </div>
 
-            <!-- æŒ‰é¢'çŽ‡åˆ†ç»"åˆ-è¡¨ -->
+            <!-- 按频率分组列表 -->
             <div class="review-group" id="review-group-daily">
-                <div class="review-group-header">æ¯æ-¥ä¾‹è¡Œ</div>
+                <div class="review-group-header">每日例行</div>
                 <div class="review-group-list" id="review-list-daily"></div>
             </div>
             <div class="review-group" id="review-group-weekly">
-                <div class="review-group-header">æ¯å'¨ä¾‹è¡Œ</div>
+                <div class="review-group-header">每周例行</div>
                 <div class="review-group-list" id="review-list-weekly"></div>
             </div>
             <div class="review-group" id="review-group-monthly">
-                <div class="review-group-header">æ¯æœˆä¾‹è¡Œ</div>
+                <div class="review-group-header">每月例行</div>
                 <div class="review-group-list" id="review-list-monthly"></div>
             </div>
             <div class="review-group" id="review-group-yearly">
-                <div class="review-group-header">æ¯å¹´ä¾‹è¡Œ</div>
+                <div class="review-group-header">每年例行</div>
                 <div class="review-group-list" id="review-list-yearly"></div>
             </div>
         </div>
     </div>
 
-    <!-- è®¾ç½®é¡µé¢ -->
+    <!-- 设置页面 -->
     <div class="settings-main-layout" id="settings-view" style="display:none;">
         <div class="settings-container">
             <div class="settings-page-header">
                 <button class="settings-back-btn" onclick="switchPage('todo')">&#8592;</button>
-                <h2 class="settings-page-title">è®¾ç½®</h2>
+                <h2 class="settings-page-title">设置</h2>
             </div>
-            <!-- å¤´åƒé€‰æ‹© -->
+            <!-- 头像选择 -->
             <div class="settings-section">
-                <h4>å¤´åƒ</h4>
+                <h4>头像</h4>
                 <div class="avatar-picker">
                     <div class="avatar-preview" id="settings-avatar-preview">
                         <span class="avatar-text" id="settings-avatar-text">B</span>
@@ -435,93 +435,124 @@
                         </div>
                     </div>
                     <label class="avatar-upload-btn">
-                        ðŸ"· ä¸Šä¼ è‡ªå®šä¹‰å¤´åƒ
+                        📷 上传自定义头像
                         <input type="file" accept="image/*" onchange="handleAvatarUpload(event)" style="display:none">
                     </label>
                 </div>
             </div>
-            <!-- è´¦æˆ·ä¿¡æ¯ -->
+            <!-- 账户信息 -->
             <div class="settings-section">
-                <h4>è´¦æˆ·ä¿¡æ¯</h4>
+                <h4>账户信息</h4>
                 <div class="setting-group">
-                    <label>ç"¨æˆ·å</label>
+                    <label>用户名</label>
                     <div class="settings-value" id="settings-username">--</div>
                 </div>
                 <div class="setting-group">
-                    <label>æ˜¾ç¤ºåç§°</label>
+                    <label>显示名称</label>
                     <div class="settings-value" id="settings-display-name">--</div>
                 </div>
             </div>
-            <!-- ä¿®æ"¹å¯†ç  -->
+            <!-- 修改密码 -->
             <div class="settings-section" id="settings-password-section">
-                <h4>ä¿®æ"¹å¯†ç </h4>
-                <div class="setting-group">
-                    <label>å½"å‰å¯†ç </label>
-                    <input type="password" id="settings-old-password" placeholder="è¾"å…¥å½"å‰å¯†ç ">
-                </div>
-                <div class="setting-group">
-                    <label>æ-°å¯†ç </label>
-                    <input type="password" id="settings-new-password" placeholder="è‡³å°' 8 ä¸ªå­-ç¬¦">
-                </div>
-                <div class="setting-group">
-                    <label>ç¡®è®¤æ-°å¯†ç </label>
-                    <input type="password" id="settings-confirm-password" placeholder="å†æ¬¡è¾"å…¥æ-°å¯†ç ">
-                </div>
-                <div class="settings-password-hint">è¯·åŠ¡å¿…ç‰¢è®°æ-°å¯†ç ã€'"æ‰¾å›žå¯†ç "åŠŸèƒ½å°šåœ¨å¼€å'ä¸­ï¼Œå¦'å¿˜è®°å¯†ç å°†æš'æ-¶æ- æ³•æ‰¾å›žã€'</div>
                 <button class="btn btn-primary settings-change-pwd-btn"
-                        onclick="changePassword()">ä¿®æ"¹å¯†ç </button>
+                        onclick="openPwdModal()">修改密码</button>
             </div>
-            <!-- å¥½å‹ -->
+            <!-- 修改密码 Modal -->
+            <div class="pwd-modal-overlay" id="pwd-modal-overlay" style="display:none;" onclick="closePwdModal()">
+                <div class="pwd-modal" onclick="event.stopPropagation()">
+                    <div class="pwd-modal-header">
+                        <h4>修改密码</h4>
+                        <button class="pwd-modal-close" onclick="closePwdModal()">&times;</button>
+                    </div>
+                    <div class="pwd-modal-body">
+                        <div class="setting-group">
+                            <label>当前密码</label>
+                            <input type="password" id="settings-old-password" placeholder="输入当前密码">
+                        </div>
+                        <div class="setting-group">
+                            <label>新密码</label>
+                            <input type="password" id="settings-new-password" placeholder="至少 8 个字符">
+                        </div>
+                        <div class="setting-group">
+                            <label>确认新密码</label>
+                            <input type="password" id="settings-confirm-password" placeholder="再次输入新密码">
+                        </div>
+                        <div class="settings-password-hint">请务必牢记新密码。"找回密码"功能尚在开发中，如忘记密码将暂时无法找回。</div>
+                        <button class="btn btn-primary settings-change-pwd-btn"
+                                onclick="changePassword()">确认修改</button>
+                    </div>
+                </div>
+            </div>
+            <!-- 好友 -->
             <div class="settings-section" id="settings-friends-section">
-                <h4>å¥½å‹</h4>
+                <h4>好友</h4>
                 <div id="friend-requests"></div>
                 <div id="friends-list">
-                    <div class="friends-empty">è¿˜æ²¡æœ‰å¥½å‹</div>
+                    <div class="friends-empty">还没有好友</div>
                 </div>
-                <button class="btn btn-primary settings-add-friend-btn" id="add-friend-btn">+ æ·»åŠ å¥½å‹</button>
+                <button class="btn btn-primary settings-add-friend-btn" id="add-friend-btn">+ 添加好友</button>
             </div>
-            <!-- AI æ¨¡åž‹ -->
+            <!-- AI 模型 -->
             <div class="settings-section" id="settings-ai-section">
-                <h4>AI æ¨¡åž‹</h4>
-                <p class="setting-desc">æ¨¡åž‹åˆ‡æ¢åŠŸèƒ½å¼€å'ä¸­ï¼Œæ•¬è¯·æœŸå¾…</p>
+                <h4>AI 模型</h4>
+                <p class="setting-desc" id="ai-model-desc">选择二狗使用的 AI 模型</p>
                 <div class="ai-model-options" id="ai-model-options">
-                    <button class="ai-model-btn ai-model-disabled active" data-model="auto" disabled>
-                        <span class="ai-model-name">è‡ªåŠ¨</span>
-                        <span class="ai-model-desc">æ™ºèƒ½é€‰æ‹©</span>
+                    <button class="ai-model-btn active" data-model="auto" onclick="selectAiModel('auto')">
+                        <span class="ai-model-name">自动</span>
+                        <span class="ai-model-desc">智能选择最优模型</span>
                     </button>
-                    <button class="ai-model-btn ai-model-disabled" data-model="model-a" disabled>
-                        <span class="ai-model-name">æ¨¡åž‹ A</span>
-                        <span class="ai-model-desc">å³å°†æŽ¨å‡º</span>
+                    <button class="ai-model-btn" data-model="doubao" onclick="selectAiModel('doubao')">
+                        <span class="ai-model-name">模型 A</span>
+                        <span class="ai-model-desc">效果还行且便宜</span>
                     </button>
-                    <button class="ai-model-btn ai-model-disabled" data-model="model-b" disabled>
-                        <span class="ai-model-name">æ¨¡åž‹ B</span>
-                        <span class="ai-model-desc">å³å°†æŽ¨å‡º</span>
+                    <button class="ai-model-btn" data-model="claude" onclick="selectAiModel('claude')">
+                        <span class="ai-model-name">模型 B</span>
+                        <span class="ai-model-desc">效果顶级但稍贵</span>
                     </button>
                 </div>
             </div>
-            <!-- æŽ¨é€é€šçŸ¥ -->
+            <!-- 二狗设置 -->
+            <div class="settings-section" id="settings-ergou-section">
+                <h4>二狗设置</h4>
+                <p class="setting-desc">设置二狗的时区，影响提醒和时间感知</p>
+                <div class="ai-model-options" id="timezone-options">
+                    <button class="ai-model-btn active" data-tz="America/Toronto" onclick="selectTimezone('America/Toronto')">
+                        <span class="ai-model-name">多伦多</span>
+                        <span class="ai-model-desc">东部时间 (ET)</span>
+                    </button>
+                    <button class="ai-model-btn" data-tz="America/Vancouver" onclick="selectTimezone('America/Vancouver')">
+                        <span class="ai-model-name">温哥华</span>
+                        <span class="ai-model-desc">太平洋时间 (PT)</span>
+                    </button>
+                    <button class="ai-model-btn" data-tz="Asia/Shanghai" onclick="selectTimezone('Asia/Shanghai')">
+                        <span class="ai-model-name">北京</span>
+                        <span class="ai-model-desc">北京时间 (CST)</span>
+                    </button>
+                </div>
+            </div>
+            <!-- 推送通知 -->
             <div class="settings-section">
-                <h4>æŽ¨é€é€šçŸ¥</h4>
+                <h4>推送通知</h4>
                 <div class="setting-group">
-                    <label>çŠ¶æ€</label>
-                    <div class="settings-value" id="push-status-text">æ£€æŸ¥ä¸­...</div>
+                    <label>状态</label>
+                    <div class="settings-value" id="push-status-text">检查中...</div>
                 </div>
-                <button class="btn btn-primary settings-push-btn" id="push-toggle-btn" style="display:none">å¼€å¯æŽ¨é€</button>
+                <button class="btn btn-primary settings-push-btn" id="push-toggle-btn" style="display:none">开启推送</button>
             </div>
-            <!-- é€€å‡ºç™»å½• -->
+            <!-- 退出登录 -->
             <div class="settings-section">
                 <button class="btn btn-danger settings-logout-btn"
-                        onclick="doLogout()">é€€å‡ºç™»å½•</button>
+                        onclick="doLogout()">退出登录</button>
             </div>
             <!-- Admin Dashboard (owner only, hidden by default) -->
             <div class="settings-section" id="admin-dashboard-section" style="display:none;">
                 <h4 style="margin:0 0 12px 0;">Admin Dashboard</h4>
                 <div id="admin-pending-section" style="display:none;margin-bottom:16px;"></div>
                 <div id="admin-dashboard-content">
-                    <div class="admin-loading">åŠ è½½ä¸­...</div>
+                    <div class="admin-loading">加载中...</div>
                 </div>
             </div>
-            <!-- åº"ç"¨ä¿¡æ¯ -->
+            <!-- 应用信息 -->
             <div class="settings-section settings-about">
                 <div class="settings-app-name">Next</div>
                 <div class="settings-app-tagline">Focus on the Right Thing</div>
@@ -530,163 +561,162 @@
         </div>
     </div>
 
-    <!-- å­¦ä¹ é¡µé¢ -->
+    <!-- 学习页面 -->
     <div class="english-main-layout" id="english-view" style="display:none;">
-        <!-- å¥½å‹åˆ†äº«æ¨ªå¹… -->
+        <!-- 好友分享横幅 -->
         <div id="english-share-banner"></div>
-        <!-- åˆ-è¡¨é¡µ -->
+        <!-- 列表页 -->
         <div class="english-list-view">
             <div class="english-header">
-                <h2>å­¦ä¹ ç¬"è®°</h2>
+                <h2>学习笔记</h2>
             </div>
-            <!-- åˆ†ç±»ç­›é€‰ -->
+            <!-- 分类筛选 -->
             <div class="learn-category-filters" id="learn-category-filters"></div>
-            <!-- ç©ºçŠ¶æ€ -->
+            <!-- 空状态 -->
             <div class="english-empty-state" id="english-empty-state">
-                <div class="empty-icon">ðŸ"'</div>
-                <h3>è¿˜æ²¡æœ‰å­¦ä¹ ç¬"è®°</h3>
-                <p>ç'¹å‡» + åˆ›å»ºä½ çš"ç¬¬ä¸€æ¡ç¬"è®°</p>
+                <div class="empty-icon">📒</div>
+                <h3>还没有学习笔记</h3>
+                <p>点击 + 创建你的第一条笔记</p>
             </div>
-            <!-- ç¬"è®°åˆ-è¡¨ -->
+            <!-- 笔记列表 -->
             <div class="english-scenarios" id="english-scenarios"></div>
         </div>
 
-        <!-- è¯¦æƒ…é¡µï¼ˆé˜…è¯»/ç¼-è¾'åŒæ¨¡å¼ï¼‰ -->
+        <!-- 详情页（阅读/编辑双模式） -->
         <div class="english-detail-view">
             <div class="english-detail-header">
                 <div class="english-detail-header-left">
                     <button class="english-back-btn" id="english-back-btn">&larr;</button>
-                    <!-- é˜…è¯»æ¨¡å¼ï¼šæ ‡é¢˜æ-‡æœ¬ -->
+                    <!-- 阅读模式：标题文本 -->
                     <h2 class="learn-detail-title" id="learn-detail-title-view"></h2>
-                    <!-- ç¼-è¾'æ¨¡å¼ï¼šæ ‡é¢˜è¾"å…¥æ¡† -->
-                    <input type="text" class="learn-detail-title-input" id="learn-detail-title-edit" placeholder="ç¬"è®°æ ‡é¢˜" style="display:none;">
+                    <!-- 编辑模式：标题输入框 -->
+                    <input type="text" class="learn-detail-title-input" id="learn-detail-title-edit" placeholder="笔记标题" style="display:none;">
                 </div>
-                <!-- é˜…è¯»æ¨¡å¼æŒ‰é'® -->
+                <!-- 阅读模式按钮 -->
                 <div class="english-detail-actions" id="learn-actions-view">
-                    <button class="btn-icon" id="learn-edit-mode-btn" title="ç¼-è¾'">âœï¸</button>
-                    <button class="btn-icon" id="english-ai-btn" title="è®©é˜¿å®æ•´ç†">âœ¨</button>
-                    <button class="btn-icon" id="english-share-btn" title="åˆ†äº«">ðŸ"¤</button>
+                    <button class="btn-icon" id="learn-edit-mode-btn" title="编辑">✏️</button>
+                    <button class="btn-icon" id="english-ai-btn" title="让二狗整理">✨</button>
+                    <button class="btn-icon" id="english-share-btn" title="分享">📤</button>
                 </div>
-                <!-- ç¼-è¾'æ¨¡å¼æŒ‰é'® -->
+                <!-- 编辑模式按钮 -->
                 <div class="english-detail-actions" id="learn-actions-edit" style="display:none;">
-                    <button class="learn-btn-cancel" id="learn-edit-cancel-btn">å-æ¶ˆ</button>
-                    <button class="learn-btn-save" id="learn-edit-save-btn">ä¿å­˜</button>
+                    <button class="learn-btn-cancel" id="learn-edit-cancel-btn">取消</button>
+                    <button class="learn-btn-save" id="learn-edit-save-btn">保存</button>
                 </div>
             </div>
 
-            <!-- åˆ†ç±»æ ‡ç­¾ + æ-¶é-´ï¼ˆé˜…è¯»æ¨¡å¼ï¼‰ -->
+            <!-- 分类标签 + 时间（阅读模式） -->
             <div class="learn-detail-meta-bar" id="learn-meta-bar">
                 <span id="learn-category-badge"></span>
                 <span class="learn-meta-time" id="learn-meta-time"></span>
             </div>
 
-            <!-- é˜…è¯»æ¨¡å¼ï¼šæ¸²æŸ"å†…å®¹ -->
+            <!-- 阅读模式：渲染内容 -->
             <div class="learn-reading-view" id="learn-reading-view">
                 <div class="english-content" id="learn-content-rendered"></div>
-                <!-- ç¬"è®°å±•ç¤ºï¼ˆæœ‰ç¬"è®°æ-¶æ‰æ˜¾ç¤ºï¼‰ -->
+                <!-- 笔记展示（有笔记时才显示） -->
                 <div class="learn-notes-display" id="learn-notes-display" style="display:none;">
-                    <h4>æˆ'çš"ç¬"è®°</h4>
+                    <h4>我的笔记</h4>
                     <div class="learn-notes-text" id="learn-notes-text"></div>
                 </div>
             </div>
 
-            <!-- ç¼-è¾'æ¨¡å¼ï¼šè¡¨å• -->
+            <!-- 编辑模式：表单 -->
             <div class="learn-editing-view" id="learn-editing-view" style="display:none;">
                 <div class="learn-edit-section">
                     <div class="learn-edit-field">
-                        <label>å†…å®¹</label>
-                        <textarea id="learn-edit-content" rows="12" placeholder="ç²˜è´´ä»Žè±†åŒ…ç­‰åº"ç"¨å¤åˆ¶çš"å†…å®¹ï¼Œæˆ-ç›´æŽ¥è¾"å…¥..."></textarea>
+                        <label>内容</label>
+                        <textarea id="learn-edit-content" rows="12" placeholder="粘贴从豆包等应用复制的内容，或直接输入..."></textarea>
                     </div>
                     <div class="learn-edit-field">
-                        <label>æˆ'çš"ç¬"è®°</label>
-                        <textarea id="learn-edit-notes" rows="4" placeholder="è®°å½•ä½ çš"å­¦ä¹ å¿ƒå¾-..."></textarea>
+                        <label>我的笔记</label>
+                        <textarea id="learn-edit-notes" rows="4" placeholder="记录你的学习心得..."></textarea>
                     </div>
                     <div class="learn-edit-field learn-category-field">
-                        <label>åˆ†ç±»</label>
+                        <label>分类</label>
                         <div class="learn-detail-categories" id="learn-detail-categories"></div>
                     </div>
                 </div>
-                <!-- åˆ é™¤ï¼šæœ€åº•éƒ¨ï¼Œä¸æ˜¾çœ¼ -->
+                <!-- 删除：最底部，不显眼 -->
                 <div class="learn-danger-zone">
-                    <button class="learn-btn-danger" id="english-delete-btn">åˆ é™¤æ­¤ç¬"è®°</button>
+                    <button class="learn-btn-danger" id="english-delete-btn">删除此笔记</button>
                 </div>
             </div>
         </div>
 
-        <!-- FAB æŒ‰é'® -->
+        <!-- FAB 按钮 -->
         <button class="learn-fab" id="learn-fab" onclick="English.openCreateModal()">+</button>
     </div>
 
-    <!-- ç"Ÿæ´» Hub -->
+    <!-- 生活 Hub -->
     <div class="life-main-layout" id="life-view" style="display:none;">
-        <div id="life-share-banner"></div>
-        <!-- Hub é¡µé¢ -->
+        <!-- Hub 页面 -->
         <div class="life-hub" id="life-hub">
             <div class="life-hub-header">
-                <h2>ç"Ÿæ´»</h2>
+                <h2>生活</h2>
             </div>
             <div class="life-hub-grid">
                 <div class="life-hub-card" onclick="Life.openFeature('expense')">
-                    <div class="life-hub-card-icon">ðŸ'°</div>
-                    <div class="life-hub-card-title">è®°è´¦</div>
-                    <div class="life-hub-card-desc">è®°å½•æ¯ä¸€ç¬"æ¶ˆè´¹</div>
+                    <div class="life-hub-card-icon">💰</div>
+                    <div class="life-hub-card-title">记账</div>
+                    <div class="life-hub-card-desc">记录每一笔消费</div>
                 </div>
                 <div class="life-hub-card" onclick="Life.openFeature('trip')">
-                    <div class="life-hub-card-icon">âœˆï¸</div>
-                    <div class="life-hub-card-title">å·®æ-…</div>
-                    <div class="life-hub-card-desc">å‡ºå·®è¡Œç¨‹ä¸ŽæŠ¥é"€</div>
+                    <div class="life-hub-card-icon">✈️</div>
+                    <div class="life-hub-card-title">差旅</div>
+                    <div class="life-hub-card-desc">出差行程与报销</div>
                 </div>
                 <div class="life-hub-card" onclick="Life.openFeature('health')">
-                    <div class="life-hub-card-icon">ðŸ¥</div>
-                    <div class="life-hub-card-title">å¥åº·</div>
-                    <div class="life-hub-card-desc">å…«æ®µé"¦ Â· ç»ç»œ</div>
+                    <div class="life-hub-card-icon">🏥</div>
+                    <div class="life-hub-card-title">健康</div>
+                    <div class="life-hub-card-desc">八段锦 · 经络</div>
                 </div>
             </div>
         </div>
 
-        <!-- è®°è´¦å­è§†å›¾ -->
+        <!-- 记账子视图 -->
         <div class="expense-view" id="expense-view" style="display:none;">
             <div class="expense-header">
                 <div class="expense-header-left">
-                    <button class="expense-back-btn" onclick="Life.showHub()">&larr; ç"Ÿæ´»</button>
-                    <h2 class="expense-title">è®°è´¦</h2>
+                    <button class="expense-back-btn" onclick="Life.showHub()">&larr; 生活</button>
+                    <h2 class="expense-title">记账</h2>
                 </div>
                 <div class="expense-period-tabs">
-                    <button class="expense-period-btn active" data-period="day" onclick="Expense.switchPeriod('day')">æ-¥</button>
-                    <button class="expense-period-btn" data-period="week" onclick="Expense.switchPeriod('week')">å'¨</button>
-                    <button class="expense-period-btn" data-period="month" onclick="Expense.switchPeriod('month')">æœˆ</button>
+                    <button class="expense-period-btn" data-period="day" onclick="Expense.switchPeriod('day')">日</button>
+                    <button class="expense-period-btn" data-period="week" onclick="Expense.switchPeriod('week')">周</button>
+                    <button class="expense-period-btn active" data-period="month" onclick="Expense.switchPeriod('month')">月</button>
                 </div>
-                <button class="expense-analytics-btn" id="expense-analytics-btn" onclick="Expense.toggleAnalytics()">ðŸ"Š</button>
+                <button class="expense-analytics-btn" id="expense-analytics-btn" onclick="Expense.toggleAnalytics()">📊</button>
             </div>
-            <!-- æ-¥æœŸå¯¼èˆª -->
+            <!-- 日期导航 -->
             <div class="expense-date-nav">
                 <button class="expense-nav-btn" onclick="Expense.navigateDate(-1)">&lsaquo;</button>
-                <span class="expense-date-label" id="expense-date-label">ä»Šå¤©</span>
+                <span class="expense-date-label" id="expense-date-label">今天</span>
                 <button class="expense-nav-btn" onclick="Expense.navigateDate(1)">&rsaquo;</button>
             </div>
-            <!-- æ±‡æ€»å¡ç‰‡ -->
+            <!-- 汇总卡片 -->
             <div class="expense-summary" id="expense-summary">
                 <div class="expense-summary-total">
-                    <span class="expense-summary-label">æ€»æ"¯å‡º</span>
-                    <span class="expense-summary-amount" id="expense-total-amount">Â¥0.00</span>
+                    <span class="expense-summary-label">总支出</span>
+                    <span class="expense-summary-amount" id="expense-total-amount">¥0.00</span>
                 </div>
             </div>
-            <!-- æ ‡ç­¾ç­›é€‰ -->
+            <!-- 标签筛选 -->
             <div class="expense-tags-filter" id="expense-tags-filter"></div>
-            <!-- æ¡ç›®åˆ-è¡¨ -->
+            <!-- 条目列表 -->
             <div class="expense-list" id="expense-list">
                 <div class="expense-empty">
-                    <div class="expense-empty-icon">ðŸ'°</div>
-                    <p>è¿˜æ²¡æœ‰è®°è´¦è®°å½•</p>
-                    <p class="expense-empty-hint">ç'¹å‡» + è®°ä¸€ç¬"</p>
+                    <div class="expense-empty-icon">💰</div>
+                    <p>还没有记账记录</p>
+                    <p class="expense-empty-hint">点击 + 记一笔</p>
                 </div>
             </div>
 
-            <!-- ç»Ÿè®¡å­è§†å›¾ -->
+            <!-- 统计子视图 -->
             <div class="expense-analytics-view" id="expense-analytics-view" style="display:none;">
                 <div class="expense-analytics-period-tabs">
-                    <button class="expense-analytics-period-btn active" data-period="week" onclick="ExpenseAnalytics.switchPeriod('week')">å'¨</button>
-                    <button class="expense-analytics-period-btn" data-period="month" onclick="ExpenseAnalytics.switchPeriod('month')">æœˆ</button>
+                    <button class="expense-analytics-period-btn active" data-period="week" onclick="ExpenseAnalytics.switchPeriod('week')">周</button>
+                    <button class="expense-analytics-period-btn" data-period="month" onclick="ExpenseAnalytics.switchPeriod('month')">月</button>
                 </div>
                 <div class="expense-analytics-date-nav">
                     <button class="expense-nav-btn" onclick="ExpenseAnalytics.navigateDate(-1)">&lsaquo;</button>
@@ -695,29 +725,29 @@
                 </div>
                 <div class="expense-analytics-total" id="expense-analytics-total"></div>
                 <div class="expense-analytics-chart-section">
-                    <h4 class="expense-analytics-section-title">åˆ†ç±»å æ¯"</h4>
+                    <h4 class="expense-analytics-section-title">分类占比</h4>
                     <div class="expense-analytics-pie-wrapper">
                         <canvas id="expense-pie-canvas"></canvas>
                     </div>
                     <div class="expense-analytics-legend" id="expense-analytics-legend"></div>
                 </div>
                 <div class="expense-analytics-chart-section">
-                    <h4 class="expense-analytics-section-title">æ¯æ-¥è¶‹åŠ¿</h4>
+                    <h4 class="expense-analytics-section-title">每日趋势</h4>
                     <div class="expense-analytics-bar-wrapper">
                         <canvas id="expense-bar-canvas"></canvas>
                     </div>
                 </div>
                 <div class="expense-analytics-empty" id="expense-analytics-empty" style="display:none;">
-                    <p>æš'æ- æ¶ˆè´¹è®°å½•</p>
+                    <p>暂无消费记录</p>
                 </div>
             </div>
         </div>
 
-        <!-- è®°ä¸€ç¬"å¼¹çª- -->
+        <!-- 记一笔弹窗 -->
         <div class="expense-add-overlay" id="expense-add-overlay" style="display:none;" onclick="Expense.closeAddModal()">
             <div class="expense-add-modal" onclick="event.stopPropagation()">
                 <div class="expense-add-header">
-                    <h3 id="expense-modal-title">è®°ä¸€ç¬"</h3>
+                    <h3 id="expense-modal-title">记一笔</h3>
                     <button class="expense-add-close" onclick="Expense.closeAddModal()">&times;</button>
                 </div>
                 <div class="expense-add-body">
@@ -729,19 +759,20 @@
                             <input type="number" id="expense-amount-input" class="expense-amount-input" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
                         </div>
                         <div class="expense-add-field">
-                            <label>æ-¥æœŸ</label>
+                            <label>日期</label>
                             <input type="date" id="expense-date-input">
                         </div>
                         <div class="expense-add-field">
-                            <label>å¤‡æ³¨</label>
-                            <input type="text" id="expense-notes-input" placeholder="ä¹°äº†ä»€ä¹ˆ...">
+                            <label>备注</label>
+                            <input type="text" id="expense-notes-input" placeholder="买了什么...">
                         </div>
                         <div class="expense-add-field">
-                            <label>ç…§ç‰‡ï¼ˆæ"¶æ®/å°ç¥¨ï¼‰</label>
+                            <label>照片（收据/小票）</label>
                             <div class="expense-photo-area" id="expense-photo-area">
-                                <div class="expense-photo-grid" id="expense-photo-grid"></div>
+                                <div class="pm-grid" id="expense-existing-photos"></div>
+                                <div class="pm-grid" id="expense-photo-grid"></div>
                                 <label class="expense-photo-add-btn" id="expense-photo-add-btn">
-                                    <span>+ æ·»åŠ ç…§ç‰‡</span>
+                                    <span>+ 添加照片</span>
                                     <input type="file" multiple accept="image/*" id="expense-photo-input" style="display:none" onchange="Expense.handlePhotoSelect(event)">
                                 </label>
                             </div>
@@ -751,47 +782,47 @@
                     <div id="expense-state-analyzing" style="display:none">
                         <div class="expense-analyzing">
                             <div class="expense-analyzing-icon">&#10024;</div>
-                            <p class="expense-analyzing-text">æ­£åœ¨è¯†åˆ«è´¦å•...</p>
+                            <p class="expense-analyzing-text">正在识别账单...</p>
                             <div class="expense-progress-bar">
                                 <div class="expense-progress-fill" id="expense-progress-fill"></div>
                             </div>
-                            <p class="expense-analyzing-hint">AI æ­£åœ¨åˆ†æžç…§ç‰‡å†…å®¹</p>
+                            <p class="expense-analyzing-hint">AI 正在分析照片内容</p>
                         </div>
                     </div>
                     <!-- State 3: Preview -->
                     <div id="expense-state-preview" style="display:none"></div>
                 </div>
                 <div class="expense-add-footer" id="expense-add-footer">
-                    <button class="btn btn-secondary" onclick="Expense.closeAddModal()">å-æ¶ˆ</button>
-                    <button class="btn btn-primary" onclick="Expense.submitEntry()">ä¿å­˜</button>
+                    <button class="btn btn-secondary" onclick="Expense.closeAddModal()">取消</button>
+                    <button class="btn btn-primary" onclick="Expense.submitEntry()">保存</button>
                 </div>
             </div>
         </div>
 
-        <!-- æ¡ç›®è¯¦æƒ…å¼¹çª- -->
+        <!-- 条目详情弹窗 -->
         <div class="expense-detail-overlay" id="expense-detail-overlay" style="display:none;" onclick="Expense.closeDetail()">
             <div class="expense-detail-modal" onclick="event.stopPropagation()">
                 <div class="expense-detail-header">
-                    <h3>æ¶ˆè´¹è¯¦æƒ…</h3>
+                    <h3>消费详情</h3>
                     <button class="expense-detail-close" onclick="Expense.closeDetail()">&times;</button>
                 </div>
                 <div class="expense-detail-body" id="expense-detail-body"></div>
                 <div class="expense-detail-footer" id="expense-detail-footer">
-                    <button class="btn btn-danger-text" onclick="Expense.deleteEntry()">åˆ é™¤</button>
-                    <button class="btn btn-primary" onclick="Expense.editEntry()">ç¼-è¾'</button>
+                    <button class="btn btn-danger-text" onclick="Expense.deleteEntry()">删除</button>
+                    <button class="btn btn-primary" onclick="Expense.editEntry()">编辑</button>
                 </div>
             </div>
         </div>
 
-        <!-- è®°è´¦ FAB -->
+        <!-- 记账 FAB -->
         <button class="expense-fab" id="expense-fab" style="display:none;" onclick="Expense.openAddModal()">+</button>
 
-        <!-- å·®æ-…å­è§†å›¾ -->
+        <!-- 差旅子视图 -->
         <div class="trip-view" id="trip-view" style="display:none;">
             <div id="trip-list-view">
                 <div class="trip-header">
-                    <button class="trip-back-btn" onclick="Life.showHub()">&larr; ç"Ÿæ´»</button>
-                    <h2>å·®æ-…</h2>
+                    <button class="trip-back-btn" onclick="Life.showHub()">&larr; 生活</button>
+                    <h2>差旅</h2>
                 </div>
                 <div id="trip-list"></div>
             </div>
@@ -802,185 +833,186 @@
             </div>
         </div>
 
-        <!-- å·®æ-… FAB -->
+        <!-- 差旅 FAB -->
         <button class="trip-fab" id="trip-fab" style="display:none;" onclick="Trip.handleFab()">+</button>
 
-        <!-- å¥åº·å­è§†å›¾ -->
+        <!-- 健康子视图 -->
         <div class="health-view" id="health-view" style="display:none;">
-            <!-- å¥åº· Hub -->
+            <!-- 健康 Hub -->
             <div id="health-hub">
                 <div class="health-hub-header">
-                    <button class="health-back-btn" onclick="Life.showHub()">&larr; ç"Ÿæ´»</button>
-                    <h2>å¥åº·</h2>
+                    <button class="health-back-btn" onclick="Life.showHub()">&larr; 生活</button>
+                    <h2>健康</h2>
                 </div>
                 <div class="health-hub-grid">
                     <div class="health-hub-card" onclick="Health.openCategory('baduanjin')">
-                        <div class="health-hub-card-icon">ðŸ§˜</div>
-                        <div class="health-hub-card-title">å…«æ®µé"¦</div>
-                        <div class="health-hub-card-desc">8å¼å…»ç"ŸåŠŸæ³•</div>
+                        <div class="health-hub-card-icon">🧘</div>
+                        <div class="health-hub-card-title">八段锦</div>
+                        <div class="health-hub-card-desc">8式养生功法</div>
                     </div>
-                    <div class="health-hub-card health-hub-card-disabled">
-                        <div class="health-hub-card-icon">ðŸ"¿</div>
-                        <div class="health-hub-card-title">ç»ç»œ</div>
-                        <div class="health-hub-card-desc">14ç»ç»œç©´ä½</div>
+                    <div class="health-hub-card" onclick="Health.openCategory('meridian')">
+                        <div class="health-hub-card-icon">📿</div>
+                        <div class="health-hub-card-title">经络</div>
+                        <div class="health-hub-card-desc">14经络穴位</div>
                     </div>
-                    <div class="health-hub-card health-hub-card-disabled">
-                        <div class="health-hub-card-icon">ðŸ'ª</div>
-                        <div class="health-hub-card-title">æ˜"ç­‹ç»</div>
-                        <div class="health-hub-card-desc">å¾…å¼€æ"¾</div>
+                    <div class="health-hub-card" onclick="Health.openCategory('yijinjing')">
+                        <div class="health-hub-card-icon">💪</div>
+                        <div class="health-hub-card-title">易筋经</div>
+                        <div class="health-hub-card-desc">12式筋骨功法</div>
                     </div>
-                    <div class="health-hub-card health-hub-card-disabled">
-                        <div class="health-hub-card-icon">ðŸ§</div>
-                        <div class="health-hub-card-title">ç«™æ¡©</div>
-                        <div class="health-hub-card-desc">å¾…å¼€æ"¾</div>
+                    <div class="health-hub-card" onclick="Health.openCategory('zhanzhuang')">
+                        <div class="health-hub-card-icon">🧍</div>
+                        <div class="health-hub-card-title">站桩</div>
+                        <div class="health-hub-card-desc">8式桩功修炼</div>
                     </div>
                 </div>
             </div>
-            <!-- åˆ†ç±»è¯¦æƒ… (å…«æ®µé"¦) -->
+            <!-- 分类详情 -->
             <div class="health-category-view" id="health-category" style="display:none;">
                 <div class="health-category-header">
-                    <button class="health-back-btn" onclick="Health.backToHub()">&larr; å¥åº·</button>
-                    <h2>å…«æ®µé"¦</h2>
+                    <button class="health-back-btn" onclick="Health.backToHub()">&larr; 健康</button>
+                    <h2 id="health-category-title">八段锦</h2>
                 </div>
                 <div class="health-action-cards" id="health-action-cards"></div>
+                <div class="health-meridian-list" id="health-meridian-list" style="display:none;"></div>
                 <div class="health-canvas-wrap">
                     <div id="health-canvas-container" style="width:100%;height:100%;"></div>
                     <div class="health-pose-label" id="health-pose-label" style="display:none;"></div>
                 </div>
                 <div class="health-side-toggle">
-                    <button class="health-side-btn active" data-side="front" onclick="Health.setViewSide('front')">æ­£é¢</button>
-                    <button class="health-side-btn" data-side="back" onclick="Health.setViewSide('back')">èƒŒé¢</button>
+                    <button class="health-side-btn active" data-side="front" onclick="Health.setViewSide('front')">正面</button>
+                    <button class="health-side-btn" data-side="back" onclick="Health.setViewSide('back')">背面</button>
                 </div>
                 <div id="health-video-wrap" class="health-video-wrap" style="display:none;">
-                    <video class="health-video" id="health-video" controls playsinline preload="none"></video>
+                    <video class="health-video" id="health-video" controls playsinline preload="metadata"></video>
                 </div>
                 <div id="health-detail" class="health-detail"></div>
             </div>
         </div>
     </div>
 
-    <!-- å·®æ-…å¼¹çª- -->
+    <!-- 差旅弹窗 -->
     <div class="trip-modal-overlay" id="trip-modal-overlay" style="display:none;"></div>
     <div class="trip-modal-overlay" id="trip-item-modal-overlay" style="display:none;"></div>
 
-    <!-- å­¦ä¹ ç¬"è®°åˆ›å»ºå¼¹çª- -->
+    <!-- 学习笔记创建弹窗 -->
     <div class="english-modal-overlay" id="english-modal-overlay">
         <div class="english-modal" onclick="event.stopPropagation()">
-            <h3>æ-°å»ºç¬"è®°</h3>
+            <h3>新建笔记</h3>
             <div class="english-modal-field">
-                <label>æ ‡é¢˜</label>
-                <input type="text" id="english-modal-title" placeholder="ç¬"è®°æ ‡é¢˜">
+                <label>标题</label>
+                <input type="text" id="english-modal-title" placeholder="笔记标题">
             </div>
             <div class="english-modal-field">
-                <label>å†…å®¹</label>
-                <textarea id="english-modal-content" rows="6" placeholder="ç²˜è´´ä»Žè±†åŒ…ç­‰åº"ç"¨å¤åˆ¶çš"å†…å®¹ï¼Œæˆ-ç›´æŽ¥è¾"å…¥..."></textarea>
+                <label>内容</label>
+                <textarea id="english-modal-content" rows="6" placeholder="粘贴从豆包等应用复制的内容，或直接输入..."></textarea>
             </div>
             <div class="english-modal-field">
-                <label>åˆ†ç±»ï¼ˆå¯é€‰ï¼‰</label>
+                <label>分类（可选）</label>
                 <div class="learn-modal-categories" id="learn-modal-categories"></div>
             </div>
             <div class="english-modal-actions">
-                <button class="btn btn-secondary" id="english-modal-cancel">å-æ¶ˆ</button>
-                <button class="btn btn-primary" id="english-modal-submit">ä¿å­˜</button>
+                <button class="btn btn-secondary" id="english-modal-cancel">取消</button>
+                <button class="btn btn-primary" id="english-modal-submit">保存</button>
             </div>
         </div>
     </div>
 
-    <!-- å¥½å‹æœç´¢å¼¹çª- -->
+    <!-- 好友搜索弹窗 -->
     <div class="friend-search-overlay" id="friend-search-overlay" style="display:none;">
         <div class="friend-search-modal" onclick="event.stopPropagation()">
-            <h3>æ·»åŠ å¥½å‹</h3>
-            <input type="text" id="friend-search-input" placeholder="æœç´¢ç"¨æˆ·å..." class="friend-search-input">
+            <h3>添加好友</h3>
+            <input type="text" id="friend-search-input" placeholder="搜索用户名..." class="friend-search-input">
             <div id="friend-search-results" class="friend-search-results"></div>
             <div class="friend-search-close">
-                <button class="btn btn-secondary" onclick="Friends.closeShareModal(); document.getElementById('friend-search-overlay').style.display='none'">å…³é-­</button>
+                <button class="btn btn-secondary" onclick="Friends.closeShareModal(); document.getElementById('friend-search-overlay').style.display='none'">关闭</button>
             </div>
         </div>
     </div>
 
-    <!-- ç»Ÿä¸€åˆ†äº«å¼¹çª- (ShareModal åŠ¨æ€æ¸²æŸ") -->
+    <!-- 统一分享弹窗 (ShareModal 动态渲染) -->
     <div class="share-modal-overlay" id="share-modal-overlay" style="display:none;" onclick="ShareModal.close()"></div>
 
-    <!-- ä¾‹è¡Œå®¡è§† æ-°å»º/ç¼-è¾'å¼¹çª- -->
+    <!-- 例行审视 新建/编辑弹窗 -->
     <div class="review-modal-overlay" id="review-modal-overlay" style="display:none;" onclick="closeReviewModal()">
         <div class="review-modal" onclick="event.stopPropagation()">
             <div class="review-modal-header">
-                <h3 id="review-modal-title">æ-°å»ºä¾‹è¡Œäº‹é¡¹</h3>
-                <button class="header-btn close-btn" onclick="closeReviewModal()">Ã-</button>
+                <h3 id="review-modal-title">新建例行事项</h3>
+                <button class="header-btn close-btn" onclick="closeReviewModal()">×</button>
             </div>
             <div class="review-modal-body">
                 <div class="review-field">
-                    <label>äº‹é¡¹åç§°</label>
-                    <input type="text" id="review-text" placeholder="ä¾‹å¦'ï¼šä¿¡ç"¨å¡è¿˜æ¬¾">
+                    <label>事项名称</label>
+                    <input type="text" id="review-text" placeholder="例如：信用卡还款">
                 </div>
                 <div class="review-field">
-                    <label>é‡å¤é¢'çŽ‡</label>
+                    <label>重复频率</label>
                     <div class="frequency-selector" id="frequency-selector">
-                        <button class="freq-btn active" data-freq="daily" onclick="selectFrequency('daily')">æ¯æ-¥</button>
-                        <button class="freq-btn" data-freq="weekly" onclick="selectFrequency('weekly')">æ¯å'¨</button>
-                        <button class="freq-btn" data-freq="monthly" onclick="selectFrequency('monthly')">æ¯æœˆ</button>
-                        <button class="freq-btn" data-freq="yearly" onclick="selectFrequency('yearly')">æ¯å¹´</button>
+                        <button class="freq-btn active" data-freq="daily" onclick="selectFrequency('daily')">每日</button>
+                        <button class="freq-btn" data-freq="weekly" onclick="selectFrequency('weekly')">每周</button>
+                        <button class="freq-btn" data-freq="monthly" onclick="selectFrequency('monthly')">每月</button>
+                        <button class="freq-btn" data-freq="yearly" onclick="selectFrequency('yearly')">每年</button>
                     </div>
                 </div>
                 <div class="review-field" id="freq-config-field" style="display:none;">
-                    <label id="freq-config-label">å…·ä½"æ-¥æœŸ</label>
+                    <label id="freq-config-label">具体日期</label>
                     <div id="freq-config-content"></div>
                 </div>
                 <div class="review-field">
-                    <label>åˆ†ç±»ï¼ˆå¯é€‰ï¼‰</label>
-                    <input type="text" id="review-category" placeholder="ä¾‹å¦'ï¼šè´¢åŠ¡ã€å¥åº·">
+                    <label>分类（可选）</label>
+                    <input type="text" id="review-category" placeholder="例如：财务、健康">
                 </div>
                 <div class="review-field">
-                    <label>å¤‡æ³¨ï¼ˆå¯é€‰ï¼‰</label>
-                    <textarea id="review-notes" rows="3" placeholder="è¡¥å……è¯´æ˜Ž"></textarea>
+                    <label>备注（可选）</label>
+                    <textarea id="review-notes" rows="3" placeholder="补充说明"></textarea>
                 </div>
             </div>
             <div class="review-modal-footer">
-                <button class="task-modal-btn secondary" onclick="closeReviewModal()">å-æ¶ˆ</button>
-                <button class="task-modal-btn primary" onclick="saveReview()">ä¿å­˜</button>
+                <button class="task-modal-btn secondary" onclick="closeReviewModal()">取消</button>
+                <button class="task-modal-btn primary" onclick="saveReview()">保存</button>
             </div>
         </div>
     </div>
 
-    <!-- ç»Ÿä¸€ä»»åŠ¡å¼¹çª-ï¼ˆæŸ¥çœ‹/ç¼-è¾'/æ-°å»ºï¼‰ -->
+    <!-- 统一任务弹窗（查看/编辑/新建） -->
     <div class="task-modal-overlay" id="task-modal-overlay" style="display:none;" onclick="closeTaskModal()">
         <div class="task-modal" onclick="event.stopPropagation()">
-            <!-- æ ‡é¢˜æ  -->
+            <!-- 标题栏 -->
             <div class="task-modal-header">
-                <textarea id="modal-title" class="title-input" placeholder="ä»»åŠ¡æ ‡é¢˜ï¼ˆé™50å­-ï¼‰" maxlength="50" rows="2"></textarea>
+                <textarea id="modal-title" class="title-input" placeholder="任务标题（限50字）" maxlength="50" rows="2"></textarea>
                 <div class="header-actions">
-                    <button class="header-btn share-btn" id="header-share-btn" onclick="shareCurrentTask()" title="&#x5206;&#x4EAB;&#x7ED9;&#x597D;&#x53CB;" style="display:none">&#x1F4E4;</button>
-                    <button class="header-btn edit-btn" id="header-edit-btn" onclick="switchToEditMode()">ç¼–è¾'</button>
-                    <button class="header-btn close-btn" onclick="closeTaskModal()">å…³é—­</button>
+                    <button class="header-btn share-btn" id="header-share-btn" onclick="shareCurrentTask()" title="分享给好友" style="display:none">📤</button>
+                    <button class="header-btn edit-btn" id="header-edit-btn" onclick="switchToEditMode()">编辑</button>
+                    <button class="header-btn close-btn" onclick="closeTaskModal()">关闭</button>
                 </div>
             </div>
-            <!-- ä¸»ä½"ï¼šå·¦å±žæ€§ + å³å†…å®¹ -->
+            <!-- 主体：左属性 + 右内容 -->
             <div class="task-modal-body">
-                <!-- å·¦æ ï¼šå±žæ€§ -->
+                <!-- 左栏：属性 -->
                 <div class="task-modal-left">
                     <div class="prop-group">
-                        <label>ðŸ"… è®¡åˆ'å®Œæˆ</label>
+                        <label>📅 计划完成</label>
                         <div class="smart-date-picker" id="smart-date-picker">
                             <button type="button" class="date-display" id="date-display" onclick="toggleDatePicker()">
-                                <span class="date-text" id="date-text">è®¾ç½®æ-¥æœŸ</span>
+                                <span class="date-text" id="date-text">设置日期</span>
                                 <span class="date-clear" id="date-clear" onclick="clearDueDate(event)" style="display:none;">&times;</span>
                             </button>
                             <input type="hidden" id="modal-due-date">
                             <div class="date-popover" id="date-popover" style="display:none;">
                                 <div class="date-chips" id="date-chips"></div>
-                                <input type="text" class="date-nl-input" id="date-nl-input" placeholder="è¾"å…¥: 3d, ä¸‹å'¨ä¸€, friday...">
+                                <input type="text" class="date-nl-input" id="date-nl-input" placeholder="输入: 3d, 下周一, friday...">
                                 <div class="date-nl-preview" id="date-nl-preview"></div>
                                 <div class="date-calendar" id="date-calendar"></div>
-                                <button type="button" class="date-clear-btn" onclick="clearDueDate()">æ¸…é™¤æ-¥æœŸ</button>
+                                <button type="button" class="date-clear-btn" onclick="clearDueDate()">清除日期</button>
                             </div>
                         </div>
                     </div>
                     <div class="prop-group">
-                        <label>ðŸ'¤ ç›¸å…³äºº</label>
-                        <input type="text" id="modal-assignee" placeholder="ç›¸å…³äººå'˜">
+                        <label>👤 相关人</label>
+                        <input type="text" id="modal-assignee" placeholder="相关人员">
                     </div>
                     <div class="prop-group">
-                        <label>ðŸ• æ-¶é-´æ®µ</label>
+                        <label>🕐 时间段</label>
                         <div class="tab-buttons" id="modal-tab-buttons">
                             <button type="button" class="tab-btn selected" data-tab="today">Today</button>
                             <button type="button" class="tab-btn" data-tab="week">Week</button>
@@ -988,86 +1020,86 @@
                         </div>
                     </div>
                     <div class="prop-group">
-                        <label>ðŸ"Š è±¡é™</label>
+                        <label>📊 象限</label>
                         <div class="quadrant-select-compact" id="modal-quadrant-select">
                             <label class="q-option selected" data-q="important-urgent">
                                 <input type="radio" name="modal-quadrant" value="important-urgent" checked>
-                                <span class="q-icon">ðŸ"¥</span><span class="q-text">ä¼˜å…ˆå¤"ç†</span>
+                                <span class="q-icon">🔥</span><span class="q-text">优先处理</span>
                             </label>
                             <label class="q-option" data-q="important-not-urgent">
                                 <input type="radio" name="modal-quadrant" value="important-not-urgent">
-                                <span class="q-icon">ðŸŽ¯</span><span class="q-text">ç­‰ä½ ç¿»ç‰Œ</span>
+                                <span class="q-icon">🎯</span><span class="q-text">等你翻牌</span>
                             </label>
                             <label class="q-option" data-q="not-important-urgent">
                                 <input type="radio" name="modal-quadrant" value="not-important-urgent">
-                                <span class="q-icon">ðŸ"¥</span><span class="q-text">å¾…åˆ†ç±»</span>
+                                <span class="q-icon">📥</span><span class="q-text">待分类</span>
                             </label>
                             <label class="q-option" data-q="not-important-not-urgent">
                                 <input type="radio" name="modal-quadrant" value="not-important-not-urgent">
-                                <span class="q-icon">âš¡</span><span class="q-text">çŸ­å¹³å¿«</span>
+                                <span class="q-icon">⚡</span><span class="q-text">短平快</span>
                             </label>
                         </div>
                     </div>
                     <div class="prop-group">
-                        <label>è¿›åº¦</label>
+                        <label>进度</label>
                         <div class="progress-slider">
                             <input type="range" id="modal-progress" min="0" max="100" value="0">
                             <span class="progress-value" id="modal-progress-value">0%</span>
                         </div>
                     </div>
-                    <!-- å…ƒä¿¡æ¯ -->
+                    <!-- 元信息 -->
                     <div class="meta-section" id="modal-meta-section">
                         <div class="meta-item" id="modal-created-at">
-                            <span>ðŸ"…</span>
-                            <span class="meta-text">åˆ›å»ºäºŽ --</span>
+                            <span>📅</span>
+                            <span class="meta-text">创建于 --</span>
                         </div>
                         <div class="meta-item" id="modal-completed-at" style="display:none;">
-                            <span>âœ…</span>
-                            <span class="meta-text">å®ŒæˆäºŽ --</span>
+                            <span>✅</span>
+                            <span class="meta-text">完成于 --</span>
                         </div>
                         <div class="meta-item meta-reminder" id="modal-reminder-row" style="display:none;">
-                            <span>ðŸ""</span>
-                            <span class="meta-text" id="modal-reminder-text">æ- æé†'</span>
-                            <button class="meta-reminder-btn" id="modal-set-reminder-btn" onclick="openSetReminderUI()">è®¾ç½®æé†'</button>
+                            <span>🔔</span>
+                            <span class="meta-text" id="modal-reminder-text">无提醒</span>
+                            <button class="meta-reminder-btn" id="modal-set-reminder-btn" onclick="openSetReminderUI()">设置提醒</button>
                         </div>
                     </div>
-                    <!-- å¿«æ·è®¾ç½®æé†' -->
+                    <!-- 快捷设置提醒 -->
                     <div class="reminder-picker" id="modal-reminder-picker" style="display:none;">
                         <div class="reminder-picker-row">
                             <input type="datetime-local" id="reminder-datetime-input" class="reminder-datetime-input">
                             <select id="reminder-repeat-select" class="reminder-repeat-select">
-                                <option value="">ä¸é‡å¤</option>
-                                <option value="daily">æ¯å¤©</option>
-                                <option value="weekly">æ¯å'¨</option>
-                                <option value="monthly">æ¯æœˆ</option>
+                                <option value="">不重复</option>
+                                <option value="daily">每天</option>
+                                <option value="weekly">每周</option>
+                                <option value="monthly">每月</option>
                             </select>
                         </div>
                         <div class="reminder-picker-actions">
-                            <button class="btn btn-sm" onclick="cancelReminderPicker()">å-æ¶ˆ</button>
-                            <button class="btn btn-sm btn-primary" onclick="confirmSetReminder()">ç¡®å®š</button>
+                            <button class="btn btn-sm" onclick="cancelReminderPicker()">取消</button>
+                            <button class="btn btn-sm btn-primary" onclick="confirmSetReminder()">确定</button>
                         </div>
                     </div>
                 </div>
-                <!-- å³æ ï¼šå†…å®¹ -->
+                <!-- 右栏：内容 -->
                 <div class="task-modal-right">
                     <div id="modal-content-view" class="modal-content-view"></div>
-                    <textarea id="modal-content" placeholder="è¯¦ç»†æè¿°ã€å¤‡æ³¨ã€ç›¸å…³ä¿¡æ¯..." style="display:none;"></textarea>
+                    <textarea id="modal-content" placeholder="详细描述、备注、相关信息..." style="display:none;"></textarea>
                 </div>
             </div>
-            <!-- å˜æ›´è®°å½•ï¼ˆå…¨å®½ï¼‰ -->
+            <!-- 变更记录（全宽） -->
             <div class="changelog-section changelog-full-width" id="modal-changelog-section">
                 <button class="changelog-toggle" id="changelog-toggle" onclick="toggleChangelog()">
-                    <span>ðŸ"‹ å˜æ›´è®°å½•</span>
-                    <span class="changelog-arrow" id="changelog-arrow">â-¼</span>
+                    <span>📋 变更记录</span>
+                    <span class="changelog-arrow" id="changelog-arrow">▼</span>
                 </button>
                 <div class="changelog-list" id="modal-changelog">
-                    <div class="changelog-empty">æš'æ- å˜æ›´è®°å½•</div>
+                    <div class="changelog-empty">暂无变更记录</div>
                 </div>
             </div>
-            <!-- åº•éƒ¨æŒ‰é'®ï¼ˆç¼-è¾'/æ-°å»ºæ¨¡å¼æ˜¾ç¤ºï¼‰ -->
+            <!-- 底部按钮（编辑/新建模式显示） -->
             <div class="task-modal-footer" id="modal-footer-edit" style="display:none;">
-                <button class="task-modal-btn secondary" onclick="closeTaskModal()">å-æ¶ˆ</button>
-                <button class="task-modal-btn primary" id="modal-save-btn" onclick="saveTask()">ä¿å­˜</button>
+                <button class="task-modal-btn secondary" onclick="closeTaskModal()">取消</button>
+                <button class="task-modal-btn primary" id="modal-save-btn" onclick="saveTask()">保存</button>
             </div>
         </div>
     </div>
@@ -1078,41 +1110,41 @@
     <!-- Sync Status Indicator -->
     <div class="sync-status" id="sync-status">
         <span class="sync-dot"></span>
-        <span class="sync-text">å·²ä¿å­˜</span>
+        <span class="sync-text">已保存</span>
     </div>
 
     <!-- Focus Mode Indicator -->
     <div class="focus-mode-indicator" id="focus-indicator">
-        ðŸŽ¯ ä¸"æ³¨æ¨¡å¼ Â· æŒ‰ Esc é€€å‡º
+        🎯 专注模式 · 按 Esc 退出
     </div>
 
     <!-- Keyboard Shortcuts Modal -->
     <div class="shortcuts-modal" id="shortcuts-modal">
         <div class="shortcuts-content">
-            <div class="shortcuts-title">âŒ¨ï¸ é"®ç›˜å¿«æ·é"®</div>
+            <div class="shortcuts-title">⌨️ 键盘快捷键</div>
             <div class="shortcut-item">
                 <span class="shortcut-key"><kbd>N</kbd></span>
-                <span class="shortcut-desc">æ-°å»ºä»»åŠ¡</span>
+                <span class="shortcut-desc">新建任务</span>
             </div>
             <div class="shortcut-item">
                 <span class="shortcut-key"><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></span>
-                <span class="shortcut-desc">åˆ‡æ¢æ ‡ç­¾é¡µ</span>
+                <span class="shortcut-desc">切换标签页</span>
             </div>
             <div class="shortcut-item">
                 <span class="shortcut-key"><kbd>D</kbd></span>
-                <span class="shortcut-desc">åˆ‡æ¢æ·±è‰²æ¨¡å¼</span>
+                <span class="shortcut-desc">切换深色模式</span>
             </div>
             <div class="shortcut-item">
                 <span class="shortcut-key"><kbd>F</kbd></span>
-                <span class="shortcut-desc">ä¸"æ³¨æ¨¡å¼</span>
+                <span class="shortcut-desc">专注模式</span>
             </div>
             <div class="shortcut-item">
                 <span class="shortcut-key"><kbd>?</kbd></span>
-                <span class="shortcut-desc">æ˜¾ç¤ºå¿«æ·é"®</span>
+                <span class="shortcut-desc">显示快捷键</span>
             </div>
             <div class="shortcut-item">
                 <span class="shortcut-key"><kbd>Esc</kbd></span>
-                <span class="shortcut-desc">å…³é-­å¼¹çª-</span>
+                <span class="shortcut-desc">关闭弹窗</span>
             </div>
         </div>
     </div>
@@ -1131,26 +1163,26 @@
         </a>
         <a class="mobile-nav-item" data-page="review" onclick="switchPage('review'); activateMobileNav(this)">
             <span class="mobile-nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg></span>
-            <span class="mobile-nav-label">ä¾‹è¡Œ</span>
+            <span class="mobile-nav-label">例行</span>
         </a>
         <a class="mobile-nav-item mobile-nav-abao" id="mobile-nav-abao">
-            <span class="mobile-nav-icon">ðŸ¾</span>
-            <span class="mobile-nav-label">é˜¿å®</span>
+            <span class="mobile-nav-icon">🐾</span>
+            <span class="mobile-nav-label">二狗</span>
         </a>
         <a class="mobile-nav-item" data-page="english" onclick="switchPage('english'); activateMobileNav(this)">
             <span class="mobile-nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="12" y1="7" x2="12" y2="13"/></svg></span>
-            <span class="mobile-nav-label">å­¦ä¹ </span>
+            <span class="mobile-nav-label">学习</span>
         </a>
         <a class="mobile-nav-item" data-page="life" onclick="switchPage('life'); activateMobileNav(this)">
             <span class="mobile-nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
-            <span class="mobile-nav-label">ç"Ÿæ´»</span>
+            <span class="mobile-nav-label">生活</span>
         </a>
     </nav>
 
-    <!-- é˜¿å®å¯¹è¯é¢æ¿ -->
+    <!-- 阿宝对话面板 -->
     <div class="abao-overlay" id="abao-overlay"></div>
     <div class="abao-panel" id="abao-panel">
-        <!-- å†°æ™¶æ•ˆæžœå±'ï¼ˆç§»åŠ¨ç«¯å¯è§ï¼‰ -->
+        <!-- 冰晶效果层（移动端可见） -->
         <div class="abao-refract-edge left"></div>
         <div class="abao-refract-edge right"></div>
         <div class="abao-refract-edge top"></div>
@@ -1161,29 +1193,29 @@
         <div class="abao-header" id="abao-header">
             <div class="abao-drag-bar">
                 <div class="abao-bar-identity">
-                    <div class="abao-mini-avatar">ðŸ¾</div>
-                    <span class="abao-mini-name">é˜¿å®</span>
+                    <div class="abao-mini-avatar">🐾</div>
+                    <span class="abao-mini-name">二狗</span>
                 </div>
                 <div class="abao-bar-handle"><span></span></div>
             </div>
             <div class="abao-header-left">
-                <div class="abao-avatar">ðŸ¾</div>
-                <span class="abao-header-title">é˜¿å®</span>
-                <span class="abao-header-status">Â· åœ¨çº¿</span>
+                <div class="abao-avatar">🐾</div>
+                <span class="abao-header-title">二狗</span>
+                <span class="abao-header-status">· 在线</span>
             </div>
-            <!-- æŒ‰é'®å·²ç§»é™¤ï¼šå…³é-­ç"¨ä¸‹æ»'æ‰‹åŠ¿ï¼Œæ-°å¯¹è¯ç§»åˆ°å¿«æ·åŒº -->
+            <!-- 按钮已移除：关闭用下滑手势，新对话移到快捷区 -->
         </div>
         <div class="abao-messages" id="abao-messages"></div>
-        <button class="abao-scroll-bottom" id="abao-scroll-bottom">â†" å›žåˆ°åº•éƒ¨</button>
+        <button class="abao-scroll-bottom" id="abao-scroll-bottom">↓ 回到底部</button>
         <div class="abao-shortcuts">
-            <button class="abao-shortcut-btn" id="abao-new-chat" data-text="">ðŸ"" æ-°å¯¹è¯</button>
-            <button class="abao-shortcut-btn" data-text="ä»Šå¤©æœ‰ä»€ä¹ˆä»»åŠ¡ï¼Ÿ">ä»Šæ-¥æ¦'è§ˆ</button>
-            <button class="abao-shortcut-btn" data-text="å¸®æˆ'æ•´ç†å¾…åˆ†ç±»ä»»åŠ¡">æ•´ç†åˆ†ç±»</button>
-            <button class="abao-shortcut-btn" data-text="è¿™å'¨å®Œæˆäº†å¤šå°'ï¼Ÿ">æœ¬å'¨ç»Ÿè®¡</button>
+            <button class="abao-shortcut-btn" id="abao-new-chat" data-text="">🔄 新对话</button>
+            <button class="abao-shortcut-btn" data-text="今天有什么任务？">今日概览</button>
+            <button class="abao-shortcut-btn" data-text="帮我整理待分类任务">整理分类</button>
+            <button class="abao-shortcut-btn" data-text="这周完成了多少？">本周统计</button>
         </div>
         <div class="abao-input-area">
-            <textarea class="abao-input" id="abao-input" placeholder="è·Ÿé˜¿å®è¯´ç'¹ä»€ä¹ˆ..." rows="1"></textarea>
-            <button class="abao-send-btn" id="abao-send" title="å'é€">
+            <textarea class="abao-input" id="abao-input" placeholder="跟二狗说点什么..." rows="1"></textarea>
+            <button class="abao-send-btn" id="abao-send" title="发送">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 8L2 14V9L8 8L2 7V2L14 8Z" fill="currentColor"/></svg>
             </button>
         </div>
@@ -1192,50 +1224,51 @@
     <!-- Notification Panel -->
     <div class="notif-panel" id="notif-panel" style="display:none">
         <div class="notif-panel-header">
-            <span class="notif-panel-title">é€šçŸ¥</span>
-            <button class="notif-read-all" id="notif-read-all" onclick="Notifications.readAll()">å…¨éƒ¨å·²è¯»</button>
+            <span class="notif-panel-title">通知</span>
+            <button class="notif-read-all" id="notif-read-all" onclick="Notifications.readAll()">全部已读</button>
         </div>
         <div class="notif-panel-body" id="notif-panel-body">
-            <div class="notif-empty">æš'æ- é€šçŸ¥</div>
+            <div class="notif-empty">暂无通知</div>
         </div>
     </div>
 
     <!-- Reminder Banner Container (top of screen, non-dismissible) -->
     <div class="notif-banner-container" id="notif-banner-container"></div>
 
-    <!-- æ"ä½œèœå• (SPEC-047) -->
+    <!-- 操作菜单 (SPEC-047) -->
     <div class="action-sheet-overlay" id="action-sheet-overlay" style="display:none">
         <div class="action-sheet" id="action-sheet"></div>
     </div>
 
     <!-- JS Modules -->
-    <script src="assets/js/api.js?v=20260228a"></script>
-    <script src="assets/js/utils.js?v=20260228a"></script>
-    <script src="assets/js/app.js?v=20260228a"></script>
-    <script src="assets/js/tasks.js?v=20260228a"></script>
-    <script src="assets/js/modal.js?v=20260228b"></script>
-    <script src="assets/js/datepicker.js?v=20260228a"></script>
-    <script src="assets/js/drag.js?v=20260228a"></script>
-    <script src="assets/js/actionsheet.js?v=20260228a"></script>
-    <script src="assets/js/share-modal.js?v=20260228b"></script>
-    <script src="assets/js/review.js?v=20260228a"></script>
-    <script src="assets/js/routines.js?v=20260228a"></script>
-    <script src="assets/js/features.js?v=20260228a"></script>
-    <script src="assets/js/particles.js?v=20260228a"></script>
-    <script src="assets/js/living-line.js?v=20260228a"></script>
-    <script src="assets/js/abao.js?v=20260228a"></script>
-    <script src="assets/js/english.js?v=20260228a"></script>
-    <script src="assets/js/life.js?v=20260228a"></script>
-    <script src="assets/js/expense.js?v=20260228b"></script>
-    <script src="assets/js/expense-analytics.js?v=20260228a"></script>
-    <script src="assets/js/trip.js?v=20260228a"></script>
-    <script src="assets/js/health-data.js?v=20260228a"></script>
-    <script src="assets/js/health-renderer.js?v=20260228a"></script>
-    <script src="assets/js/health.js?v=20260228a"></script>
-    <script src="assets/js/friends.js?v=20260228a"></script>
-    <script src="assets/js/notifications.js?v=20260228a"></script>
-    <script src="assets/js/settings.js?v=20260228a"></script>
-    <script src="assets/js/admin.js?v=20260228a"></script>
+    <script src="assets/js/api.js?v=20260302h"></script>
+    <script src="assets/js/utils.js?v=20260302h"></script>
+    <script src="assets/js/jelly-indicator.js?v=20260302h"></script>
+    <script src="assets/js/app.js?v=20260302h"></script>
+    <script src="assets/js/tasks.js?v=20260302h"></script>
+    <script src="assets/js/modal.js?v=20260302h"></script>
+    <script src="assets/js/datepicker.js?v=20260302h"></script>
+    <script src="assets/js/drag.js?v=20260302h"></script>
+    <script src="assets/js/actionsheet.js?v=20260302h"></script>
+    <script src="assets/js/share-modal.js?v=20260302h"></script>
+    <script src="assets/js/review.js?v=20260302h"></script>
+    <script src="assets/js/routines.js?v=20260302h"></script>
+    <script src="assets/js/features.js?v=20260302h"></script>
+    <script src="assets/js/particles.js?v=20260302h"></script>
+    <script src="assets/js/living-line.js?v=20260302h"></script>
+    <script src="assets/js/abao.js?v=20260302h"></script>
+    <script src="assets/js/english.js?v=20260302h"></script>
+    <script src="assets/js/life.js?v=20260302h"></script>
+    <script src="assets/js/expense.js?v=20260302h"></script>
+    <script src="assets/js/expense-analytics.js?v=20260302h"></script>
+    <script src="assets/js/trip.js?v=20260302h"></script>
+    <script src="assets/js/health-data.js?v=20260302h"></script>
+    <script src="assets/js/health-renderer.js?v=20260302h"></script>
+    <script src="assets/js/health.js?v=20260302h"></script>
+    <script src="assets/js/friends.js?v=20260302h"></script>
+    <script src="assets/js/notifications.js?v=20260302h"></script>
+    <script src="assets/js/settings.js?v=20260302h"></script>
+    <script src="assets/js/admin.js?v=20260302h"></script>
 
     <script>
     // Initialize
@@ -1246,14 +1279,14 @@
     renderPendingItems();
     if (typeof Moment !== 'undefined') { Moment.load(); Moment.startAutoRefresh(); }
 
-    // åˆå§‹åŒ-å®ŒæˆåŽä¸»åŠ¨æ‹‰ä¸€æ¬¡æ"¶ä»¶ç®±ï¼ˆè¡¥è¶³ switchPage æœªè¢«è°ƒç"¨æ-¶çš"ç©ºç™½ï¼‰
+    // 初始化完成后主动拉一次收件箱（补足 switchPage 未被调用时的空白）
     setTimeout(function() {
         if (typeof Friends !== 'undefined' && Friends.loadSharedInbox) {
             Friends.loadSharedInbox();
         }
-    }, 2500); // wait for auth IIFE (matches updateInboxBadge at 2000ms)
+    }, 2500);
 
-    // Register Service Worker (ç‰ˆæœ¬å·å¼ºåˆ¶æ›´æ-°)
+    // Register Service Worker (版本号强制更新)
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(regs) {
             regs.forEach(function(r) { r.update(); });
