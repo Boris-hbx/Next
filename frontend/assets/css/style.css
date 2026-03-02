@@ -707,7 +707,7 @@ body {
     color: rgba(255, 255, 255, 0.9);
     text-decoration: none;
     border-radius: 12px;
-    transition: all 0.3s ease;
+    transition: color 0.3s ease, font-weight 0.3s ease, transform 0.3s ease;
     font-weight: 500;
     font-size: 1.1rem;
     backdrop-filter: blur(10px);
@@ -716,6 +716,7 @@ body {
     overflow: hidden;
     background: rgba(255, 255, 255, 0.08);
     cursor: pointer;
+    z-index: 1;
 }
 
 /* 所有nav-link的光晕效果 */
@@ -751,10 +752,57 @@ body {
 }
 
 .nav-link.active {
-    background: linear-gradient(135deg, #ff6b6b, #feca57);
+    background: transparent;
     color: #ffffff;
     font-weight: 600;
+    box-shadow: none;
+}
+
+/* ========== Jelly Pill Indicator ========== */
+.jelly-pill {
+    position: absolute;
+    pointer-events: none;
+    border-radius: 10px;
+    will-change: left, top, width, height;
+    transition: opacity 0.2s ease;
+    z-index: 0;
+}
+
+/* Sidebar nav pill */
+.jelly-pill-sidebar {
+    background: linear-gradient(135deg, #ff6b6b, #feca57);
     box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+    border-radius: 12px;
+}
+
+/* Matrix tab pill — solid primary like expense period tabs */
+.jelly-pill-matrix {
+    background: var(--primary-color, #667eea);
+    border-radius: 10px;
+}
+
+/* Review filter pill */
+.jelly-pill-review {
+    background: rgba(var(--primary-color-rgb), 0.15);
+    border-radius: 20px;
+}
+
+/* Learn category filter pill — solid like expense period tabs */
+.jelly-pill-learn {
+    background: var(--primary-color, #667eea);
+    border-radius: 20px;
+}
+
+/* Mobile bottom nav pill */
+.jelly-pill-mobile {
+    background: rgba(var(--primary-color-rgb), 0.1);
+    border-radius: 16px;
+}
+
+/* Expense period tab pill */
+.jelly-pill-expense {
+    background: var(--primary-color, #667eea);
+    border-radius: 6px;
 }
 
 /* Navigation Section Title */
@@ -1589,36 +1637,32 @@ body {
 .matrix-tab {
     padding: 0.6rem 1.2rem;
     border: none;
-    background: rgba(var(--primary-color-rgb), 0.1);
-    color: var(--primary-color);
+    background: none;
+    color: var(--text-secondary, #8b949e);
     font-size: 0.95rem;
     font-weight: 600;
     border-radius: 10px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: color 0.2s ease;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-}
-
-/* Today 标签始终高亮 */
-.matrix-tab[data-tab="today"] {
-    background: var(--primary-gradient);
-    color: white;
+    position: relative;
+    z-index: 1;
 }
 
 .matrix-tab:hover {
-    background: rgba(var(--primary-color-rgb), 0.2);
+    color: var(--primary-color);
 }
 
-.matrix-tab[data-tab="today"]:hover {
-    background: linear-gradient(135deg, #7b8eef 0%, #8a5db3 100%);
-}
-
+/* Fallback: active tab has its own background before JS pill loads */
 .matrix-tab.active {
-    background: var(--primary-gradient);
+    background: var(--primary-color, #667eea);
     color: white;
-    box-shadow: 0 0 0 2px white, 0 0 0 4px rgba(var(--primary-color-rgb), 0.5);
+}
+/* Once jelly pill is ready, tab background becomes transparent so pill shows */
+.jelly-ready .matrix-tab.active {
+    background: none;
 }
 
 .tab-count {
@@ -8749,6 +8793,12 @@ body.dark-mode .action-sheet-cancel {
     background: #e1e4e8;
 }
 
+@media (max-width: 767px) {
+    .avatar-menu-desktop-only {
+        display: none !important;
+    }
+}
+
 /* 头像选择器（设置页面） */
 .avatar-picker {
     display: flex;
@@ -8957,6 +9007,64 @@ body.dark-mode .action-sheet-cancel {
     font-weight: 500;
 }
 
+/* 密码 Modal */
+.pwd-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+.pwd-modal {
+    background: var(--bg-card, #fff);
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+    border-radius: 12px;
+    width: 400px;
+    max-width: 90vw;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+[data-theme="dark"] .pwd-modal {
+    background: rgba(30, 30, 40, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.pwd-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+}
+.pwd-modal-header h4 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.pwd-modal-close {
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+}
+.pwd-modal-close:hover {
+    color: var(--text-primary);
+}
+.pwd-modal-body {
+    padding: 16px 20px 20px;
+}
+.pwd-modal-body .setting-group {
+    margin-bottom: 14px;
+}
+
 /* 修改密码按钮 */
 .settings-change-pwd-btn {
     width: 100%;
@@ -8970,6 +9078,9 @@ body.dark-mode .action-sheet-cancel {
     font-weight: 500;
     cursor: pointer;
     transition: opacity 0.2s;
+}
+#settings-password-section .settings-change-pwd-btn {
+    margin-top: 0;
 }
 
 .settings-change-pwd-btn:hover {
